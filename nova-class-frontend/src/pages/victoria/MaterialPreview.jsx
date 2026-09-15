@@ -45,20 +45,42 @@ const VOICE_STATUS_LABEL = {
 // How long a run of silence has to last, once real speech has started, before
 // a turn is considered finished and sent off for transcription. Lower feels
 // snappier but risks cutting someone off mid-sentence during a natural
-// pause; higher feels laggy. 900ms is a middle ground — short enough that
-// the reply doesn't feel delayed, long enough for a normal breath/pause.
-const VOICE_SILENCE_TIMEOUT_MS = 900;
+// pause; higher feels laggy. Lowered from 900ms after reports that even a
+// single short word felt like a long wait before Nova responded.
+const VOICE_SILENCE_TIMEOUT_MS = 600;
 // Anything shorter than this run of speech is treated as noise, not an
 // answer — a brief mic/speaker echo blip is unlikely to stay above the RMS
 // threshold this long, real speech easily does.
 const VOICE_MIN_SPEECH_MS = 500;
 // Hard safety cap per turn so a stuck mic can't record forever.
 const VOICE_MAX_TURN_MS = 20000;
+// How long Nova waits in total silence — the student never started
+// speaking at all — before she proactively continues the lesson herself,
+// like a professor who keeps teaching the next point rather than waiting
+// indefinitely to be asked a question. Deliberately much shorter than
+// VOICE_MAX_TURN_MS, which stays as an unrelated absolute safety cap.
+const VOICE_PROACTIVE_CONTINUE_MS = 4000;
 // RMS amplitude (0..1) above which the mic is considered "someone is
 // talking". Tuned for a typical laptop mic in a normal room; a very noisy
-// room may need this raised to avoid false triggers.
-const VOICE_RMS_THRESHOLD = 0.02;
-function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
+// room may need this raised to avoid false triggers. Raised from 0.02 after
+// reports of the mic opening a "listening" turn on ambient room noise alone
+// (fan hum, faint echo) — Whisper then hallucinates plausible filler text
+// ("Thank you.", etc.) for that noise-only clip and Nova answers it,
+// making the assistant seem to "hear and say whatever it wants."
+const VOICE_RMS_THRESHOLD = 0.035;
+// A separate, lower threshold used ONLY while Nova is speaking (barge-in
+// detection), not while idly listening. The two situations have opposite
+// risk profiles: while listening, a too-low threshold means ambient noise
+// keeps opening false "someone spoke" turns (see VOICE_RMS_THRESHOLD above).
+// While Nova is speaking, the mic's own echoCancellation/autoGainControl
+// actively suppress input that resembles what's coming out of the speakers
+// — on a laptop with no headset, this can shave real speech down well below
+// 0.035 even when the student is genuinely talking. A student trying and
+// failing to interrupt is a worse experience than an occasional false
+// barge-in (worst case: Nova pauses briefly and resumes), so this threshold
+// is deliberately looser.
+const VOICE_BARGE_IN_RMS_THRESHOLD = 0.015;
+function AIChatPanel({ materialId, currentPage, totalPages, panelVisible, onAdvancePage }) {
   const { lang } = useLang();
   const [messages, setMessages] = useState([
     {
@@ -91,6 +113,17 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
   }
   const bottomRef = useRef(null);
   const audioRef = useRef(null);
+  // Sentences queued for TTS during a streamed reply — filled as SSE events
+  // arrive (see sendMessageStreaming) and drained one at a time by
+  // playNextQueuedSentence, so the first sentence starts playing while later
+  // ones are still being generated instead of waiting for the whole reply.
+  const speechQueueRef = useRef([]);
+  const isDrainingQueueRef = useRef(false);
+  // The in-flight fetch() reading a streamed reply's SSE body, if any — so an
+  // interruption can actually cancel the network request (and stop the
+  // backend from continuing to generate an answer nobody will hear), not
+  // just ignore whatever it produces after the fact.
+  const activeStreamAbortRef = useRef(null);
   // Monotonic counter bumped every time voice output is stopped — i.e. at every
   // interruption or new turn. An async reply (TTS/LLM) captures it before its
   // await and bails if it no longer matches after, so a stale answer that was
@@ -118,13 +151,46 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
   const voiceOpenRef = useRef(false);
   const voiceStatusRef = useRef(voiceStatus);
   useEffect(() => { voiceStatusRef.current = voiceStatus; }, [voiceStatus]);
+  // Barge-in specifically turned out NOT to tolerate that lag: with the
+  // streaming voice pipeline calling setMessages once per sentence (many
+  // re-renders in quick succession while Nova is talking), the "a render's
+  // worth of lag is harmless" assumption above stopped holding for the one
+  // check that's actually time-critical — the VAD loop's "is Nova currently
+  // speaking, so any voice detected should interrupt her" test. Set directly,
+  // synchronously, at the exact same call sites that start/stop playback —
+  // no React state or effect in the path — so the interrupt check in
+  // runVoiceActivityLoop can never read a stale value.
+  const isNovaSpeakingRef = useRef(false);
+  // Whether the lesson-opening message has been read aloud yet this mount.
+  // Text mode always auto-generates that opening message on mount (see the
+  // effect below), whether or not the student ever opens voice — without
+  // this flag, the first time they DO open voice, openVoiceMode would see an
+  // existing assistant message already in `messages` and treat it as "lesson
+  // already underway", jumping straight to continueLessonAloud (next concept)
+  // and silently skipping the opening the student never actually heard.
+  const introSpokenRef = useRef(false);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+  // Sent as conversation context on every AI request. Capped to the most
+  // recent messages rather than the whole history — a long lesson taught
+  // page-by-page (Continue lesson / voice auto-continue) accumulates
+  // paragraph-length replies fast, and an unbounded history both risks
+  // hitting request-size/LLM-context limits (a 51-page lesson genuinely did
+  // — see the 413 "request entity too large" this was added to fix) and
+  // makes every turn slower/pricier for no teaching benefit once earlier
+  // pages have already been explained and moved past.
+  const MAX_HISTORY_MESSAGES = 30;
+  function buildRecentHistory() {
+    return messagesRef.current
+      .filter(m => m.role !== "system")
+      .slice(-MAX_HISTORY_MESSAGES)
+      .map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.text }));
+  }
   // The lesson auto-starts from a mount-only effect (see below) whose
   // sendMessage call was created at that mount's render — without this ref,
   // it would permanently use whatever page the student was on at that
-  // instant, ignoring a page turn that lands (as it usually does) before the
-  // chat-history fetch resolves.
+  // instant, ignoring a page turn that lands before that first request
+  // actually goes out.
   const currentPageRef = useRef(currentPage);
   currentPageRef.current = currentPage;
   const totalPagesRef = useRef(totalPages);
@@ -137,32 +203,19 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
 
   // AIChatPanel is remounted with key={materialId} (see MaterialPreview)
   // whenever the student switches lessons, so a plain mount-only effect here
-  // already loads the right lesson's history and starts (or resumes) Nova
-  // Teacher automatically, without needing materialId as a dependency or a
-  // "Start learning" button — the student never has to ask to be taught.
-  // messagesRef is set directly (not left to the next render) so the
-  // sendMessage call immediately below sees the restored history instead of
-  // a stale empty array.
+  // already starts Nova Teacher automatically, without needing materialId as
+  // a dependency or a "Start learning" button — the student never has to ask
+  // to be taught. Deliberately does NOT restore any previously saved
+  // chat-history/resume from a past session: every time the student opens
+  // this lesson, Nova greets fresh, states what today's lesson covers, and
+  // teaches from page 1 — not a silent "pick up where we left off" that skips
+  // the opening. (Requested explicitly: no more history-based resuming.)
   useEffect(() => {
     let active = true;
     (async () => {
-      let hasSaved = false;
-      try {
-        const { data } = await API.get(`/classroom/materials/${materialId}/chat-history`);
-        if (!active) return;
-        if (data.messages?.length) {
-          hasSaved = true;
-          const restored = data.messages.map(m => ({ role: m.role, text: m.content }));
-          setMessages(restored);
-          messagesRef.current = restored;
-        }
-      } catch { /* fall through to a fresh start */ }
       if (!active) return;
       setLessonStarted(true);
-      await sendMessage(
-        hasSaved ? "Resume this lesson from where we stopped." : "Start this lesson as my professor.",
-        { teachingIntent: hasSaved ? "continue" : "start" },
-      );
+      await sendMessage("Start this lesson as my professor.", { teachingIntent: "start" });
     })();
     return () => { active = false; };
   }, [materialId]);
@@ -246,9 +299,7 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
     setSending(true);
     let replyText;
     try {
-      const history = messagesRef.current
-        .filter(m => m.role !== "system")
-        .map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.text }));
+      const history = buildRecentHistory();
       const { data } = await API.post(`/classroom/materials/${materialId}/ai`, {
         action: "chat",
         mode: teachingIntent || lessonStarted ? "teacher" : "assistant",
@@ -276,7 +327,25 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
     await sendMessage(text, { teachingIntent: "answer" });
   }
 
+  // Turns the actual PDF page forward before asking for the next
+  // explanation, so "continue" means "move to the next page and explain
+  // it" — not just a vague "next concept" while the viewer sits still. Sets
+  // currentPageRef directly (not just calling onAdvancePage) so the
+  // sendMessage call right after this already carries the new page number —
+  // waiting for the prop round-trip through PdfLessonViewer's onPageChange
+  // would still show the old page for this one request.
+  function advanceToNextPage() {
+    const page = currentPageRef.current;
+    const total = totalPagesRef.current;
+    if (onAdvancePage && page && total && page < total) {
+      const nextPage = page + 1;
+      currentPageRef.current = nextPage;
+      onAdvancePage(nextPage);
+    }
+  }
+
   async function continueLesson() {
+    advanceToNextPage();
     await sendMessage("Continue the lesson with the next important concept.", { teachingIntent: "continue" });
   }
 
@@ -288,10 +357,47 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
     await sendMessage("Check my understanding with one question.", { teachingIntent: "check" });
   }
 
-  function openVoiceMode() {
+  // Opens talking, not listening — a professor-led lesson shouldn't greet
+  // the student with silence and wait to be asked something. If the lesson
+  // hasn't produced anything to say yet (still loading), fall back to
+  // listening rather than continuing on nothing.
+  async function openVoiceMode() {
     voiceOpenRef.current = true;
     setVoiceOpen(true);
-    startListening();
+    // ensureMic() used to only ever get called from startListening() — fine
+    // when that was the only way voice mode opened, but once opening could
+    // also go straight into continueLessonAloud() (so Nova starts talking
+    // immediately instead of opening into silence), that branch skipped mic
+    // setup entirely. micStreamRef stayed null for the rest of the session,
+    // so playNextQueuedSentence's `if (micStreamRef.current && ...)` guard
+    // for starting the barge-in recorder was always false — the VAD loop
+    // never started at all, not "started but insensitive". Call it here,
+    // unconditionally, before either branch, so both paths always have a
+    // live mic stream to watch for an interruption.
+    try {
+      await ensureMic();
+    } catch {
+      setVoiceStatus("ready");
+      return;
+    }
+    if (!voiceOpenRef.current) return; // closed while the permission prompt was up
+    const lastAssistantMessage = [...messagesRef.current].reverse().find(m => m.role === "assistant");
+    if (lastAssistantMessage && !introSpokenRef.current) {
+      // Text mode already auto-generated the lesson's opening on mount (see
+      // the materialId effect above) — the student just hasn't heard it yet
+      // because they opened voice mode instead of reading it. Read that
+      // existing opening aloud instead of calling continueLessonAloud, which
+      // would ask the LLM for the *next* concept and skip the opening
+      // entirely.
+      introSpokenRef.current = true;
+      setVoiceQuestion("");
+      setVoiceReply(lastAssistantMessage.text);
+      await speak(lastAssistantMessage.text);
+    } else if (lessonStarted && lastAssistantMessage) {
+      await continueLessonAloud();
+    } else {
+      startListening();
+    }
   }
 
   function closeVoiceMode() {
@@ -374,14 +480,37 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
   function runVoiceActivityLoop() {
     const tick = () => {
       const recorder = recorderRef.current;
-      if (!recorder || recorder.state !== "recording") return;
+      if (!recorder || recorder.state !== "recording") {
+        // TEMP DIAGNOSTIC — remove once barge-in is confirmed fixed. If this
+        // fires while Nova is audibly speaking, the VAD loop has silently
+        // died (no recorder, or it isn't "recording") and no amount of
+        // fixing the interrupt *logic* will help until this prints nothing.
+        console.log("[VAD] loop stopped — recorder:", recorder, "state:", recorder?.state);
+        return;
+      }
       const now = Date.now();
-      const isVoice = currentVoiceVolume() > VOICE_RMS_THRESHOLD;
+      const vol = currentVoiceVolume();
+      // Barge-in uses a looser threshold than idle listening — see
+      // VOICE_BARGE_IN_RMS_THRESHOLD's comment: echoCancellation/
+      // autoGainControl actively suppress mic input that resembles Nova's
+      // own voice coming out of the speakers, so genuine interrupting speech
+      // can read much quieter than the same speech would during silence.
+      const activeThreshold = isNovaSpeakingRef.current ? VOICE_BARGE_IN_RMS_THRESHOLD : VOICE_RMS_THRESHOLD;
+      const isVoice = vol > activeThreshold;
+      // TEMP DIAGNOSTIC — throttled to ~2/sec so it's readable. Reports the
+      // three things that decide whether an interrupt fires: is Nova
+      // considered to be speaking, how loud the mic reads right now, and
+      // whether that loudness clears the threshold.
+      if (!tick._lastLog || now - tick._lastLog > 500) {
+        tick._lastLog = now;
+        console.log("[VAD]", { isNovaSpeaking: isNovaSpeakingRef.current, vol: vol.toFixed(4), threshold: activeThreshold, isVoice, voiceStatus: voiceStatusRef.current });
+      }
 
-      if (voiceStatusRef.current === "speaking") {
+      if (isNovaSpeakingRef.current) {
         // The first sound of the student's voice interrupts Nova immediately
         // — the recording just keeps going, now capturing their question.
         if (isVoice) {
+          console.log("[VAD] BARGE-IN TRIGGERED — calling stopAllVoiceOutput()");
           stopAllVoiceOutput();
           turnStartedAtRef.current = now;
           speechStartedAtRef.current = now;
@@ -397,7 +526,11 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
           && (now - speechStartedAtRef.current) >= VOICE_MIN_SPEECH_MS;
         const silentFor = now - lastVoiceAtRef.current;
         const elapsed = now - turnStartedAtRef.current;
-        if ((spokeLongEnough && silentFor >= VOICE_SILENCE_TIMEOUT_MS) || elapsed >= VOICE_MAX_TURN_MS) {
+        // Never spoke at all this turn, and stayed quiet long enough that
+        // Nova should stop waiting to be asked and continue teaching on her
+        // own (see finishTurn's silence branch below).
+        const staysSilentTooLong = !speechStartedAtRef.current && elapsed >= VOICE_PROACTIVE_CONTINUE_MS;
+        if ((spokeLongEnough && silentFor >= VOICE_SILENCE_TIMEOUT_MS) || staysSilentTooLong || elapsed >= VOICE_MAX_TURN_MS) {
           try { recorder.stop(); } catch { /* already stopped */ }
           return; // onstop → finishTurn takes it from here; stop polling
         }
@@ -417,9 +550,17 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
     if (!voiceOpenRef.current) return;
 
     if (!hadSpeech || chunks.length === 0) {
-      // Silence or noise-only — keep the conversation going rather than
-      // dropping back to a state that needs a manual tap to resume.
-      startListening();
+      // Silence or noise-only for the whole turn — a professor-led lesson
+      // shouldn't just sit waiting to be asked something. This is
+      // specifically "explained a page, gave the student a chance to ask
+      // something, they didn't" — advance the actual PDF page here (not in
+      // continueLessonAloud itself, which is also used just to resume
+      // talking when voice mode reopens mid-conversation and shouldn't skip
+      // a page just for that), then continue teaching from the new page.
+      // The student can still interrupt any time (barge-in) once Nova
+      // starts talking again.
+      advanceToNextPage();
+      continueLessonAloud();
       return;
     }
 
@@ -443,20 +584,38 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
     setVoiceQuestion(text);
     setVoiceStatus("thinking");
     const seq = playbackSeqRef.current;
-    const reply = await sendMessage(text, { voice: true });
+    // sendMessageStreaming already speaks each sentence as it arrives (see
+    // enqueueSentence inside it) — no separate speak(reply) call needed here,
+    // that would just replay the whole thing a second time.
+    const reply = await sendMessageStreaming(text, { teachingIntent: "answer" });
     // "End call" (closeVoiceMode) can land while the reply is still being
-    // generated — don't speak into a closed panel. And if the student already
-    // moved on to a newer question (the sequence was bumped), drop this reply
-    // so an old answer doesn't get spoken over the new one.
+    // generated — don't keep captions from a closed panel. And if the student
+    // already moved on to a newer question (the sequence was bumped), this
+    // reply's own sentences were already dropped inside the queue, so just
+    // skip updating state for it here too.
     if (!voiceOpenRef.current || seq !== playbackSeqRef.current) { setVoiceStatus("ready"); return; }
     if (!reply) { setVoiceStatus("ready"); return; }
     setVoiceReply(reply);
-    speak(reply);
+  }
+
+  // Nova continuing the lecture on her own initiative — not the student
+  // asking a question — used both when a listening turn goes by in total
+  // silence (see finishTurn) and to kick voice mode off already talking
+  // instead of opening into silent waiting.
+  async function continueLessonAloud() {
+    setVoiceQuestion("");
+    setVoiceStatus("thinking");
+    const seq = playbackSeqRef.current;
+    const reply = await sendMessageStreaming("Continue the lesson with the next important concept.", { teachingIntent: "continue" });
+    if (!voiceOpenRef.current || seq !== playbackSeqRef.current) { setVoiceStatus("ready"); return; }
+    if (!reply) { startListening(); return; }
+    setVoiceReply(reply);
   }
 
   // Shared by both TTS paths so listening always resumes the same way once
   // Nova finishes talking (or fails to).
   function resumeAfterSpeaking() {
+    isNovaSpeakingRef.current = false;
     if (!voiceOpenRef.current) { setVoiceStatus("ready"); return; }
     if (recorderRef.current && recorderRef.current.state === "recording") {
       // The barge-in watcher speak() started was already running silently
@@ -477,10 +636,28 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
   // Every path into either voice output goes through here first so a
   // fallback (or a fresh reply) never overlaps whatever was already playing.
   function stopAllVoiceOutput() {
+    // Cleared immediately, synchronously — the moment an interrupt is
+    // detected, Nova is no longer "speaking" as far as the VAD loop is
+    // concerned, with no React render/effect in between to lag behind.
+    isNovaSpeakingRef.current = false;
     // Bump first: any TTS/reply already awaiting a response is now stale and
     // must not play, even though its audio element doesn't exist yet for the
-    // pause() below to catch.
+    // pause() below to catch. Every check against playbackSeqRef elsewhere
+    // (queue draining, the streaming reader loop, enqueueSentence) uses this
+    // same counter as the one source of truth for "does this still belong to
+    // the current turn" — bumping it here is what invalidates all of them at
+    // once, not each piece separately.
     playbackSeqRef.current += 1;
+    // Drop anything queued for a reply that no longer matters, and reset the
+    // draining flag so the queue isn't left permanently "stuck" thinking a
+    // (now-abandoned) drain is still in progress — see playNextQueuedSentence.
+    speechQueueRef.current = [];
+    isDrainingQueueRef.current = false;
+    // Actually cancel the network request, not just ignore its result — a
+    // student interrupting mid-answer means the backend can stop generating
+    // an answer nobody is going to hear.
+    activeStreamAbortRef.current?.abort();
+    activeStreamAbortRef.current = null;
     audioRef.current?.pause();
     audioRef.current = null;
     window.speechSynthesis?.cancel();
@@ -493,6 +670,7 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
     utterance.onend = resumeAfterSpeaking;
     utterance.onerror = resumeAfterSpeaking;
     setVoiceStatus("speaking");
+    isNovaSpeakingRef.current = true;
     window.speechSynthesis.speak(utterance);
   }
 
@@ -503,6 +681,7 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
   async function speak(text) {
     setVoiceStatus("speaking");
     stopAllVoiceOutput();
+    isNovaSpeakingRef.current = true; // set after stopAllVoiceOutput, which clears it
     const seq = playbackSeqRef.current; // this reply's playback generation
     if (micStreamRef.current) beginRecordingSegment(); // watch for a barge-in while she talks
     // Every language — Burmese included — goes through /classroom/tts now: the
@@ -525,6 +704,189 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
     } catch {
       if (voiceOpenRef.current && seq === playbackSeqRef.current) speakWithBrowserVoice(text);
     }
+  }
+
+  // Queues one sentence of a streamed reply and, if nothing is already
+  // playing, starts draining the queue immediately — the first sentence to
+  // arrive starts speaking right away instead of waiting for sendMessage's
+  // whole reply. Later sentences just join the queue and play back to back
+  // once whatever's currently speaking finishes. `seq` is the generation this
+  // sentence was produced under (captured by the caller at the start of that
+  // turn) — if the student has since interrupted (stopAllVoiceOutput bumps
+  // playbackSeqRef), this sentence belongs to an abandoned reply and must
+  // never be queued, no matter how far the SSE stream that produced it has
+  // already gotten.
+  function enqueueSentence(text, seq) {
+    if (!text || seq !== playbackSeqRef.current) return;
+    speechQueueRef.current.push(text);
+    if (!isDrainingQueueRef.current) playNextQueuedSentence();
+  }
+
+  async function playNextQueuedSentence() {
+    const next = speechQueueRef.current.shift();
+    if (!next) { isDrainingQueueRef.current = false; resumeAfterSpeaking(); return; }
+    isDrainingQueueRef.current = true;
+    setVoiceStatus("speaking");
+    isNovaSpeakingRef.current = true;
+    const seq = playbackSeqRef.current;
+    // Barge-in watcher only needs to start once per reply, not once per
+    // sentence — starting a fresh MediaRecorder segment mid-reply would drop
+    // whatever partial "is the student talking" state it had built up.
+    // TEMP DIAGNOSTIC — remove once barge-in is confirmed fixed.
+    console.log("[VAD] playNextQueuedSentence guard check:", {
+      hasMicStream: Boolean(micStreamRef.current),
+      recorderState: recorderRef.current?.state,
+      willCallBeginRecordingSegment: Boolean(micStreamRef.current) && recorderRef.current?.state !== "recording",
+    });
+    if (micStreamRef.current && recorderRef.current?.state !== "recording") beginRecordingSegment();
+    try {
+      const { data } = await API.post("/classroom/tts", { text: next }, { responseType: "blob" });
+      if (!voiceOpenRef.current || seq !== playbackSeqRef.current) {
+        // Interrupted while this sentence's TTS was in flight. Don't play it
+        // — but also don't leave the queue thinking a drain is still under
+        // way forever; stopAllVoiceOutput already emptied the queue and
+        // reset this flag itself, but reset it again defensively in case
+        // this callback lands after some other path already reset it, so a
+        // stray leftover `true` here can never block the next real turn's
+        // first enqueueSentence from starting to drain.
+        isDrainingQueueRef.current = false;
+        return;
+      }
+      const url = URL.createObjectURL(data);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); playNextQueuedSentence(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); playNextQueuedSentence(); };
+      await audio.play();
+    } catch {
+      if (voiceOpenRef.current && seq === playbackSeqRef.current) playNextQueuedSentence();
+      else isDrainingQueueRef.current = false;
+    }
+  }
+
+  // Streaming counterpart to sendMessage, used only for voice turns: reads
+  // the backend's SSE reply (see materialAI's `voice` branch) sentence by
+  // sentence, speaking each one as it arrives instead of waiting for the
+  // whole reply before saying anything. `mySeq` — captured once at the top —
+  // is this turn's generation; every SSE event re-checks it against
+  // playbackSeqRef.current before touching shared state, so a student
+  // interrupting mid-stream (stopAllVoiceOutput bumps the seq and aborts
+  // the fetch below) reliably stops this turn from enqueueing more speech or
+  // mutating the chat transcript, even for events already in flight when the
+  // interrupt happened. Falls back to a plain non-streaming request only for
+  // a genuine failure (stream never opened, connection dropped) — an
+  // intentional abort is not a failure and must not trigger a retry.
+  async function sendMessageStreaming(text, { teachingIntent = null } = {}) {
+    if (!text || sending) return null;
+    const mySeq = playbackSeqRef.current;
+    setMessages(prev => [...prev, { role: "user", text }]);
+    setSending(true);
+    speechQueueRef.current = [];
+    const controller = new AbortController();
+    activeStreamAbortRef.current = controller;
+    let fullReply = "";
+    let assistantIndex = -1;
+    let aborted = false;
+    try {
+      const history = buildRecentHistory();
+      const token = localStorage.getItem("nova_token");
+      const res = await fetch(`http://localhost:5001/api/classroom/materials/${materialId}/ai`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          action: "chat",
+          mode: teachingIntent || lessonStarted ? "teacher" : "assistant",
+          ...(teachingIntent || lessonStarted ? { teachingIntent: teachingIntent || "answer" } : {}),
+          message: text,
+          history,
+          currentPage: currentPageRef.current,
+          totalPages: totalPagesRef.current,
+          lang,
+          voice: true,
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok || !res.body) throw new Error("stream unavailable");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        if (mySeq !== playbackSeqRef.current) { aborted = true; break; } // interrupted between reads
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (mySeq !== playbackSeqRef.current) { aborted = true; break; } // interrupted while awaiting this chunk
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop(); // last (possibly incomplete) chunk stays buffered
+        for (const line of lines) {
+          const jsonStr = line.replace(/^data:\s*/, "").trim();
+          if (!jsonStr) continue;
+          let evt;
+          try { evt = JSON.parse(jsonStr); } catch { continue; }
+          if (evt.type === "sentence") {
+            fullReply += (fullReply ? " " : "") + evt.text;
+            enqueueSentence(evt.text, mySeq);
+            if (mySeq === playbackSeqRef.current) {
+              setMessages(prev => {
+                if (assistantIndex === -1) {
+                  assistantIndex = prev.length;
+                  return [...prev, { role: "assistant", text: evt.text }];
+                }
+                const copy = [...prev];
+                copy[assistantIndex] = { role: "assistant", text: fullReply };
+                return copy;
+              });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if (err?.name === "AbortError") {
+        aborted = true;
+      } else if (mySeq === playbackSeqRef.current) {
+        // A genuine failure (not an interruption) with nothing spoken yet for
+        // this turn — fall back to a plain single-shot request. Built
+        // directly here (not via sendMessage) so it doesn't re-append the
+        // user message sendMessageStreaming already added above, and so its
+        // reply actually gets spoken — sendMessage on its own never calls
+        // speak()/enqueueSentence, that's the caller's job in the normal
+        // (streaming-succeeded) path, which never runs when we fall back
+        // here.
+        try {
+          const history = buildRecentHistory();
+          const { data } = await API.post(`/classroom/materials/${materialId}/ai`, {
+            action: "chat",
+            mode: teachingIntent || lessonStarted ? "teacher" : "assistant",
+            ...(teachingIntent || lessonStarted ? { teachingIntent: teachingIntent || "answer" } : {}),
+            message: text,
+            history,
+            currentPage: currentPageRef.current,
+            totalPages: totalPagesRef.current,
+            lang,
+            voice: true,
+          });
+          fullReply = data.reply || data.response || "";
+          if (fullReply && mySeq === playbackSeqRef.current) {
+            setMessages(prev => [...prev, { role: "assistant", text: fullReply }]);
+            enqueueSentence(fullReply, mySeq);
+          }
+        } catch {
+          fullReply = "";
+          if (mySeq === playbackSeqRef.current) {
+            setMessages(prev => [...prev, { role: "assistant", text: "⚠️ Something went wrong. Please try again." }]);
+          }
+        }
+      } else {
+        aborted = true;
+      }
+    }
+    if (activeStreamAbortRef.current === controller) activeStreamAbortRef.current = null;
+    setSending(false);
+    return aborted ? null : (fullReply || null);
   }
 
   return (
@@ -571,7 +933,13 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible }) {
           disabled={sending || !lessonStarted}
         />
         {speechSupported && (
-          <button type="button" style={micBtn} onClick={openVoiceMode} aria-label="Start voice chat" disabled={!lessonStarted}>
+          // Also disabled while `sending` — lessonStarted flips true right as
+          // the opening lecture request goes out, before its reply has
+          // actually arrived. Without this, tapping the mic in that window
+          // opens voice mode with no assistant message yet to speak, so
+          // openVoiceMode falls back to silently listening — Nova never
+          // makes a sound, and it looks like voice mode is just broken.
+          <button type="button" style={micBtn} onClick={openVoiceMode} aria-label="Start voice chat" disabled={sending || !lessonStarted}>
             <Icon name="microphone" size={16} alt="" />
           </button>
         )}
@@ -675,6 +1043,15 @@ export default function MaterialPreview({ isOverlay = false }) {
         ? prev
         : { currentPage, totalPages }
     ));
+  }, []);
+  // Lets the AI teaching panel drive the actual PDF page — "explain this
+  // page, then move to the next one" needs the viewer to physically turn the
+  // page in sync with what Nova is now talking about, not just describe a
+  // page number in text. Ref (not a prop) because turning the page is an
+  // imperative action, not state PdfLessonViewer needs to re-render for.
+  const pdfViewerRef = useRef(null);
+  const advancePdfPage = useCallback((page) => {
+    pdfViewerRef.current?.goToPage(page);
   }, []);
 
   const load = useCallback(async () => {
@@ -892,6 +1269,7 @@ export default function MaterialPreview({ isOverlay = false }) {
           </div>
         ) : isPdf ? (
           <PdfLessonViewer
+            ref={pdfViewerRef}
             fileUrl={fileUrl}
             title={previewTitle}
             bookmarks={bookmarks}
@@ -937,6 +1315,7 @@ export default function MaterialPreview({ isOverlay = false }) {
                 currentPage={pdfPageState.currentPage}
                 totalPages={pdfPageState.totalPages}
                 panelVisible={splitChat}
+                onAdvancePage={advancePdfPage}
               />
             </div>
           </div>

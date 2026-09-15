@@ -10,7 +10,13 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "x-admin-secret"],
 }));
-app.use(express.json());
+// Default 100kb was too small for the AI Study Mentor / Voice Teaching chat
+// endpoints, which send the full conversation history on every turn — a
+// long lesson taught page-by-page (Continue lesson / voice auto-continue)
+// accumulates paragraph-length replies fast enough to blow past 100kb after
+// a dozen or so pages, and every request just started failing outright
+// with a 413 (surfaced to the student as a generic "Something went wrong").
+app.use(express.json({ limit: "5mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- Victoria's routes ---

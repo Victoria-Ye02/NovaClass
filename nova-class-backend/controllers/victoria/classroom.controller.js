@@ -1,5 +1,5 @@
 const pool = require("../../config/db");
-const { completeText } = require("../../services/ai/groqText");
+const { completeText, streamCompletion } = require("../../services/ai/groqText");
 const { ocrPdfPageText } = require("../../services/ai/pdfVision");
 const { textToSpeech: elevenLabsTextToSpeech } = require("../../services/ai/elevenLabs");
 const { textToSpeech: burmeseTextToSpeech } = require("../../services/ai/burmeseTts");
@@ -1256,8 +1256,8 @@ Exception: if the student explicitly asks you to switch languages ("can we talk 
         : `You are Nova, a warm and patient study tutor for this lesson's material. Be encouraging and never condescending — normalize confusion ("that part trips a lot of people up", not "that's easy"). Don't just repeat the material back: explain it, and reach for a short, concrete example or analogy when the student seems stuck on something. After explaining anything non-trivial, check in with a brief question ("does that make sense so far?") instead of lecturing on and on. If the student seems to want practice, offer one quick question drawn from this lesson and give warm, specific feedback on their answer — encouraging if they're wrong, brief praise if right, and always explain the correct answer either way. ${naturalToneInstruction}`;
 
       const teachingInstruction = !isTeacherMode ? "" : {
-        start: `Teaching intent: START. Open the lesson proactively. Give a one-sentence learning goal, explain one key concept from the current page in a short paragraph, give one concrete example or analogy, then ask exactly one brief check-understanding question. Do not ask what the student wants to do.`,
-        continue: `Teaching intent: CONTINUE. Continue the lesson from the last concept or current page. Introduce one next logical concept, explain why it matters, give a concrete example, then ask exactly one brief check-understanding question.`,
+        start: `Teaching intent: START. This is a brand-new lesson session — the student just opened this material and has heard nothing yet, so open like a professor actually opening class, in two clear beats: (1) a brief warm greeting plus one sentence naming today's topic in plain terms (what this lesson/page is actually about), ending with a short "let's get started" — style transition; then (2), in the same reply, begin teaching from the very beginning of the current page — explain one key concept, give one concrete example or analogy grounded in what's on the page, then ask exactly one brief check-understanding question. Do not ask what the student wants to do, and do not skip straight into content without that opening beat first.`,
+        continue: `Teaching intent: CONTINUE. The viewer has just turned to this new page — explain THIS page's content specifically (see "Current page" content below), don't skip ahead to a different topic. Cover the main point of this page, explain why it matters, give a concrete example grounded in what's actually on the page, then ask exactly one brief check-understanding question.`,
         simplify: `Teaching intent: SIMPLIFY. Re-explain the current concept with simpler words and one different everyday analogy. Do not introduce a new topic. End with one brief check-understanding question.`,
         check: `Teaching intent: CHECK. Ask exactly one short question that tests the concept currently being taught. Do not answer the question yet and do not introduce a new concept.`,
         answer: `Teaching intent: ANSWER. Treat the student's latest message as a response or question inside the active lesson. Write this entire reply in the language identified by the REPLY LANGUAGE instruction — not the material's own language — even though you are drawing on and reinforcing an idea from the (Korean-language) material. First give supportive feedback. If there is a misunderstanding, correct the misunderstanding clearly and explain why; if it is correct, reinforce the precise idea. Then choose one next teaching step: either a short follow-up explanation or one brief question.`,
@@ -1286,6 +1286,102 @@ ${langInstruction}`;
         ...(history || []).map(h => ({ role: h.role === "assistant" ? "assistant" : "user", content: h.content })),
         { role: "user", content: message },
       ];
+
+      // Shared by both the streaming (voice) and non-streaming paths below —
+      // see the streaming branch and the post-hoc language-fix check further
+      // down for how this is used.
+      const HANGUL_RE = /[가-힣]/g;
+      const targetLang = latestGenuineStudentMessage
+        ? (BURMESE_SCRIPT_RE.test(latestGenuineStudentMessage) ? "my"
+          : HANGUL_RE.test(latestGenuineStudentMessage) ? "ko"
+          : /[àáạảãăằắặẳẵâầấậẩẫèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestGenuineStudentMessage) ? "vi"
+          : "en")
+        : null;
+
+      // Voice mode streams the reply sentence-by-sentence over SSE instead of
+      // returning one JSON blob once the model finishes the whole thing — the
+      // frontend starts TTS on the first sentence the moment it arrives and
+      // keeps speaking subsequent sentences as they stream in, instead of
+      // sitting through the full "wait for all the text, then speak" delay on
+      // every single turn. Falls back to the old whole-text path (see below)
+      // for anything that isn't a voice turn, and internally falls back to a
+      // one-shot corrected reply if the first sentence comes back in the
+      // wrong language (the same fix the non-streaming path applies, just
+      // detected one sentence earlier so nothing wrong gets spoken aloud).
+      if (voice) {
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
+        });
+        const send = (type, data) => res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
+
+        let fullText = "";
+        let sentenceBuffer = "";
+        let firstSentenceChecked = false;
+        let languageOk = true;
+        const SENTENCE_RE = /^(.*?[.!?。！？])\s*/s;
+
+        try {
+          for await (const delta of streamCompletion({ messages: msgs, maxTokens: 300 })) {
+            fullText += delta;
+            sentenceBuffer += delta;
+            let match;
+            while (languageOk && (match = SENTENCE_RE.exec(sentenceBuffer))) {
+              const sentence = match[1].trim();
+              sentenceBuffer = sentenceBuffer.slice(match[0].length);
+              if (!sentence) continue;
+              if (!firstSentenceChecked && isTeacherMode && targetLang) {
+                firstSentenceChecked = true;
+                const hangulCount = (sentence.match(HANGUL_RE) || []).length;
+                if (targetLang !== "ko" && hangulCount > 5) { languageOk = false; break; }
+              }
+              send("sentence", { text: sentence });
+            }
+          }
+
+          let finalReply = fullText.trim();
+          if (!languageOk) {
+            // First sentence came back in the wrong language — the same
+            // failure mode the non-streaming path corrects for. Nothing has
+            // been sent to the student yet (languageOk flips before any
+            // send() for this reply), so it's safe to silently translate the
+            // whole thing and deliver it as a single chunk instead — same
+            // total latency as the old non-streaming path for this rare
+            // case, never worse.
+            try {
+              const fixLangName = { my: "Burmese (Myanmar language)", vi: "Vietnamese", en: "English" }[targetLang];
+              const translation = await completeText({
+                messages: [
+                  { role: "system", content: `Translate the following teacher's reply into ${fixLangName}. Keep any technical/domain terms (Java, JDBC, SQL, code snippets, etc.) as-is where a natural equivalent doesn't exist. Return ONLY the translated text, nothing else — no preamble, no quotes around it.` },
+                  { role: "user", content: finalReply },
+                ],
+                maxTokens: 300,
+              });
+              finalReply = translation.choices[0].message.content;
+            } catch (translateErr) {
+              console.warn("[Teacher mode language fix] streaming translation fallback failed:", translateErr.message);
+            }
+            send("sentence", { text: finalReply });
+          } else if (sentenceBuffer.trim()) {
+            // Trailing text with no closing punctuation (the model's last
+            // fragment) — still worth speaking, just flush it as-is.
+            send("sentence", { text: sentenceBuffer.trim() });
+          }
+
+          pool.query(
+            "INSERT INTO material_chat_messages (material_id, user_id, role, content) VALUES (?, ?, 'user', ?), (?, ?, 'assistant', ?)",
+            [req.params.materialId, req.user.id, message, req.params.materialId, req.user.id, finalReply]
+          ).catch(err => console.warn("[Chat history] write failed:", err.message));
+
+          send("done", {});
+        } catch (streamErr) {
+          send("error", { message: streamErr.message });
+        }
+        return res.end();
+      }
+
       // 150 was too tight for non-Latin scripts — Korean/Burmese need
       // noticeably more tokens per sentence than English in this tokenizer,
       // so a "1-3 short sentences" reply in those languages was getting cut
@@ -1311,11 +1407,9 @@ ${langInstruction}`;
       // must keep following it, or the lesson reverts to Korean the instant
       // the student goes quiet for a moment, which would feel broken.
       if (isTeacherMode && latestGenuineStudentMessage) {
-        const HANGUL_RE = /[가-힣]/g;
-        const targetLang = BURMESE_SCRIPT_RE.test(latestGenuineStudentMessage) ? "my"
-          : HANGUL_RE.test(latestGenuineStudentMessage) ? "ko"
-          : /[àáạảãăằắặẳẵâầấậẩẫèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestGenuineStudentMessage) ? "vi"
-          : "en";
+        // targetLang/HANGUL_RE computed once, shared with the streaming
+        // branch above (which returns before reaching here for voice turns —
+        // this block now only ever runs for non-voice, text-mode chat).
         const replyHangulCount = (reply.match(HANGUL_RE) || []).length;
         if (targetLang !== "ko" && replyHangulCount > 10) {
           try {
@@ -1325,7 +1419,7 @@ ${langInstruction}`;
                 { role: "system", content: `Translate the following teacher's reply into ${fixLangName}. Keep any technical/domain terms (Java, JDBC, SQL, code snippets, etc.) as-is where a natural equivalent doesn't exist. Return ONLY the translated text, nothing else — no preamble, no quotes around it.` },
                 { role: "user", content: reply },
               ],
-              maxTokens: voice ? 300 : 600,
+              maxTokens: 600,
             });
             reply = translation.choices[0].message.content;
           } catch (translateErr) {

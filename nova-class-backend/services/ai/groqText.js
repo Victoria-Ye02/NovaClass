@@ -23,6 +23,23 @@ async function completeText({ messages, maxTokens = 1024, responseFormat }) {
   });
 }
 
+// Yields text deltas as they arrive instead of waiting for the full reply —
+// lets a caller (voice mode's sentence-by-sentence TTS, notably) start acting
+// on the first sentence while the model is still generating the rest, instead
+// of the whole "wait for full text, then speak" round-trip being fully serial.
+async function* streamCompletion({ messages, maxTokens = 1024 }) {
+  const stream = await textClient.chat.completions.create({
+    model: TEXT_MODEL,
+    messages,
+    max_tokens: maxTokens,
+    stream: true,
+  });
+  for await (const chunk of stream) {
+    const delta = chunk.choices?.[0]?.delta?.content;
+    if (delta) yield delta;
+  }
+}
+
 async function transcribeAudio({ file, responseFormat = "text", language }) {
   return audioClient.audio.transcriptions.create({
     file,
@@ -40,4 +57,4 @@ function setClientsForTests({ text, audio } = {}) {
   if (audio) audioClient = audio;
 }
 
-module.exports = { TEXT_MODEL, completeText, transcribeAudio, setClientsForTests };
+module.exports = { TEXT_MODEL, completeText, streamCompletion, transcribeAudio, setClientsForTests };

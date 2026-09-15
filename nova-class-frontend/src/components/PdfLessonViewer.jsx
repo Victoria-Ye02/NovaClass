@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import PdfHighlightOverlay from "./PdfHighlightOverlay";
 import PdfThumbnailSidebar from "./PdfThumbnailSidebar";
@@ -29,7 +29,7 @@ function isEditableTarget(target) {
   return target.isContentEditable || ["input", "textarea", "select"].includes(tagName);
 }
 
-export default function PdfLessonViewer({
+const PdfLessonViewer = forwardRef(function PdfLessonViewer({
   fileUrl,
   title,
   bookmarks,
@@ -40,7 +40,7 @@ export default function PdfLessonViewer({
   onPdfReady,
   onPageChange,
   highlightState,
-}) {
+}, ref) {
   const {
     status: highlightStatus = "idle",
     progress: highlightProgress = { completedPages: 0, totalPages: 0 },
@@ -130,6 +130,14 @@ export default function PdfLessonViewer({
     setCurrentPage(nextPage);
     setPageInput(String(nextPage));
   }, [currentPage, numPages]);
+
+  // Lets a parent (MaterialPreview, on the AI teaching panel's behalf) turn
+  // the page itself — e.g. "explain this page, then move to the next one" —
+  // the same way a bookmark thumbnail click or the prev/next buttons already
+  // do internally. goToPage already clamps to [1, numPages] and no-ops
+  // before the document has loaded, so callers don't need their own bounds
+  // checking.
+  useImperativeHandle(ref, () => ({ goToPage }), [goToPage]);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -575,4 +583,6 @@ export default function PdfLessonViewer({
       )}
     </section>
   );
-}
+});
+
+export default PdfLessonViewer;

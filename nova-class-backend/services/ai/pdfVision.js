@@ -25,9 +25,17 @@ async function ocrPdfPageText(pdfPath, pageNumber) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
     const base64 = fs.readFileSync(pngPath).toString("base64");
-    const result = await model.generateContent([
-      { inlineData: { data: base64, mimeType: "image/png" } },
-      "Transcribe every piece of readable text on this presentation slide or document page, exactly as written, preserving structure (headings, bullet points, labels) and whatever language it's written in. If there is truly no readable text anywhere on the page, respond with exactly: NO_TEXT_FOUND",
+    // The SDK retries 429s internally with growing backoff, which can hang
+    // this call (and the "Continue lesson" request awaiting it) for minutes
+    // once the free-tier daily quota is exhausted. Race it against a timeout
+    // so a quota/rate-limit failure fails fast and falls back to "no page
+    // text" instead of stalling the whole lesson turn.
+    const result = await Promise.race([
+      model.generateContent([
+        { inlineData: { data: base64, mimeType: "image/png" } },
+        "Transcribe every piece of readable text on this presentation slide or document page, exactly as written, preserving structure (headings, bullet points, labels) and whatever language it's written in. If there is truly no readable text anywhere on the page, respond with exactly: NO_TEXT_FOUND",
+      ]),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Vision OCR timed out")), 10000)),
     ]);
     const text = (result.response.text() || "").trim();
     if (!text || text === "NO_TEXT_FOUND") return null;
