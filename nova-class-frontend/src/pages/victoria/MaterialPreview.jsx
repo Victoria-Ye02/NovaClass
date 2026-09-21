@@ -59,7 +59,7 @@ const VOICE_MAX_TURN_MS = 20000;
 // like a professor who keeps teaching the next point rather than waiting
 // indefinitely to be asked a question. Deliberately much shorter than
 // VOICE_MAX_TURN_MS, which stays as an unrelated absolute safety cap.
-const VOICE_PROACTIVE_CONTINUE_MS = 4000;
+const VOICE_PROACTIVE_CONTINUE_MS = 2000;
 // RMS amplitude (0..1) above which the mic is considered "someone is
 // talking". Tuned for a typical laptop mic in a normal room; a very noisy
 // room may need this raised to avoid false triggers. Raised from 0.02 after
@@ -68,6 +68,19 @@ const VOICE_PROACTIVE_CONTINUE_MS = 4000;
 // ("Thank you.", etc.) for that noise-only clip and Nova answers it,
 // making the assistant seem to "hear and say whatever it wants."
 const VOICE_RMS_THRESHOLD = 0.035;
+// Frequency range where human speech (fundamental + lower formants)
+// concentrates most of its energy. Used to confirm that a mic sample loud
+// enough to clear VOICE_RMS_THRESHOLD is actually voice-shaped, not a fan
+// hum, door thud, or other steady/broadband noise that happens to be loud
+// enough — those spread energy more evenly across the spectrum or sit below
+// 300Hz, so they fail the ratio check below even when they clear the plain
+// volume threshold.
+const SPEECH_BAND_HZ = [300, 3400];
+// Share of total frequency-domain energy that must fall inside
+// SPEECH_BAND_HZ for a loud sample to count as speech, not noise. Applied
+// only to idle listening (see the barge-in threshold's comment below for why
+// that path stays amplitude-only).
+const SPEECH_BAND_ENERGY_RATIO = 0.35;
 // A separate, lower threshold used ONLY while Nova is speaking (barge-in
 // detection), not while idly listening. The two situations have opposite
 // risk profiles: while listening, a too-low threshold means ambient noise
@@ -80,6 +93,21 @@ const VOICE_RMS_THRESHOLD = 0.035;
 // barge-in (worst case: Nova pauses briefly and resumes), so this threshold
 // is deliberately looser.
 const VOICE_BARGE_IN_RMS_THRESHOLD = 0.015;
+// Spectral confirmation for barge-in, same idea as SPEECH_BAND_ENERGY_RATIO
+// but deliberately looser: reports of background noise (fan hum, a door
+// thud, a chair creak) interrupting Nova mid-sentence showed the plain
+// amplitude threshold above isn't enough on its own during playback. A
+// full 0.35 would also reject real interruptions, though — echoCancellation
+// is actively suppressing mic input that resembles what the speakers are
+// playing, which smears the spectral shape of genuine but quiet speech —
+// so this only needs to reject clearly non-voice broadband/low-frequency
+// noise, not confirm speech as confidently as idle listening does.
+const SPEECH_BAND_ENERGY_RATIO_BARGE_IN = 0.2;
+// A loud, voice-shaped sample has to hold for this long before it counts as
+// a barge-in — rejects a single transient spike (a thud, a click) that
+// clears both checks for one animation frame but doesn't keep going the way
+// actual speech does, without adding enough delay to feel unresponsive.
+const BARGE_IN_SUSTAIN_MS = 120;
 function AIChatPanel({ materialId, currentPage, totalPages, panelVisible, onAdvancePage }) {
   const { lang } = useLang();
   const [messages, setMessages] = useState([
@@ -141,6 +169,12 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible, onAdva
   const turnStartedAtRef = useRef(0);
   const speechStartedAtRef = useRef(0);
   const lastVoiceAtRef = useRef(0);
+  // When the current unbroken run of loud+voice-shaped mic input during
+  // barge-in detection started, or 0 if there isn't one right now — lets the
+  // barge-in check require BARGE_IN_SUSTAIN_MS of continuous signal instead
+  // of firing on a single animation frame, so one loud transient (a door
+  // thud, a keyboard clack) can't trigger it.
+  const bargeInCandidateSinceRef = useRef(0);
   // Read inside the voice-activity loop and async STT/TTS callbacks instead
   // of the `voiceOpen`/`voiceStatus` state values directly — those closures
   // capture whatever render created them, so a stale read would keep the
@@ -288,6 +322,30 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible, onAdva
       sumSquares += normalized * normalized;
     }
     return Math.sqrt(sumSquares / data.length);
+  }
+
+  // Share of the mic's current frequency-domain energy that falls inside
+  // SPEECH_BAND_HZ — see that constant's comment. Only meaningful once
+  // currentVoiceVolume() has already cleared a threshold; at near-silence
+  // the 8-bit frequency bins are mostly quantization noise and the ratio is
+  // not a reliable signal either way.
+  function currentSpeechBandRatio() {
+    const analyser = analyserRef.current;
+    const ctx = audioCtxRef.current;
+    if (!analyser || !ctx) return 0;
+    const bins = analyser.frequencyBinCount;
+    const data = new Uint8Array(bins);
+    analyser.getByteFrequencyData(data);
+    const hzPerBin = ctx.sampleRate / analyser.fftSize;
+    let bandEnergy = 0;
+    let totalEnergy = 0;
+    for (let i = 0; i < bins; i++) {
+      const energy = data[i] * data[i];
+      totalEnergy += energy;
+      const hz = i * hzPerBin;
+      if (hz >= SPEECH_BAND_HZ[0] && hz <= SPEECH_BAND_HZ[1]) bandEnergy += energy;
+    }
+    return totalEnergy > 0 ? bandEnergy / totalEnergy : 0;
   }
 
   // Shared by the text input's Send button and voice mode, so a spoken
@@ -496,26 +554,45 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible, onAdva
       // own voice coming out of the speakers, so genuine interrupting speech
       // can read much quieter than the same speech would during silence.
       const activeThreshold = isNovaSpeakingRef.current ? VOICE_BARGE_IN_RMS_THRESHOLD : VOICE_RMS_THRESHOLD;
-      const isVoice = vol > activeThreshold;
+      const loudEnough = vol > activeThreshold;
+      // Spectral confirmation now runs in both states — background noise
+      // (fan hum, a door thud, a chair creak) was getting through during
+      // barge-in specifically because that path used to be amplitude-only.
+      // The required ratio is still lower for barge-in than idle listening
+      // (see SPEECH_BAND_ENERGY_RATIO_BARGE_IN's comment) so a missed
+      // interruption stays rarer than an occasional false one.
+      const bandRatio = loudEnough ? currentSpeechBandRatio() : 0;
+      const requiredBandRatio = isNovaSpeakingRef.current ? SPEECH_BAND_ENERGY_RATIO_BARGE_IN : SPEECH_BAND_ENERGY_RATIO;
+      const isVoice = loudEnough && bandRatio > requiredBandRatio;
       // TEMP DIAGNOSTIC — throttled to ~2/sec so it's readable. Reports the
-      // three things that decide whether an interrupt fires: is Nova
-      // considered to be speaking, how loud the mic reads right now, and
-      // whether that loudness clears the threshold.
+      // signals that decide whether an interrupt/turn-start fires: is Nova
+      // considered to be speaking, how loud the mic reads right now, whether
+      // that loudness clears the threshold, how voice-shaped it is, and the
+      // final decision.
       if (!tick._lastLog || now - tick._lastLog > 500) {
         tick._lastLog = now;
-        console.log("[VAD]", { isNovaSpeaking: isNovaSpeakingRef.current, vol: vol.toFixed(4), threshold: activeThreshold, isVoice, voiceStatus: voiceStatusRef.current });
+        console.log("[VAD]", { isNovaSpeaking: isNovaSpeakingRef.current, vol: vol.toFixed(4), threshold: activeThreshold, bandRatio: bandRatio.toFixed(2), isVoice, voiceStatus: voiceStatusRef.current });
       }
 
       if (isNovaSpeakingRef.current) {
-        // The first sound of the student's voice interrupts Nova immediately
-        // — the recording just keeps going, now capturing their question.
+        // Require the loud+voice-shaped signal to hold for BARGE_IN_SUSTAIN_MS
+        // before actually interrupting — rejects a single transient spike
+        // (a thud, a click) that clears both checks for one frame but doesn't
+        // keep going the way real speech does. Genuine speech clears this
+        // within a couple of animation frames, so it doesn't add noticeable lag.
         if (isVoice) {
-          console.log("[VAD] BARGE-IN TRIGGERED — calling stopAllVoiceOutput()");
-          stopAllVoiceOutput();
-          turnStartedAtRef.current = now;
-          speechStartedAtRef.current = now;
-          lastVoiceAtRef.current = now;
-          setVoiceStatus("listening");
+          if (!bargeInCandidateSinceRef.current) bargeInCandidateSinceRef.current = now;
+          if (now - bargeInCandidateSinceRef.current >= BARGE_IN_SUSTAIN_MS) {
+            console.log("[VAD] BARGE-IN TRIGGERED — calling stopAllVoiceOutput()");
+            bargeInCandidateSinceRef.current = 0;
+            stopAllVoiceOutput();
+            turnStartedAtRef.current = now;
+            speechStartedAtRef.current = now;
+            lastVoiceAtRef.current = now;
+            setVoiceStatus("listening");
+          }
+        } else {
+          bargeInCandidateSinceRef.current = 0;
         }
       } else if (voiceStatusRef.current === "listening") {
         if (isVoice) {
@@ -640,6 +717,10 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible, onAdva
     // detected, Nova is no longer "speaking" as far as the VAD loop is
     // concerned, with no React render/effect in between to lag behind.
     isNovaSpeakingRef.current = false;
+    // No barge-in candidate should carry over into whatever comes next
+    // (listening, or Nova starting a new reply) — it was measuring how long
+    // the signal that just triggered this stop had been sustained.
+    bargeInCandidateSinceRef.current = 0;
     // Bump first: any TTS/reply already awaiting a response is now stale and
     // must not play, even though its audio element doesn't exist yet for the
     // pause() below to catch. Every check against playbackSeqRef elsewhere

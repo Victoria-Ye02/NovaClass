@@ -107,9 +107,26 @@ export default function KMate() {
       const conversation = await Conversation.startSession({
         signedUrl: data.signedUrl,
         onStatusChange: ({ status }) => setVoiceStatus(status),
-        onModeChange: ({ mode }) => setVoiceMode(mode),
+        onModeChange: ({ mode }) => { console.log(`[K.Mate mode] ${mode} @ ${performance.now().toFixed(0)}ms`); setVoiceMode(mode); },
         onDisconnect: () => { conversationRef.current = null; setVoiceMode(null); },
         onError: (message) => setVoiceError(typeof message === "string" ? message : "Something went wrong."),
+        // TEMP DIAGNOSTIC — remove once background-noise behavior is
+        // confirmed. onVadScore reports ElevenLabs' own server-side voice-
+        // activity confidence (0-1) in real time; onMessage fires whenever
+        // the agent thinks a full user utterance came through. Play
+        // background noise (fan, music, another person talking) into the
+        // mic WITHOUT speaking yourself: if vadScore stays low and no
+        // "user_transcript" message ever appears, the agent is not treating
+        // that noise as speech. If a user_transcript shows up with
+        // noise-derived text, it is.
+        //
+        // TEMP DIAGNOSTIC — also timing reply latency. performance.now() on
+        // each event lets us measure the gap between the user_transcript
+        // message (end of recognized speech) and the next agent_response
+        // message, to see whether the delay is in turn-detection, the LLM,
+        // or TTS/playback.
+        onVadScore: ({ vadScore }) => console.log("[K.Mate VAD]", vadScore.toFixed(3)),
+        onMessage: (props) => console.log(`[K.Mate message] @ ${performance.now().toFixed(0)}ms`, props),
       });
       if (endRequestedRef.current) {
         // "End call" was already pressed while this was still connecting —

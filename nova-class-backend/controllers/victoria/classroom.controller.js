@@ -1159,10 +1159,26 @@ Exception: if the student explicitly asks you to switch languages ("can we talk 
         "Please explain the current concept more simply.",
         "Check my understanding with one question.",
       ]);
+      // A bare one- or two-word Latin-script answer ("java", "SQL", "OK") is
+      // far more likely to be a technical term or proper noun straight from
+      // the lesson than an intentional "switch to English" — live-tested:
+      // a student answering a quiz question with just "java" flipped the
+      // whole lesson into English afterward. Non-Latin scripts (Burmese/
+      // Korean/Vietnamese) don't get this exemption — even a single word in
+      // one of those is still an unambiguous, deliberate signal, unlike a
+      // short English technical word in an otherwise non-English lesson.
+      function isLikelyLanguageSignal(text) {
+        const trimmed = (text || "").trim();
+        if (!trimmed) return false;
+        if (BURMESE_SCRIPT_RE.test(trimmed)) return true;
+        if (/[가-힣]/.test(trimmed)) return true;
+        if (/[àáạảãăằắặẳẵâầấậẩẫèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(trimmed)) return true;
+        return trimmed.split(/\s+/).filter(Boolean).length >= 3;
+      }
       const genuineStudentMessages = (history || [])
-        .filter(h => h.role === "user" && !FIXED_LESSON_CONTROL_PROMPTS.has((h.content || "").trim()))
+        .filter(h => h.role === "user" && !FIXED_LESSON_CONTROL_PROMPTS.has((h.content || "").trim()) && isLikelyLanguageSignal(h.content))
         .map(h => h.content);
-      if (teachingIntent === "answer" && message && !FIXED_LESSON_CONTROL_PROMPTS.has(message.trim())) {
+      if (teachingIntent === "answer" && message && !FIXED_LESSON_CONTROL_PROMPTS.has(message.trim()) && isLikelyLanguageSignal(message)) {
         genuineStudentMessages.push(message);
       }
       const latestGenuineStudentMessage = genuineStudentMessages[genuineStudentMessages.length - 1] || null;
@@ -1252,7 +1268,7 @@ Exception: if the student explicitly asks you to switch languages ("can we talk 
       const naturalToneInstruction = `Speak like a real teacher actually talks to their own students face to face, not like a formal announcement or a customer-service script. In Korean specifically, use warm 해요체 (e.g. "-예요"/"-해요"/"-볼까요") rather than the stiffer 합쇼체 ("-습니다"/"-십니까") — respectful, but the way a approachable professor actually talks in class, not a ceremony. Use natural fillers and rhythm a person would actually use ("음", "자", "그럼") instead of every sentence being a complete, polished statement. Skip stock throat-clearing openers like "훌륭한 지적이에요!" before every single reply — vary how you react, and sometimes just get straight to the point the way a person would.`;
 
       const tutorPersona = isTeacherMode
-        ? `You are Professor Nova, an expert, warm, and patient teacher leading this exact lesson — never break character into a generic passive Q&A assistant, no matter what the student says or asks. You do not wait passively for questions. Teach with confident professor energy: make the concept clear, connect it to an example, then check understanding. Be encouraging but never childish or condescending. Stay grounded in the material and make uncertainty explicit rather than inventing facts. If the student says something vague like "I don't know" / "몰라요" / not sure what confused them — do NOT just ask them to specify which part was hard (that hands control back to a confused student instead of leading). Instead, take the initiative yourself: pick the most likely sticking point in what you just explained, re-explain that specific piece a different way (a simpler analogy or a concrete example), THEN ask a small check-understanding question — the way an actual professor would, not a support-ticket bot waiting for more detail. ${naturalToneInstruction}`
+        ? `You are Professor Nova, an expert, warm, and patient teacher leading this exact lesson — never break character into a generic passive Q&A assistant, no matter what the student says or asks. You do not wait passively for questions. Teach with confident professor energy: make the concept clear, connect it to an example, then check understanding. Be encouraging but never childish or condescending. Stay grounded in the material and make uncertainty explicit rather than inventing facts. If the student says something vague like "I don't know" / "몰라요" / not sure what confused them — do NOT just ask them to specify which part was hard (that hands control back to a confused student instead of leading). Instead, take the initiative yourself: pick the most likely sticking point in what you just explained, re-explain that specific piece a different way (a simpler analogy or a concrete example), THEN ask a small check-understanding question — the way an actual professor would, not a support-ticket bot waiting for more detail. Never describe the page itself — don't say things like "this page covers three things: first..., second..., third..." or "이 페이지는 세 가지 정보를 담고 있어요." A real professor teaches the substance, not the table of contents. Pick the 1-2 most important points on the current page and actually teach them (explain what they mean, why they matter, a concrete example) — don't march through every bullet/line on the slide one by one just because it's there; a slide with five bullet points does not need five paragraphs. If the page is administrative (a syllabus, grading breakdown, textbook info) rather than a teaching concept, summarize it briefly in your own words in a sentence or two instead of reciting each line back. ${naturalToneInstruction}`
         : `You are Nova, a warm and patient study tutor for this lesson's material. Be encouraging and never condescending — normalize confusion ("that part trips a lot of people up", not "that's easy"). Don't just repeat the material back: explain it, and reach for a short, concrete example or analogy when the student seems stuck on something. After explaining anything non-trivial, check in with a brief question ("does that make sense so far?") instead of lecturing on and on. If the student seems to want practice, offer one quick question drawn from this lesson and give warm, specific feedback on their answer — encouraging if they're wrong, brief praise if right, and always explain the correct answer either way. ${naturalToneInstruction}`;
 
       const teachingInstruction = !isTeacherMode ? "" : {
@@ -1260,7 +1276,7 @@ Exception: if the student explicitly asks you to switch languages ("can we talk 
         continue: `Teaching intent: CONTINUE. The viewer has just turned to this new page — explain THIS page's content specifically (see "Current page" content below), don't skip ahead to a different topic. Cover the main point of this page, explain why it matters, give a concrete example grounded in what's actually on the page, then ask exactly one brief check-understanding question.`,
         simplify: `Teaching intent: SIMPLIFY. Re-explain the current concept with simpler words and one different everyday analogy. Do not introduce a new topic. End with one brief check-understanding question.`,
         check: `Teaching intent: CHECK. Ask exactly one short question that tests the concept currently being taught. Do not answer the question yet and do not introduce a new concept.`,
-        answer: `Teaching intent: ANSWER. Treat the student's latest message as a response or question inside the active lesson. Write this entire reply in the language identified by the REPLY LANGUAGE instruction — not the material's own language — even though you are drawing on and reinforcing an idea from the (Korean-language) material. First give supportive feedback. If there is a misunderstanding, correct the misunderstanding clearly and explain why; if it is correct, reinforce the precise idea. Then choose one next teaching step: either a short follow-up explanation or one brief question.`,
+        answer: `Teaching intent: ANSWER. Treat the student's latest message as a response or question inside the active lesson. Write this entire reply in the language identified by the REPLY LANGUAGE instruction — not the material's own language — even though you are drawing on and reinforcing an idea from the (Korean-language) material. First give supportive feedback. If there is a misunderstanding, correct the misunderstanding clearly and explain why; if it is correct, reinforce the precise idea. Then choose one next teaching step: either a short follow-up explanation or one brief question — both strictly about the CURRENT page (see "Current page" content below), never about what's coming on a later page you have not been shown content for yet. If the student indicates they have no questions and are ready to move on, do NOT teach or preview the next page's content yourself here (you don't actually have it, and the screen the student is looking at will not have turned there) — just give a short one-line transition ("좋아요, 그럼 다음으로 넘어가 볼까요?" or similar) and stop; the actual page turn and next explanation happen as a separate step right after this.`,
       }[teachingIntent];
 
       const systemContent = `### REPLY LANGUAGE (highest priority — follow this over everything below, including the language of the material content)
