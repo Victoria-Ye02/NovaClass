@@ -101,11 +101,28 @@ export default function KMate() {
     setVoiceError(null);
     setVoiceStatus("connecting");
     endRequestedRef.current = false;
+
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setVoiceError("Couldn't access your microphone — check the browser's mic permission and try again.");
+      setVoiceStatus("disconnected");
+      return;
+    }
+
+    let signedUrl;
+    try {
       const { data } = await API.get("/ai/voice-signed-url");
+      signedUrl = data.signedUrl;
+    } catch (err) {
+      setVoiceError(err.response?.data?.error || "Voice agent is temporarily unavailable — try again in a moment.");
+      setVoiceStatus("disconnected");
+      return;
+    }
+
+    try {
       const conversation = await Conversation.startSession({
-        signedUrl: data.signedUrl,
+        signedUrl,
         onStatusChange: ({ status }) => setVoiceStatus(status),
         onModeChange: ({ mode }) => { console.log(`[K.Mate mode] ${mode} @ ${performance.now().toFixed(0)}ms`); setVoiceMode(mode); },
         onDisconnect: () => { conversationRef.current = null; setVoiceMode(null); },
@@ -137,7 +154,7 @@ export default function KMate() {
       }
       conversationRef.current = conversation;
     } catch {
-      setVoiceError("Couldn't start the call — check microphone permission and try again.");
+      setVoiceError("Couldn't connect to Nova — try again.");
       setVoiceStatus("disconnected");
     }
   }
