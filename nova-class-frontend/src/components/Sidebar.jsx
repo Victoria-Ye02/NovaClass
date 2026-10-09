@@ -3,7 +3,10 @@ import { useLang } from "../LanguageContext";
 import { useTheme } from "../ThemeContext";
 import Icon from "./Icon";
 
-export default function Sidebar() {
+// `dark` lets a page (currently K_MATE's Code Assistant mode) force the
+// Devline dark-IDE palette on the sidebar without touching every other page,
+// which still follows the app's normal light/dark theme toggle.
+export default function Sidebar({ dark }) {
   const navigate = useNavigate();
   const name = localStorage.getItem("nova_name") || "Student";
   const { t } = useLang();
@@ -25,11 +28,13 @@ export default function Sidebar() {
     navigate("/login");
   }
 
+  const c = dark ? darkPalette : null;
+
   return (
-    <aside style={styles.sidebar}>
-      <div style={styles.logo}>
-        <span style={styles.logoText}>Nova Class</span>
-        <span style={styles.logoSub}>Educational Portal</span>
+    <aside style={{ ...styles.sidebar, ...(c ? { background: c.panelBg, borderRight: `1px solid ${c.borderColor}` } : {}) }}>
+      <div style={{ ...styles.logo, ...(c ? { borderBottom: `1px solid ${c.borderColor}` } : {}) }}>
+        <span style={{ ...styles.logoText, ...(c ? { color: c.textColor } : {}) }}>Nova Class</span>
+        <span style={{ ...styles.logoSub, ...(c ? { color: c.mutedTextColor } : {}) }}>Educational Portal</span>
       </div>
 
       <nav style={styles.nav}>
@@ -40,7 +45,9 @@ export default function Sidebar() {
             end={item.path === "/"}
             style={({ isActive }) => ({
               ...styles.navItem,
+              ...(c && !isActive ? { color: c.mutedTextColor } : {}),
               ...(isActive ? styles.navActive : {}),
+              ...(isActive && c ? { background: c.accent, color: c.panelBg } : {}),
             })}
           >
             <Icon name={item.icon} size={16} style={styles.navIcon} />
@@ -49,14 +56,14 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div style={styles.bottom}>
+      <div style={{ ...styles.bottom, ...(c ? { borderTop: `1px solid ${c.borderColor}` } : {}) }}>
         <div style={styles.userBox}>
-          <div style={styles.avatar}>{name[0]?.toUpperCase()}</div>
+          <div style={{ ...styles.avatar, ...(c ? { background: c.accent, color: c.panelBg } : {}) }}>{name[0]?.toUpperCase()}</div>
           <div>
-            <div style={styles.userName}>{name}</div>
+            <div style={{ ...styles.userName, ...(c ? { color: c.textColor } : {}) }}>{name}</div>
           </div>
         </div>
-        <button onClick={toggleTheme} style={styles.themeBtn}>
+        <button onClick={toggleTheme} style={{ ...styles.themeBtn, ...(c ? { background: c.surfaceAltBg, border: `1px solid ${c.borderColor}`, color: c.mutedTextColor } : {}) }}>
           <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             {theme === "dark" ? (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -76,14 +83,19 @@ export default function Sidebar() {
             <div style={{ width: "13px", height: "13px", borderRadius: "50%", background: "#fff", position: "absolute", top: "2px", left: theme === "dark" ? "15px" : "2px", transition: "left 0.2s" }} />
           </div>
         </button>
-        <button onClick={logout} style={styles.logoutBtn}>{t("logout")}</button>
-        <a href="https://icons8.com" target="_blank" rel="noreferrer" style={styles.iconCredit}>
+        <button onClick={logout} style={{ ...styles.logoutBtn, ...(c ? { background: c.surfaceAltBg } : {}) }}>{t("logout")}</button>
+        <a href="https://icons8.com" target="_blank" rel="noreferrer" style={{ ...styles.iconCredit, ...(c ? { color: c.mutedTextColor } : {}) }}>
           Icons by Icons8
         </a>
       </div>
     </aside>
   );
 }
+
+const darkPalette = {
+  panelBg: "#0F1013", surfaceAltBg: "#1B1D21", borderColor: "#2E3137",
+  textColor: "#E6E4DF", mutedTextColor: "#9A9DA3", accent: "#5CC8B8",
+};
 
 const styles = {
   sidebar: {

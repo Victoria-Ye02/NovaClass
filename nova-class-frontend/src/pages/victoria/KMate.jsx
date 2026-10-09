@@ -3,14 +3,64 @@ import { Conversation } from "@elevenlabs/client";
 import Sidebar from "../../components/Sidebar";
 import Icon from "../../components/Icon";
 import API from "../../services/api";
+import { useLang } from "../../LanguageContext";
+import CodeHomeworkCoach from "./CodeHomeworkCoach";
 
-const quickBtns = [
+const topikQuickBtns = [
   { icon: "note", label: "Grammar Q1", q: "책을 많이 ( ) 지식을 쌓을 수 있다 — what is the answer?" },
   { icon: "note", label: "Grammar Q2", q: "이 동네로 이사를 ( ) 일 년이 됐다 — explain the answer" },
   { icon: "book", label: "Vocabulary", q: "What does 가성비 mean?" },
   { icon: "info", label: "TOPIK Info", q: "What sections are in TOPIK II?" },
   { flag: "🇲🇲",  label: "Burmese",    q: "TOPIK II ရဲ့ grammar 만큼 ကို မြန်မာလို ရှင်းပြပေး" },
 ];
+
+// A row of four different hues read as a toy/kids-app row, not a dev tool —
+// one accent (the mode's own cyan) keeps it feeling vibrant without looking
+// playful, the way an IDE's own UI chrome stays single-hue even though its
+// syntax highlighting inside the editor is colorful.
+const codeQuickBtns = [
+  { icon: "error",     label: "Explain this error", q: "I got this error, can you explain what it means?\n" },
+  { icon: "note",      label: "Review my code",      q: "Can you review this code and point out what to improve, without rewriting it for me?\n" },
+  { icon: "book",      label: "Explain a concept",   q: "Can you explain how recursion works with a small example?" },
+  { icon: "clipboard", label: "Check my homework",   q: "Here's my attempt at the assignment — am I on the right track?\n" },
+];
+
+// Two independent personas sharing this one page (see the mode toggle in the
+// header) — switching never mixes a TOPIK conversation with a coding one, or
+// sends a coding question to the TOPIK-only RAG backend (its ChromaDB
+// collection has no programming content at all).
+const MODES = {
+  topik: {
+    label: "TOPIK Tutor",
+    icon: "bot",
+    subtitle: "TOPIK II AI Tutor — Ask anything in any language",
+    welcome: "👋 K.Mate မှ ကြိုဆိုပါတယ်!\nTOPIK II ပြင်ဆင်ရာတွင် ကူညီပေးပါမည်။\nEnglish / 한국어 / မြန်မာ — any language!",
+    quickBtns: topikQuickBtns,
+    placeholder: "Ask K.Mate anything about TOPIK...",
+    endpoint: "/kmate/ask",
+    accent: "var(--primary)",
+  },
+  // "Devline" reference direction: dark IDE-assistant look (Cursor/VS
+  // Code-adjacent) — a single flat accent instead of a gradient wash, and a
+  // dark panel background rather than just dark message bubbles on an
+  // otherwise light page.
+  code: {
+    label: "Homework Coach",
+    icon: "source-code",
+    subtitle: "Professor-guided coding homework — hints, practice, and feedback",
+    welcome: "Hey! I'm K.Mate in Code Assistant mode. Paste your code, an error message, or ask me to explain a concept — Java, Python, HTML, whatever you're working on.",
+    quickBtns: codeQuickBtns,
+    placeholder: "Paste code or ask about programming...",
+    endpoint: "/kmate/code-ask",
+    accent: "#5CC8B8",
+    panelBg: "#131417",
+    surfaceBg: "#1B1D21",
+    surfaceAltBg: "#22252A",
+    borderColor: "#2E3137",
+    textColor: "#E6E4DF",
+    mutedTextColor: "#9A9DA3",
+  },
+};
 
 const ATTACH_TYPES = [
   { key: "image", icon: "camera",     label: "Image", accept: "image/*" },
@@ -39,10 +89,32 @@ function errorMessage(err) {
   return "❌ Cannot reach the server. Please check your connection or try again later.";
 }
 
+// Solid MODES[x].accent is what text/border colors use (a gradient can't be
+// a border-color); this is the richer fill for anything with real surface
+// area — buttons, the active tab pill, bubbles — falling back to the solid
+// accent for modes (TOPIK) that don't define a gradient of their own.
+function modeBackground(modeKey) {
+  return MODES[modeKey].accentGradient || MODES[modeKey].accent;
+}
+
 export default function KMate() {
-  const [messages, setMessages] = useState([
-    { role: "bot", text: "👋 K.Mate မှ ကြိုဆိုပါတယ်!\nTOPIK II ပြင်ဆင်ရာတွင် ကူညီပေးပါမည်။\nEnglish / 한국어 / မြန်မာ — any language!" }
-  ]);
+  const { lang: uiLang } = useLang();
+  const [mode, setMode] = useState("topik"); // "topik" | "code"
+  const [debugMode, setDebugMode] = useState(false);
+  // Each mode keeps its own conversation — switching tabs must never mix a
+  // TOPIK chat with a coding one, or make one mode's history disappear when
+  // you tab back to it.
+  const [messagesByMode, setMessagesByMode] = useState({
+    topik: [{ role: "bot", text: MODES.topik.welcome }],
+    code: [{ role: "bot", text: MODES.code.welcome }],
+  });
+  const messages = messagesByMode[mode];
+  function setMessages(updater) {
+    setMessagesByMode(prev => ({
+      ...prev,
+      [mode]: typeof updater === "function" ? updater(prev[mode]) : updater,
+    }));
+  }
   const [input, setInput]   = useState("");
   const [loading, setLoading] = useState(false);
   const [quizMode, setQuizMode] = useState(false);
@@ -254,7 +326,13 @@ export default function KMate() {
     setMessages(m => [...m, { role: "user", text }]);
     setLoading(true);
     try {
-      const res = await API.post("/kmate/ask", { question: text });
+      // Debug mode asks the coding mentor to slow down and ask what the
+      // student already tried before hinting, instead of jumping straight
+      // to a hint — a small system-prompt-side variant, not a new endpoint.
+      const question = mode === "code" && debugMode
+        ? `[Debug mode: ask me what I've already tried and what the exact error/behavior is before giving a hint]\n${text}`
+        : text;
+      const res = await API.post(MODES[mode].endpoint, { question, language: uiLang });
       setMessages(m => [...m, { role: "bot", text: res.data.answer || "No answer" }]);
     } catch (err) {
       setMessages(m => [...m, { role: "bot", text: errorMessage(err) }]);
@@ -262,28 +340,72 @@ export default function KMate() {
     setLoading(false);
   }
 
+  const isCode = mode === "code";
+  // Named distinctly from the `m` used as the per-message loop variable
+  // below (`messages.map((m, i) => ...)`) — reusing that name here would
+  // silently shadow it inside that callback instead of erroring.
+  const codeColors = MODES.code;
+
+  const headerEl = (
+<div style={s.header}>
+          <div>
+            <h2 style={{ ...s.title, ...(isCode ? { color: codeColors.textColor } : {}) }}><Icon name={MODES[mode].icon} size={22} style={{ marginRight: "6px" }} />K_MATE</h2>
+            <p style={{ ...s.sub, ...(isCode ? { color: codeColors.mutedTextColor } : {}) }}>{MODES[mode].subtitle}</p>
+          </div>
+
+          <div style={{ ...s.modeToggle, ...(isCode ? { background: codeColors.surfaceBg, border: `1px solid ${codeColors.borderColor}` } : {}) }}>
+            {Object.keys(MODES).map(key => (
+              <button
+                key={key}
+                style={{
+                  ...s.modeToggleBtn,
+                  ...(isCode && mode !== key ? { color: codeColors.mutedTextColor } : {}),
+                  ...(mode === key ? {
+                    ...s.modeToggleBtnActive,
+                    background: modeBackground(key),
+                    ...(key === "code" ? { color: codeColors.panelBg, fontWeight: 700 } : {}),
+                  } : {}),
+                }}
+                onClick={() => { setMode(key); setQuizMode(false); }}
+              >
+                {MODES[key].label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: "8px" }}>
+            {mode === "topik" ? (
+              <>
+                {!voiceOpen && (
+                  <button style={{ ...s.quizToggleBtn, background: modeBackground(mode) }} onClick={startVoiceCall}>
+                    <Icon name="microphone" size={14} style={{ marginRight: "4px" }} />
+                    Talk to Nova
+                  </button>
+                )}
+                <button style={{ ...s.quizToggleBtn, background: modeBackground(mode) }} onClick={() => setQuizMode(!quizMode)}>
+                  <Icon name={quizMode ? "chat" : "clipboard"} size={14} style={{ marginRight: "4px" }} />
+                  {quizMode ? "Back to Chat" : "Practice Quiz"}
+                </button>
+              </>
+            ) : (
+              <span style={{ ...s.quizToggleBtn, background: codeColors.surfaceBg, color: codeColors.mutedTextColor, border: `1px solid ${codeColors.borderColor}`, cursor: "default" }}>
+                &lt;/&gt; Code homework only
+              </span>
+            )}
+          </div>
+        </div>
+  );
+
+  if (isCode) return <CodeHomeworkCoach header={headerEl} />;
+
   return (
     <div style={s.layout}>
       <Sidebar />
-      <main style={s.main}>
-        <div style={s.header}>
-          <div>
-            <h2 style={s.title}><Icon name="bot" size={22} style={{ marginRight: "6px" }} />K_MATE</h2>
-            <p style={s.sub}>TOPIK II AI Tutor — Ask anything in any language</p>
-          </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            {!voiceOpen && (
-              <button style={s.quizToggleBtn} onClick={startVoiceCall}>
-                <Icon name="microphone" size={14} style={{ marginRight: "4px" }} />
-                Talk to Nova
-              </button>
-            )}
-            <button style={s.quizToggleBtn} onClick={() => setQuizMode(!quizMode)}>
-              <Icon name={quizMode ? "chat" : "clipboard"} size={14} style={{ marginRight: "4px" }} />
-              {quizMode ? "Back to Chat" : "Practice Quiz"}
-            </button>
-          </div>
-        </div>
+      <main style={{
+        ...s.main,
+        ...(isCode ? { background: codeColors.panelBg, transition: "background .15s" } : {}),
+      }}>
+        {headerEl}
 
         {voiceOpen && (
           <div style={s.voicePanel}>
@@ -319,19 +441,35 @@ export default function KMate() {
         {quizMode ? <QuizMode /> : (
           <>
             {/* Chat */}
-            <div style={s.chatBox}>
+            <div style={{
+              ...s.chatBox,
+              ...(isCode ? { background: codeColors.panelBg, border: `1px solid ${codeColors.borderColor}` } : {}),
+            }}>
               {messages.map((m, i) => (
                 <div key={i} style={{ ...s.msgRow, justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                  {m.role === "bot" && <Icon name="bot" size={24} style={s.botAvatar} />}
-                  <div style={{ ...s.bubble, ...(m.role === "user" ? s.userBubble : s.botBubble) }}
+                  {m.role === "bot" && <Icon name={MODES[mode].icon} size={24} style={s.botAvatar} />}
+                  <div style={{
+                    ...s.bubble,
+                    ...(m.role === "user" ? s.userBubble : s.botBubble),
+                    ...(m.role === "user" ? { background: modeBackground(mode) } : {}),
+                    ...(m.role === "user" && isCode ? { background: codeColors.surfaceAltBg, color: codeColors.textColor } : {}),
+                    ...(m.role === "bot" && isCode ? {
+                      background: "transparent", border: "none", padding: "0",
+                      maxWidth: "85%", color: codeColors.textColor,
+                    } : {}),
+                  }}
                     dangerouslySetInnerHTML={{ __html: formatText(m.text) }} />
                   {m.role === "user" && <Icon name="user" size={24} style={s.userAvatar} />}
                 </div>
               ))}
               {loading && (
                 <div style={{ ...s.msgRow, justifyContent: "flex-start" }}>
-                  <Icon name="bot" size={24} style={s.botAvatar} />
-                  <div style={{ ...s.bubble, ...s.botBubble, color: "var(--text-faint)", fontStyle: "italic" }}>
+                  <Icon name={MODES[mode].icon} size={24} style={s.botAvatar} />
+                  <div style={{
+                    ...s.bubble, ...s.botBubble,
+                    ...(isCode ? { background: "transparent", border: "none", padding: "0" } : {}),
+                    color: isCode ? codeColors.mutedTextColor : "var(--text-faint)", fontStyle: "italic",
+                  }}>
                     K.Mate is thinking...
                   </div>
                 </div>
@@ -341,16 +479,29 @@ export default function KMate() {
 
             {/* Quick Buttons */}
             <div style={s.quickRow}>
-              {quickBtns.map((b, i) => (
-                <button key={i} style={s.quickBtn} onClick={() => send(b.q)}>
-                  {b.icon ? <Icon name={b.icon} size={12} style={{ marginRight: "4px" }} /> : b.flag + " "}
-                  {b.label}
-                </button>
-              ))}
+              {MODES[mode].quickBtns.map((b, i) => {
+                const chipColor = b.color || MODES[mode].accent;
+                return (
+                  <button
+                    key={i}
+                    style={{
+                      ...s.quickBtn,
+                      ...(isCode ? { color: chipColor, border: `1.5px solid ${chipColor}`, background: `${chipColor}14` } : {}),
+                    }}
+                    onClick={() => send(b.q)}
+                  >
+                    {b.icon ? <Icon name={b.icon} size={12} style={{ marginRight: "4px" }} /> : b.flag + " "}
+                    {b.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Input */}
-            <div style={s.inputBox}>
+            <div style={{
+              ...s.inputBox,
+              ...(isCode ? { background: codeColors.surfaceBg, border: `1px solid ${codeColors.borderColor}` } : {}),
+            }}>
               {attachFile && (
                 <div style={s.attachChip}>
                   <span>
@@ -365,10 +516,16 @@ export default function KMate() {
                   {attachOpen && (
                     <>
                       <div onClick={() => setAttachOpen(false)} style={s.menuOverlay} />
-                      <div style={s.attachMenu}>
+                      <div style={{
+                        ...s.attachMenu,
+                        ...(isCode ? { background: codeColors.surfaceBg, border: `1px solid ${codeColors.borderColor}` } : {}),
+                      }}>
                         {ATTACH_TYPES.map(t => (
-                          <button key={t.key} style={s.attachMenuItem} onClick={() => pickAttachType(t.key)}
-                            onMouseEnter={e => e.currentTarget.style.background = "var(--surface-alt)"}
+                          <button key={t.key} style={{
+                            ...s.attachMenuItem,
+                            ...(isCode ? { color: codeColors.textColor, borderBottom: `1px solid ${codeColors.borderColor}` } : {}),
+                          }} onClick={() => pickAttachType(t.key)}
+                            onMouseEnter={e => e.currentTarget.style.background = isCode ? codeColors.surfaceAltBg : "var(--surface-alt)"}
                             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                           >
                             <Icon name={t.icon} size={16} /> {t.label}
@@ -378,7 +535,12 @@ export default function KMate() {
                     </>
                   )}
                   <button
-                    style={{ ...s.attachBtn, transform: attachOpen ? "rotate(45deg)" : "rotate(0deg)" }}
+                    style={{
+                      ...s.attachBtn,
+                      color: MODES[mode].accent,
+                      transform: attachOpen ? "rotate(45deg)" : "rotate(0deg)",
+                      ...(isCode ? { background: codeColors.surfaceAltBg, border: `1.5px solid ${codeColors.borderColor}` } : {}),
+                    }}
                     onClick={() => setAttachOpen(o => !o)}
                     title="Attach image, audio, or file"
                   >
@@ -392,14 +554,23 @@ export default function KMate() {
                   />
                 </div>
                 <textarea
-                  style={s.textarea}
-                  placeholder="Ask K.Mate anything about TOPIK..."
+                  style={{ ...s.textarea, ...(isCode ? { color: codeColors.textColor } : {}) }}
+                  placeholder={MODES[mode].placeholder}
                   value={input}
                   rows={1}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                 />
-                <button style={{ ...s.sendBtn, opacity: loading ? 0.5 : 1 }} onClick={() => send()} disabled={loading}>➤</button>
+                <button
+                  style={{
+                    ...s.sendBtn,
+                    background: modeBackground(mode),
+                    opacity: loading ? 0.5 : 1,
+                    ...(isCode ? { color: codeColors.panelBg } : {}),
+                  }}
+                  onClick={() => send()}
+                  disabled={loading}
+                >➤</button>
               </div>
             </div>
           </>
@@ -530,13 +701,30 @@ function QuizMode() {
 const s = {
   layout: { display: "flex", minHeight: "100vh", background: "var(--bg)" },
   main: { marginLeft: "240px", flex: 1, display: "flex", flexDirection: "column", height: "100vh", padding: "24px 32px" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" },
+  // flexWrap here means a narrow window drops the whole button group onto
+  // its own row below the title instead of squeezing every button — the bug
+  // this fixes was individual button *labels* line-wrapping mid-word
+  // ("Code" / "Assistant" split across two lines) because nothing stopped
+  // text from wrapping once its button ran out of horizontal room.
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", rowGap: "10px" },
   title: { fontSize: "22px", fontWeight: 700, color: "var(--text)" },
   sub: { fontSize: "13px", color: "var(--text-muted)" },
   quizToggleBtn: {
     background: "var(--primary)", color: "#fff", padding: "10px 20px",
     borderRadius: "10px", fontSize: "14px", fontWeight: 600, border: "none",
+    whiteSpace: "nowrap", flexShrink: 0,
   },
+  modeToggle: {
+    display: "flex", gap: "2px", background: "var(--surface-alt)",
+    border: "1px solid var(--border)", borderRadius: "10px", padding: "3px",
+    flexShrink: 0,
+  },
+  modeToggleBtn: {
+    padding: "8px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: 600,
+    border: "none", background: "transparent", color: "var(--text-muted)",
+    whiteSpace: "nowrap",
+  },
+  modeToggleBtnActive: { color: "#fff" },
   voicePanel: {
     display: "flex", flexDirection: "column", alignItems: "center", gap: "10px",
     background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "16px",
@@ -575,6 +763,10 @@ const s = {
   bubble: { maxWidth: "75%", padding: "12px 16px", borderRadius: "16px", fontSize: "14px", lineHeight: 1.7 },
   userBubble: { background: "var(--primary)", color: "#fff", borderBottomRightRadius: "4px" },
   botBubble: { background: "var(--surface-alt)", color: "var(--text)", border: "1px solid var(--border)", borderBottomLeftRadius: "4px" },
+  // Code Assistant's own replies get a distinct dark bubble (matches the
+  // mode's dark accent) so a glance at the chat log alone tells you which
+  // persona is talking, not just the header above it.
+  botBubbleCode: { background: "#161b2e", color: "#fff", border: "1px solid rgba(99,102,241,0.35)" },
   quickRow: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" },
   quickBtn: {
     background: "var(--surface)", border: "1.5px solid var(--border)", color: "var(--primary)",

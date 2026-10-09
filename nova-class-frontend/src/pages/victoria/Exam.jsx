@@ -4,7 +4,7 @@ import Icon from "../../components/Icon";
 import API from "../../services/api";
 
 const symbols = ["①", "②", "③", "④"];
-const ROUNDS = ["102nd", "96nd", "91st"];
+const ROUNDS = ["102nd", "96th", "91st"];
 // Reading/Writing are drawn randomly across ALL exam rounds regardless of any
 // round choice, so a round only actually matters for Listening (tied to one
 // specific recording) — question counts are fixed by the TOPIK II blueprint,
