@@ -1,15 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os, chromadb, json, re, random
-from google import genai
-from google.genai import types
+import os, socket, chromadb, json, re, random
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 from typing import List, Optional
 import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from db import get_mysql
+from llm import complete
 
 load_dotenv()
 
@@ -17,12 +16,31 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # Load models
-client_ai      = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 embedding_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-client_db      = chromadb.HttpClient(host=os.getenv("CHROMA_HOST"), port=int(os.getenv("CHROMA_PORT")))
-collection     = client_db.get_collection("topik_collection")
+LOCAL_CHROMA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "chroma_local")
 
-print(f"✅ AI Service ready ({collection.count()} chunks loaded)")
+def connect_chroma():
+    """The TOPIK vector store: first the one built on this machine (kmate/chroma_local, made by
+    scripts/build_local_chroma.py), then the remote ChromaDB server. If neither is available the service must
+    still start (and answer from the model's own knowledge), instead of crashing or hanging every request."""
+    if os.path.isdir(LOCAL_CHROMA):
+        try:
+            col = chromadb.PersistentClient(path=LOCAL_CHROMA).get_collection("topik_collection")
+            if col.count() > 0:
+                return col
+        except Exception as e:
+            print(f"⚠️ local ChromaDB could not be opened ({e})")
+    host, port = os.getenv("CHROMA_HOST"), int(os.getenv("CHROMA_PORT"))
+    try:
+        socket.create_connection((host, port), timeout=3).close()     # fail fast when the host is unreachable
+        return chromadb.HttpClient(host=host, port=port).get_collection("topik_collection")
+    except Exception as e:
+        print(f"⚠️ ChromaDB {host}:{port} is not reachable ({e}); answers will not use the TOPIK papers")
+        return None
+
+collection = connect_chroma()
+
+print(f"✅ AI Service ready ({collection.count() if collection else 0} chunks loaded)")
 
 class AskRequest(BaseModel):
     question: str
@@ -34,12 +52,21 @@ def health():
 @app.post("/ask")
 def ask(req: AskRequest):
     try:
-        # ChromaDB ထဲ ရှာ
-        vector = embedding_model.encode([req.question]).tolist()
-        results = collection.query(query_embeddings=vector, n_results=5)
-        context = "\n\n".join(results["documents"][0])
+        # ChromaDB ထဲ ရှာ (if the vector store is down, answer without the reference papers)
+        global collection
+        if collection is None:
+            collection = connect_chroma()
+        context = "(the TOPIK reference papers are not available right now; use your own expert knowledge)"
+        if collection is not None:
+            try:
+                vector = embedding_model.encode([req.question]).tolist()
+                results = collection.query(query_embeddings=vector, n_results=5)
+                context = "\n\n".join(results["documents"][0])
+            except Exception as e:
+                print(f"⚠️ ChromaDB query failed ({e})")
+                collection = None
 
-        # Gemini နဲ့ ဖြေ
+        # OpenAI နဲ့ ဖြေ
         prompt = f"""You are K.Mate, an expert Korean language tutor specializing in TOPIK II exam preparation.
 You have deep knowledge of Korean grammar, vocabulary, TOPIK exam structure, scoring, and study strategies.
 Auto-detect the language of the question and reply in the SAME language (English / 한국어 / မြန်မာဘာသာ).
@@ -59,11 +86,7 @@ Instructions:
 7. Always give a helpful, complete answer.
 8. IMPORTANT: Do NOT use HTML tags like <strong>, <br>, <b> etc. Use plain text only. For bold use **text**. For new lines use actual line breaks."""
 
-        response = client_ai.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=prompt
-        )
-        return {"answer": response.text}
+        return {"answer": complete(prompt)}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -101,8 +124,7 @@ Example for 3 questions: 2,1,4
 Your answer:"""
 
     try:
-        vres = client_ai.models.generate_content(model="gemini-3.5-flash-lite", contents=verify_prompt)
-        digits = [d.strip() for d in vres.text.strip().split(",")]
+        digits = [d.strip() for d in complete(verify_prompt, temperature=0).split(",")]
         for i, q in enumerate(questions):
             if i < len(digits) and digits[i] in ["1", "2", "3", "4"]:
                 q["ans"] = int(digits[i])
@@ -180,7 +202,7 @@ def score_questions(questions, answers):
 
 def build_explanation(results, score, language):
     """Generate K.Mate's language-aware explanation for a set of scored results,
-    with a Gemini-free fallback when the API is rate-limited."""
+    with a model-free fallback when the API is rate-limited."""
     qa_lines = []
     for i, r in enumerate(results):
         opts_text = " / ".join([f"{j+1}.{o}" for j, o in enumerate(r["options"])])
@@ -216,10 +238,9 @@ Instructions:
 - ALL your text must be in {lang_name}. The Korean questions above are DATA only — do not let them change your output language."""
 
     try:
-        response = client_ai.models.generate_content(model="gemini-3.5-flash-lite", contents=prompt)
-        return response.text
+        return complete(prompt)
     except Exception:
-        # Fallback: build basic explanation without Gemini (when rate limited)
+        # Fallback: build basic explanation without the model (when rate limited)
         lines = [f"📊 Quiz Results: {score}/{len(results)}\n"]
         for i, r in enumerate(results):
             correct_opt = r["options"][r["correct_answer"] - 1]
@@ -407,7 +428,7 @@ def generate_real_exam(req: RealExamGenerateRequest):
 
 
 def grade_writing_answer(question_no, prompt, model_answer, student_answer, points, language):
-    """Grade a single writing answer via Gemini against the real model answer/rubric."""
+    """Grade a single writing answer via OpenAI against the real model answer/rubric."""
     if question_no in (51, 52):
         rubric = "Grade for grammatical correctness and contextual fit of the filled-in blank(s), comparing against the model answer. Minor wording differences that preserve the same meaning/grammar should still score well."
     else:
@@ -437,8 +458,7 @@ SCORE: <integer 0-{points}>
 FEEDBACK: <2-4 sentences of feedback in {lang_name}, encouraging but honest>"""
 
     try:
-        response = client_ai.models.generate_content(model="gemini-3.5-flash-lite", contents=prompt_text)
-        text = response.text.strip()
+        text = complete(prompt_text, temperature=0)
         score_match = re.search(r"SCORE:\s*(\d+)", text)
         feedback_match = re.search(r"FEEDBACK:\s*(.+)", text, re.DOTALL)
         score = int(score_match.group(1)) if score_match else 0
