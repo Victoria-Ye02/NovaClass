@@ -2,6 +2,8 @@ fastapi
 uvicorn[standard]
 chromadb
 pymysql
-google-genai
+openai
 sentence-transformers
 python-dotenv
+requests
+langchain-text-splitters
