@@ -15,10 +15,21 @@ const QUESTIONS = [
   { question: "비가 와서 길이 ( ).", options: ["A) 막았다", "B) 막혔다", "C) 막고", "D) 막으면"], answer: "B", weakness: "피동 표현", explanation: "길이 막힘을 당했으므로 피동입니다." },
 ];
 
+const OPTIONS = {
+  types: [
+    { key: "grammar_fill_in", label: "Grammar fill-in", ko: "문법 빈칸", skill: "grammar", description: "Choose the grammar form that fits the blank." },
+    { key: "sentence_order", label: "Sentence order", ko: "문장 순서", skill: "reading", description: "Put four sentences in order." },
+  ],
+  difficulties: [{ key: "easy", label: "Easy" }, { key: "medium", label: "Medium" }, { key: "hard", label: "Hard" }],
+};
+
 beforeEach(() => {
   API.get.mockReset();
   API.post.mockReset();
-  API.get.mockResolvedValue({ data: { attempts: 3, averageScore: 55, weaknesses: [{ weakness: "피동 표현", asked: 4, wrong: 3, accuracy: 25, lastSeen: "2026-10-13" }] } });
+  API.get.mockImplementation(async url => {
+    if (url === "/kmate/quiz/options") return { data: OPTIONS };
+    return { data: { attempts: 3, averageScore: 55, weaknesses: [{ weakness: "피동 표현", asked: 4, wrong: 3, accuracy: 25, lastSeen: "2026-10-13" }] } };
+  });
   API.post.mockImplementation(async (url, body) => {
     if (url === "/kmate/quiz/generate") return { data: { questions: QUESTIONS } };
     if (url === "/kmate/quiz/followup") return { data: { questions: QUESTIONS.slice(0, 1), weaknesses: body.weaknesses } };
@@ -81,5 +92,40 @@ describe("K-Mate practice quiz: weak points", () => {
     fireEvent.click(screen.getByRole("button", { name: /Practice what I missed/ }));
     await waitFor(() => expect(API.post.mock.calls.some(([url]) => url === "/kmate/quiz/followup")).toBe(true));
     expect(API.post.mock.calls.find(([url]) => url === "/kmate/quiz/followup")[1].weaknesses).toEqual(["피동 표현"]);
+  });
+
+  it("lets the student pick a question type and a difficulty, and sends both when the quiz is made and checked", async () => {
+    render(<QuizMode />);
+    const types = await screen.findByTestId("type-picker");
+    expect(types.textContent).toContain("Grammar fill-in");
+    expect(types.textContent).toContain("문장 순서");
+    fireEvent.click(screen.getByRole("button", { name: /Sentence order/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Hard" }));
+    fireEvent.click(screen.getByRole("button", { name: /3 Questions/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Start Quiz/ }));
+    await screen.findByText(/Question 1 \/ 2/);
+    const generate = API.post.mock.calls.find(([url]) => url === "/kmate/quiz/generate")[1];
+    expect(generate).toMatchObject({ topic: "grammar", count: 3, type: "sentence_order", difficulty: "hard" });
+
+    fireEvent.click(screen.getByRole("button", { name: /① 됐다/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Next/ }));
+    fireEvent.click(screen.getByRole("button", { name: /② 막혔다/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Submit Quiz/ }));
+    await screen.findByText("1 / 2");
+    expect(API.post.mock.calls.find(([url]) => url === "/kmate/quiz/check")[1]).toMatchObject({ type: "sentence_order", difficulty: "hard" });
+  });
+
+  it("without choosing, the quiz is made for any type and any difficulty (as before)", async () => {
+    await start();
+    const generate = API.post.mock.calls.find(([url]) => url === "/kmate/quiz/generate")[1];
+    expect(generate.type).toBeUndefined();
+    expect(generate.difficulty).toBeUndefined();
+  });
+
+  it("leaves the pickers out if the server cannot list the options", async () => {
+    API.get.mockImplementation(async url => { if (url === "/kmate/quiz/options") throw new Error("down"); return { data: { attempts: 0, averageScore: 0, weaknesses: [] } }; });
+    render(<QuizMode />);
+    await screen.findByRole("button", { name: /Start Quiz/ });
+    expect(screen.queryByTestId("type-picker")).toBeNull();
   });
 });

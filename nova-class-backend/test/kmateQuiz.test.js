@@ -81,7 +81,7 @@ test("checkQuiz grades, stores the attempt and every answer with its weak point,
   assert.equal(res.body.results[1].weakness, "피동 표현");
 
   const attempt = sql.find(c => /INSERT INTO topik_quiz_attempts/.test(c.q));
-  assert.deepEqual(attempt.params, [7, "grammar", "en", "followup", 2, 1, 50]);
+  assert.deepEqual(attempt.params, [7, "grammar", "en", "followup", null, null, 2, 1, 50]);
   const answers = sql.filter(c => /INSERT INTO topik_quiz_answers/.test(c.q));
   assert.equal(answers.length, 2);
   assert.deepEqual(answers[1].params.slice(0, 2), [41, 7]);
@@ -111,4 +111,61 @@ test("quizWeaknesses lists the student's most-missed points with their accuracy"
   const { req, res } = http();
   await controller.quizWeaknesses(req, res);
   assert.deepEqual(res.body, { attempts: 5, averageScore: 62, weaknesses: [{ weakness: "피동 표현", asked: 4, wrong: 3, accuracy: 25, lastSeen: "2026-10-13T10:00:00.000Z" }] });
+});
+
+test("quizOptions lists the question types and difficulty levels the screen offers (no prompt text)", async t => {
+  const { controller } = load(t, "[]");
+  const { req, res } = http();
+  controller.quizOptions(req, res);
+  assert.equal(res.body.types.length, 8);
+  assert.deepEqual(res.body.types[0], { key: "grammar_fill_in", label: "Grammar fill-in", ko: "문법 빈칸", skill: "grammar", description: "Choose the grammar form that fits the blank in a sentence." });
+  assert.deepEqual(res.body.difficulties.map(d => d.key), ["easy", "medium", "hard"]);
+  assert.equal(JSON.stringify(res.body).includes("format"), false);
+});
+
+test("generateQuiz writes the chosen question type and difficulty into the request to the model", async t => {
+  const { controller, calls } = load(t, MODEL_QUESTIONS);
+  const { req, res } = http({ topic: "grammar", count: 2, language: "en", type: "sentence_order", difficulty: "hard" });
+  await controller.generateQuiz(req, res);
+  const prompt = calls[0].messages[0].content;
+  assert.match(prompt, /"Sentence order" \(문장 순서\)/);
+  assert.match(prompt, /\(가\) \(나\) \(다\) \(라\)/);               // the real exam format of that type
+  assert.match(prompt, /Difficulty: Hard — about TOPIK level 5-6/);
+});
+
+test("an unknown type or difficulty is ignored, not passed to the model", async t => {
+  const { controller, calls } = load(t, MODEL_QUESTIONS);
+  const { req, res } = http({ topic: "grammar", count: 2, type: "nonsense", difficulty: "impossible" });
+  await controller.generateQuiz(req, res);
+  assert.equal(res.statusCode, 200);
+  assert.doesNotMatch(calls[0].messages[0].content, /Difficulty:|question, written like the real exam/);
+});
+
+test("checkQuiz stores the type and difficulty with the attempt and each answer; followup practice can keep them", async t => {
+  const { controller, calls } = load(t, MODEL_QUESTIONS);
+  const sql = [];
+  pool.query = async (q, params) => { sql.push({ q: q.replace(/\s+/g, " "), params }); return /INSERT INTO topik_quiz_attempts/.test(q) ? [{ insertId: 8 }] : [{}]; };
+  const { req, res } = http({ questions: JSON.parse(MODEL_QUESTIONS), answers: ["A", "A"], type: "main_idea", difficulty: "easy", kind: "practice" });
+  await controller.checkQuiz(req, res);
+  assert.deepEqual(sql.find(c => /INSERT INTO topik_quiz_attempts/.test(c.q)).params.slice(3, 6), ["practice", "main_idea", "easy"]);
+  const answer = sql.find(c => /INSERT INTO topik_quiz_answers/.test(c.q));
+  assert.deepEqual(answer.params.slice(8, 10), ["main_idea", "easy"]);
+
+  const follow = http({ weaknesses: ["피동 표현"], type: "grammar_fill_in", difficulty: "easy" });
+  await controller.followupQuiz(follow.req, follow.res);
+  assert.match(calls.at(-1).messages[0].content, /"Grammar fill-in"/);
+});
+
+test("older tables get the new columns added, and 'already there' is not an error", async t => {
+  const { controller } = load(t, "[]");
+  const ddl = [];
+  pool.query = async q => {
+    ddl.push(q.replace(/\s+/g, " "));
+    if (/ALTER TABLE/.test(q)) { const e = new Error("dup"); e.code = "ER_DUP_FIELDNAME"; throw e; }
+    return /FROM topik_/.test(q) ? [[]] : [{}];
+  };
+  const { req, res } = http();
+  await controller.quizWeaknesses(req, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(ddl.filter(q => /^ALTER TABLE topik_quiz_(attempts|answers) ADD COLUMN (question_type|difficulty)/.test(q)).length, 4);
 });

@@ -8,6 +8,8 @@ const TABLES = [
     topic VARCHAR(60) NOT NULL,
     language VARCHAR(10) NOT NULL DEFAULT 'en',
     kind ENUM('practice','followup') NOT NULL DEFAULT 'practice',
+    question_type VARCHAR(40) NULL,
+    difficulty VARCHAR(10) NULL,
     total INT NOT NULL,
     correct INT NOT NULL,
     score INT NOT NULL,
@@ -24,6 +26,8 @@ const TABLES = [
     correct_answer VARCHAR(4),
     is_correct TINYINT(1) NOT NULL,
     weakness VARCHAR(120),
+    question_type VARCHAR(40) NULL,
+    difficulty VARCHAR(10) NULL,
     explanation TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_weakness (user_id, weakness),
@@ -31,28 +35,41 @@ const TABLES = [
   )`,
 ];
 
+// Tables made before a column existed get it added (this server has no ADD COLUMN IF NOT EXISTS, so a duplicate-column
+// error just means it is already there).
+const ADDED_COLUMNS = [
+  "ALTER TABLE topik_quiz_attempts ADD COLUMN question_type VARCHAR(40) NULL",
+  "ALTER TABLE topik_quiz_attempts ADD COLUMN difficulty VARCHAR(10) NULL",
+  "ALTER TABLE topik_quiz_answers ADD COLUMN question_type VARCHAR(40) NULL",
+  "ALTER TABLE topik_quiz_answers ADD COLUMN difficulty VARCHAR(10) NULL",
+];
+
 let ready = null;
 function ensureTables(pool) {
-  if (!ready) ready = TABLES.reduce((chain, sql) => chain.then(() => pool.query(sql)), Promise.resolve()).catch(err => { ready = null; throw err; });
+  if (!ready) {
+    ready = TABLES.reduce((chain, sql) => chain.then(() => pool.query(sql)), Promise.resolve())
+      .then(() => ADDED_COLUMNS.reduce((chain, sql) => chain.then(() => pool.query(sql)).catch(err => { if (err.code !== "ER_DUP_FIELDNAME") throw err; }), Promise.resolve()))
+      .catch(err => { ready = null; throw err; });
+  }
   return ready;
 }
 
 const cleanWeakness = value => String(value || "").replace(/\s+/g, " ").trim().slice(0, 120);
 
 // results: [{ question, options, yourAnswer, correctAnswer, isCorrect, weakness, explanation }]
-async function saveAttempt(pool, { userId, topic, language, kind = "practice", results }) {
+async function saveAttempt(pool, { userId, topic, language, kind = "practice", questionType = null, difficulty = null, results }) {
   await ensureTables(pool);
   const correct = results.filter(r => r.isCorrect).length;
   const score = results.length ? Math.round((correct / results.length) * 100) : 0;
   const [attempt] = await pool.query(
-    "INSERT INTO topik_quiz_attempts (user_id, topic, language, kind, total, correct, score) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [userId, String(topic || "mixed").slice(0, 60), String(language || "en").slice(0, 10), kind === "followup" ? "followup" : "practice", results.length, correct, score]
+    "INSERT INTO topik_quiz_attempts (user_id, topic, language, kind, question_type, difficulty, total, correct, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [userId, String(topic || "mixed").slice(0, 60), String(language || "en").slice(0, 10), kind === "followup" ? "followup" : "practice", questionType || null, difficulty || null, results.length, correct, score]
   );
   const attemptId = attempt.insertId;
   for (const r of results) {
     await pool.query(
-      "INSERT INTO topik_quiz_answers (attempt_id, user_id, question, options, your_answer, correct_answer, is_correct, weakness, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [attemptId, userId, String(r.question || ""), JSON.stringify(r.options || []), r.yourAnswer || "", r.correctAnswer || "", r.isCorrect ? 1 : 0, cleanWeakness(r.weakness) || null, String(r.explanation || "")]
+      "INSERT INTO topik_quiz_answers (attempt_id, user_id, question, options, your_answer, correct_answer, is_correct, weakness, question_type, difficulty, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [attemptId, userId, String(r.question || ""), JSON.stringify(r.options || []), r.yourAnswer || "", r.correctAnswer || "", r.isCorrect ? 1 : 0, cleanWeakness(r.weakness) || null, questionType || null, difficulty || null, String(r.explanation || "")]
     );
   }
   return { attemptId, correct, score };

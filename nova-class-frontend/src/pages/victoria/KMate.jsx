@@ -594,6 +594,9 @@ export function QuizMode() {
   const [current, setCurrent] = useState(0);
   const [result, setResult]   = useState(null);
   const [weak, setWeak]       = useState(null);        // { attempts, averageScore, weaknesses[] }
+  const [options, setOptions] = useState(null);        // { types[], difficulties[] } from the server
+  const [typeKey, setTypeKey] = useState("");          // "" = any question type
+  const [level, setLevel]     = useState("");          // "" = any difficulty
 
   // the student's most-missed points, kept on the server across sessions
   async function loadWeaknesses() {
@@ -602,6 +605,7 @@ export function QuizMode() {
   useEffect(() => {
     let alive = true;
     API.get("/kmate/quiz/weaknesses").then(r => { if (alive) setWeak(r.data); }).catch(() => {});
+    API.get("/kmate/quiz/options").then(r => { if (alive) setOptions(r.data); }).catch(() => {});
     return () => { alive = false; };
   }, []);
 
@@ -617,7 +621,7 @@ export function QuizMode() {
   async function startQuiz() {
     setStep("loading");
     try {
-      const res = await API.post("/kmate/quiz/generate", { topic, count, language: LANG_CODE[lang] });
+      const res = await API.post("/kmate/quiz/generate", { topic, count, language: LANG_CODE[lang], type: typeKey || undefined, difficulty: level || undefined });
       begin(res.data.questions, "practice");
     } catch { setStep("settings"); alert("Quiz generation failed. Is the server running?"); }
   }
@@ -626,7 +630,7 @@ export function QuizMode() {
   async function startFollowup(weaknesses) {
     setStep("loading");
     try {
-      const res = await API.post("/kmate/quiz/followup", { weaknesses, count: Math.min(Math.max(weaknesses.length + 2, 3), 6), language: LANG_CODE[lang] });
+      const res = await API.post("/kmate/quiz/followup", { weaknesses, count: Math.min(Math.max(weaknesses.length + 2, 3), 6), language: LANG_CODE[lang], type: typeKey || undefined, difficulty: level || undefined });
       begin(res.data.questions, "followup");
     } catch { setStep(result ? "results" : "settings"); alert("Could not make the practice questions."); }
   }
@@ -636,7 +640,7 @@ export function QuizMode() {
     try {
       // the server grades by option letter ("A".."D"); the UI stores 1-based picks
       const letters = answers.map(n => "ABCD"[n - 1] || "");
-      const res = await API.post("/kmate/quiz/check", { questions, answers: letters, language: LANG_CODE[lang], topic, kind });
+      const res = await API.post("/kmate/quiz/check", { questions, answers: letters, language: LANG_CODE[lang], topic, kind, type: typeKey || undefined, difficulty: level || undefined });
       setResult(res.data);
       setStep("results");
       loadWeaknesses();
@@ -684,6 +688,26 @@ export function QuizMode() {
           </button>
         ))}
       </div>
+      {options && (
+        <>
+          <label style={s.qLabel}>Question Type</label>
+          <div style={s.optRow} data-testid="type-picker">
+            <button style={{ ...s.optBtn, ...(typeKey === "" ? s.optActive : {}) }} onClick={() => setTypeKey("")}>Any</button>
+            {options.types.map(t => (
+              <button key={t.key} title={t.description} style={{ ...s.optBtn, ...(typeKey === t.key ? s.optActive : {}) }} onClick={() => setTypeKey(t.key)}>
+                {t.label}<span style={s.typeKo}>{t.ko}</span>
+              </button>
+            ))}
+          </div>
+          <label style={s.qLabel}>Difficulty</label>
+          <div style={s.optRow} data-testid="level-picker">
+            <button style={{ ...s.optBtn, ...(level === "" ? s.optActive : {}) }} onClick={() => setLevel("")}>Any</button>
+            {options.difficulties.map(d => (
+              <button key={d.key} style={{ ...s.optBtn, ...(level === d.key ? s.optActive : {}) }} onClick={() => setLevel(d.key)}>{d.label}</button>
+            ))}
+          </div>
+        </>
+      )}
       <label style={s.qLabel}>Number of Questions</label>
       <div style={s.optRow}>
         {[3,5,10].map(n => (
@@ -889,6 +913,7 @@ const s = {
     width: "40px", height: "40px", borderRadius: "10px", fontSize: "18px",
   },
   // Quiz styles
+  typeKo: { marginLeft: "6px", fontSize: "11px", opacity: 0.7 },
   weakCard: { background: "var(--surface-2, var(--bg))", border: "1px solid var(--border)", borderRadius: "12px", padding: "14px 16px", marginBottom: "18px" },
   weakHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", color: "var(--text)" },
   weakRow: { display: "flex", alignItems: "center", gap: "10px", padding: "6px 0", borderTop: "1px solid var(--border)" },

@@ -369,16 +369,23 @@ exports.history = async (req, res) => {
 
 // ---- K-Mate TOPIK practice quiz --------------------------------------------------------------
 const quizStore = require("../../services/topik/quizStore");
+const { typeByKey, difficultyByKey, publicOptions } = require("../../services/topik/questionTypes");
 
 const EXPLAIN_LANGUAGE = { my: "Burmese (Myanmar)", ko: "Korean" };
 
 // Asks the model for multiple-choice questions. `focus` is a list of weak points (e.g. "-(으)ㄴ 지 + time");
 // when given, every question must test one of them, in a new sentence (not a copy of an earlier question).
-async function makeQuizQuestions({ topic, count, language, focus = [] }) {
+async function makeQuizQuestions({ topic, count, language, focus = [], type, difficulty }) {
+  const questionType = typeByKey(type);
+  const level = difficultyByKey(difficulty);
+  const typeRule = questionType
+    ? `\nEvery question is a TOPIK II "${questionType.label}" (${questionType.ko}) question, written like the real exam: ${questionType.format}`
+    : "";
+  const levelRule = level ? `\nDifficulty: ${level.label} — ${level.level}` : "";
   const focusRule = focus.length
     ? `\nThe student keeps getting these points wrong, so EVERY question must test one of them (spread them out), in a NEW sentence and with different wrong options than before:\n${focus.map(f => `- ${f}`).join("\n")}\nKeep the difficulty the same or slightly easier, and make the explanation say exactly what to look for. In "weakness" copy the listed point EXACTLY as written above (same words, same language) so progress on it can be tracked.`
     : "";
-  const prompt = `Generate ${count} multiple-choice Korean language quiz questions about: ${topic}.${focusRule}
+  const prompt = `Generate ${count} multiple-choice Korean language quiz questions about: ${topic}.${typeRule}${levelRule}${focusRule}
 Language for explanations: ${EXPLAIN_LANGUAGE[language] || "English"}.
 Write the questions as plain text: no HTML tags or entities (no <u>, no &nbsp;), and show a blank as ( ).
 
@@ -400,13 +407,16 @@ Return ONLY valid JSON array:
 
 // POST /api/kmate/quiz/generate  { topic, count, language }
 exports.generateQuiz = async (req, res) => {
-  const { topic = "TOPIK vocabulary", count = 5, language = "en" } = req.body;
+  const { topic = "TOPIK vocabulary", count = 5, language = "en", type, difficulty } = req.body;
   try {
-    res.json({ questions: await makeQuizQuestions({ topic, count, language }) });
+    res.json({ questions: await makeQuizQuestions({ topic, count, language, type, difficulty }) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+// GET /api/kmate/quiz/options -> { types: [{ key, label, ko, skill, description }], difficulties: [{ key, label }] }
+exports.quizOptions = (req, res) => res.json(publicOptions());
 
 // POST /api/kmate/quiz/followup  { weaknesses: ["..."], count, language }
 // Practice questions aimed at the points the student just got wrong (or the ones in their weakness list).
@@ -415,7 +425,7 @@ exports.followupQuiz = async (req, res) => {
   if (weaknesses.length === 0) return res.status(400).json({ error: "weaknesses are required" });
   const count = Math.min(Math.max(parseInt(req.body.count, 10) || weaknesses.length + 1, 2), 8);
   try {
-    const questions = await makeQuizQuestions({ topic: "TOPIK II (targeted practice)", count, language: req.body.language || "en", focus: weaknesses });
+    const questions = await makeQuizQuestions({ topic: "TOPIK II (targeted practice)", count, language: req.body.language || "en", focus: weaknesses, type: req.body.type, difficulty: req.body.difficulty });
     res.json({ questions, weaknesses });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -425,7 +435,7 @@ exports.followupQuiz = async (req, res) => {
 // POST /api/kmate/quiz/check  { questions, answers, topic, language, kind }
 // Grades the answers, stores the attempt (and each answer's weak point) and returns the detailed review.
 exports.checkQuiz = async (req, res) => {
-  const { questions, answers, topic, language, kind } = req.body;
+  const { questions, answers, topic, language, kind, type, difficulty } = req.body;
   if (!questions || !answers) return res.status(400).json({ error: "questions and answers are required" });
 
   try {
@@ -448,7 +458,7 @@ exports.checkQuiz = async (req, res) => {
     let attemptId = null;
     try {
       // a storage problem must not take the student's result away
-      attemptId = (await quizStore.saveAttempt(pool, { userId: req.user.id, topic, language, kind, results })).attemptId;
+      attemptId = (await quizStore.saveAttempt(pool, { userId: req.user.id, topic, language, kind, questionType: typeByKey(type)?.key, difficulty: difficultyByKey(difficulty)?.key, results })).attemptId;
     } catch (storeErr) {
       console.error("[Quiz] could not save the attempt:", storeErr.message);
     }
