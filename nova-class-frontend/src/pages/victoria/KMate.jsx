@@ -581,38 +581,72 @@ export default function KMate() {
 }
 
 // ── Quiz Mode ──────────────────────────────────────────────
-function QuizMode() {
+const LANG_CODE = { English: "en", Korean: "ko", Burmese: "my" };
+
+export function QuizMode() {
   const [step, setStep]       = useState("settings"); // settings | loading | questions | results
   const [topic, setTopic]     = useState("grammar");
   const [count, setCount]     = useState(null);
   const [lang, setLang]       = useState("English");
+  const [kind, setKind]       = useState("practice");  // practice | followup (questions aimed at weak points)
   const [questions, setQs]    = useState([]);
   const [answers, setAnswers] = useState([]);
   const [current, setCurrent] = useState(0);
   const [result, setResult]   = useState(null);
+  const [weak, setWeak]       = useState(null);        // { attempts, averageScore, weaknesses[] }
+
+  // the student's most-missed points, kept on the server across sessions
+  async function loadWeaknesses() {
+    try { setWeak((await API.get("/kmate/quiz/weaknesses")).data); } catch { /* the panel just stays hidden */ }
+  }
+  useEffect(() => {
+    let alive = true;
+    API.get("/kmate/quiz/weaknesses").then(r => { if (alive) setWeak(r.data); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  function begin(newQuestions, newKind) {
+    setQs(newQuestions);
+    setAnswers(new Array(newQuestions.length).fill(0));
+    setCurrent(0);
+    setKind(newKind);
+    setResult(null);
+    setStep("questions");
+  }
 
   async function startQuiz() {
     setStep("loading");
     try {
-      const res = await API.post("/kmate/quiz/generate", { topic, count });
-      setQs(res.data.questions);
-      setAnswers(new Array(res.data.questions.length).fill(0));
-      setCurrent(0);
-      setStep("questions");
+      const res = await API.post("/kmate/quiz/generate", { topic, count, language: LANG_CODE[lang] });
+      begin(res.data.questions, "practice");
     } catch { setStep("settings"); alert("Quiz generation failed. Is the server running?"); }
+  }
+
+  // new questions about the points the student got wrong (or the ones in their weakness list)
+  async function startFollowup(weaknesses) {
+    setStep("loading");
+    try {
+      const res = await API.post("/kmate/quiz/followup", { weaknesses, count: Math.min(Math.max(weaknesses.length + 2, 3), 6), language: LANG_CODE[lang] });
+      begin(res.data.questions, "followup");
+    } catch { setStep(result ? "results" : "settings"); alert("Could not make the practice questions."); }
   }
 
   async function submitQuiz() {
     setStep("loading");
     try {
-      const res = await API.post("/kmate/quiz/check", { questions, answers, language: lang });
+      // the server grades by option letter ("A".."D"); the UI stores 1-based picks
+      const letters = answers.map(n => "ABCD"[n - 1] || "");
+      const res = await API.post("/kmate/quiz/check", { questions, answers: letters, language: LANG_CODE[lang], topic, kind });
       setResult(res.data);
       setStep("results");
+      loadWeaknesses();
     } catch { setStep("questions"); alert("Check failed."); }
   }
 
   const symbols = ["①","②","③","④"];
   const q = questions[current];
+  const picked = answers[current];                       // 1-based, 0 = not answered yet
+  const correctIndex = q ? "ABCD".indexOf(String(q.answer || "").trim().toUpperCase()[0]) + 1 : 0;
 
   const TOPIC_ICON = { grammar: "note", vocabulary: "book", mixed: "target" };
   const TOPIC_LABEL = { grammar: "Grammar", vocabulary: "Vocabulary", mixed: "Mixed" };
@@ -624,6 +658,24 @@ function QuizMode() {
   if (step === "settings") return (
     <div style={s.quizCard}>
       <h3 style={s.quizTitle}><Icon name="clipboard" size={20} style={{ marginRight: "6px" }} />TOPIK II Practice Quiz</h3>
+      {weak && weak.weaknesses.length > 0 && (
+        <div style={s.weakCard} data-testid="weak-points">
+          <div style={s.weakHead}>
+            <strong>Your weak points</strong>
+            <span style={s.weakMeta}>{weak.attempts} quizzes · average {weak.averageScore}%</span>
+          </div>
+          {weak.weaknesses.slice(0, 5).map(w => (
+            <div key={w.weakness} style={s.weakRow}>
+              <span style={s.weakName}>{w.weakness}</span>
+              <span style={s.weakMeta}>{w.wrong} wrong / {w.asked} · {w.accuracy}%</span>
+              <button style={s.weakBtn} onClick={() => startFollowup([w.weakness])}>Practice</button>
+            </div>
+          ))}
+          <button style={{ ...s.navBtn, ...s.navBtnPrimary, marginTop: "10px" }} onClick={() => startFollowup(weak.weaknesses.slice(0, 4).map(w => w.weakness))}>
+            <Icon name="target" size={14} style={{ marginRight: "4px" }} />Practice my weak points
+          </button>
+        </div>
+      )}
       <label style={s.qLabel}>Choose Topic</label>
       <div style={s.optRow}>
         {["grammar","vocabulary","mixed"].map(t => (
@@ -654,22 +706,34 @@ function QuizMode() {
 
   if (step === "questions" && q) return (
     <div style={s.quizCard}>
-      <div style={s.qProgress}>Question {current+1} / {questions.length}</div>
+      <div style={s.qProgress}>{kind === "followup" ? "Weak-point practice · " : ""}Question {current+1} / {questions.length}</div>
       <div style={s.qProgressBar}><div style={{ ...s.qProgressFill, width: `${((current+1)/questions.length)*100}%` }} /></div>
-      <div style={s.qText}>{q.q}</div>
+      <div style={s.qText}>{q.question}</div>
       <div style={s.optionsCol}>
-        {q.opts.map((opt, i) => (
-          <button key={i}
-            style={{ ...s.choiceBtn, ...(answers[current] === i+1 ? s.choiceActive : {}) }}
-            onClick={() => { const a = [...answers]; a[current] = i+1; setAnswers(a); }}
-          >{symbols[i]} {opt}</button>
-        ))}
+        {(q.options || []).map((opt, i) => {
+          const mark = picked ? (i + 1 === correctIndex ? s.choiceRight : i + 1 === picked ? s.choiceWrong : {}) : {};
+          return (
+            <button key={i}
+              style={{ ...s.choiceBtn, ...(picked === i+1 ? s.choiceActive : {}), ...mark }}
+              disabled={Boolean(picked)}
+              onClick={() => { const a = [...answers]; a[current] = i+1; setAnswers(a); }}
+            >{symbols[i]} {opt.replace(/^[A-D]\)\s*/, "")}</button>
+          );
+        })}
       </div>
+      {picked > 0 && (
+        // the answer is locked and explained right away, so a mistake is understood while it is fresh
+        <div style={picked === correctIndex ? s.feedbackOk : s.feedbackBad} role="status" data-testid="instant-feedback">
+          <strong>{picked === correctIndex ? "✓ Correct" : `✗ Not quite — the answer is ${symbols[correctIndex - 1] || q.answer}`}</strong>
+          {q.weakness && <span style={s.weakChip}>{q.weakness}</span>}
+          {q.explanation && <div style={{ marginTop: "6px" }}>{q.explanation}</div>}
+        </div>
+      )}
       <div style={s.qNav}>
         {current > 0 && <button style={s.navBtn} onClick={() => setCurrent(c => c-1)}>← Back</button>}
         {current < questions.length-1
-          ? <button style={{ ...s.navBtn, ...s.navBtnPrimary }} disabled={!answers[current]} onClick={() => setCurrent(c => c+1)}>Next →</button>
-          : <button style={{ ...s.navBtn, ...s.navBtnGreen }} disabled={!answers[current]} onClick={submitQuiz}>
+          ? <button style={{ ...s.navBtn, ...s.navBtnPrimary }} disabled={!picked} onClick={() => setCurrent(c => c+1)}>Next →</button>
+          : <button style={{ ...s.navBtn, ...s.navBtnGreen }} disabled={!picked} onClick={submitQuiz}>
               <Icon name="checkmark" size={14} style={{ marginRight: "4px" }} />Submit Quiz
             </button>
         }
@@ -678,16 +742,31 @@ function QuizMode() {
   );
 
   if (step === "results" && result) {
-    const pct = Math.round((result.score / result.total) * 100);
+    const pct = result.score;
     const scoreIcon = pct >= 80 ? "party-popper" : pct >= 60 ? "thumbs-up" : "flexed-biceps";
+    const missed = [...new Set(result.results.filter(r => !r.isCorrect && r.weakness).map(r => r.weakness))];
     return (
       <div style={s.quizCard}>
         <div style={s.scoreCard}>
-          <div style={s.scoreNum}>{result.score} / {result.total}</div>
+          <div style={s.scoreNum}>{result.correct} / {result.total}</div>
           <div style={s.scoreLabel}>{pct}% <Icon name={scoreIcon} size={18} /></div>
         </div>
-        <div style={s.explanation} dangerouslySetInnerHTML={{ __html: formatText(result.explanation) }} />
+        <div style={s.explanation}>
+          {result.results.map((r, i) => (
+            <div key={i} style={{ marginBottom: "14px" }}>
+              <strong>{r.isCorrect ? "✓" : "✗"} {i + 1}. {r.question}</strong>
+              {r.weakness && !r.isCorrect && <span style={s.weakChip}>{r.weakness}</span>}
+              {!r.isCorrect && <div>Your answer: {r.yourAnswer || "—"} · Correct answer: {r.correctAnswer}</div>}
+              <div>{r.explanation}</div>
+            </div>
+          ))}
+        </div>
         <div style={s.qNav}>
+          {missed.length > 0 && (
+            <button style={{ ...s.navBtn, ...s.navBtnGreen }} onClick={() => startFollowup(missed)}>
+              <Icon name="target" size={14} style={{ marginRight: "4px" }} />Practice what I missed
+            </button>
+          )}
           <button style={{ ...s.navBtn, ...s.navBtnPrimary }} onClick={() => { setStep("settings"); setResult(null); }}>
             <Icon name="refresh" size={14} style={{ marginRight: "4px" }} />Try Again
           </button>
@@ -810,6 +889,17 @@ const s = {
     width: "40px", height: "40px", borderRadius: "10px", fontSize: "18px",
   },
   // Quiz styles
+  weakCard: { background: "var(--surface-2, var(--bg))", border: "1px solid var(--border)", borderRadius: "12px", padding: "14px 16px", marginBottom: "18px" },
+  weakHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", color: "var(--text)" },
+  weakRow: { display: "flex", alignItems: "center", gap: "10px", padding: "6px 0", borderTop: "1px solid var(--border)" },
+  weakName: { flex: 1, color: "var(--text)", fontWeight: 600 },
+  weakMeta: { color: "var(--text-muted, #8A8F98)", fontSize: "12px" },
+  weakBtn: { padding: "5px 12px", borderRadius: "8px", border: "1px solid var(--border)", background: "transparent", color: "var(--primary, #3B37C8)", fontWeight: 700, cursor: "pointer" },
+  weakChip: { display: "inline-block", marginLeft: "8px", padding: "2px 9px", borderRadius: "999px", background: "rgba(59,55,200,.12)", color: "var(--primary, #3B37C8)", fontSize: "12px", fontWeight: 700 },
+  choiceRight: { borderColor: "#22C55E", background: "rgba(34,197,94,.12)" },
+  choiceWrong: { borderColor: "#EF4444", background: "rgba(239,68,68,.10)" },
+  feedbackOk: { margin: "14px 0 0", padding: "12px 14px", borderRadius: "10px", background: "rgba(34,197,94,.10)", border: "1px solid rgba(34,197,94,.45)", color: "var(--text)", lineHeight: 1.6 },
+  feedbackBad: { margin: "14px 0 0", padding: "12px 14px", borderRadius: "10px", background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.40)", color: "var(--text)", lineHeight: 1.6 },
   quizCenter: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" },
   spinner: { fontSize: "40px" },
   quizCard: { background: "var(--surface)", borderRadius: "16px", padding: "28px", border: "1px solid var(--border)", flex: 1, overflowY: "auto" },

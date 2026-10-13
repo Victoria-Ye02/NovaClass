@@ -353,6 +353,9 @@ async function setup() {
     )
   `);
 
+  // K-Mate TOPIK practice quiz history and weak points (also created on first use by quizStore)
+  for (const ddl of require("../services/topik/quizStore").TABLES) await conn.query(ddl);
+
   console.log("✅ All tables created successfully");
   await conn.end();
 }

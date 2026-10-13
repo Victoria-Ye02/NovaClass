@@ -1,5 +1,6 @@
 const pool = require("../../config/db");
-const { completeText } = require("../../services/ai/groqText");
+const { completeText } = require("../../services/ai/kmateText");
+// Homework Coach and the code assistant use OpenAI; only the K-Mate TOPIK parts (tutor via the Python service, practice quiz) use Claude.
 const { completeText: completeCodeText } = require("../../services/ai/openaiText");
 
 const KMATE_AI_URL = process.env.KMATE_AI_URL || "http://localhost:8082";
@@ -366,13 +367,20 @@ exports.history = async (req, res) => {
   }
 };
 
-// POST /api/kmate/quiz/generate  { topic, count, language }
-exports.generateQuiz = async (req, res) => {
-  const { topic = "TOPIK vocabulary", count = 5, language = "en" } = req.body;
+// ---- K-Mate TOPIK practice quiz --------------------------------------------------------------
+const quizStore = require("../../services/topik/quizStore");
 
-  try {
-    const prompt = `Generate ${count} multiple-choice Korean language quiz questions about: ${topic}.
-Language for explanations: ${language === "my" ? "Burmese (Myanmar)" : "English"}.
+const EXPLAIN_LANGUAGE = { my: "Burmese (Myanmar)", ko: "Korean" };
+
+// Asks the model for multiple-choice questions. `focus` is a list of weak points (e.g. "-(으)ㄴ 지 + time");
+// when given, every question must test one of them, in a new sentence (not a copy of an earlier question).
+async function makeQuizQuestions({ topic, count, language, focus = [] }) {
+  const focusRule = focus.length
+    ? `\nThe student keeps getting these points wrong, so EVERY question must test one of them (spread them out), in a NEW sentence and with different wrong options than before:\n${focus.map(f => `- ${f}`).join("\n")}\nKeep the difficulty the same or slightly easier, and make the explanation say exactly what to look for. In "weakness" copy the listed point EXACTLY as written above (same words, same language) so progress on it can be tracked.`
+    : "";
+  const prompt = `Generate ${count} multiple-choice Korean language quiz questions about: ${topic}.${focusRule}
+Language for explanations: ${EXPLAIN_LANGUAGE[language] || "English"}.
+Write the questions as plain text: no HTML tags or entities (no <u>, no &nbsp;), and show a blank as ( ).
 
 Return ONLY valid JSON array:
 [
@@ -380,29 +388,44 @@ Return ONLY valid JSON array:
     "question": "question text in Korean or about Korean",
     "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
     "answer": "A",
-    "explanation": "brief explanation"
+    "weakness": "the ONE grammar pattern or vocabulary point this question tests, in a few words (e.g. -(으)ㄴ 지 + time, 피동 표현)",
+    "explanation": "why the answer is right and why a student might pick a wrong option"
   }
 ]`;
+  const completion = await completeText({ maxTokens: 2048, messages: [{ role: "user", content: prompt }] });
+  const out = completion.choices[0].message.content.trim().replace(/```json\s*/g, "").replace(/```\s*/g, "");
+  const questions = JSON.parse(out.slice(out.indexOf("["), out.lastIndexOf("]") + 1));
+  return questions.map(q => ({ ...q, weakness: quizStore.cleanWeakness(q.weakness) }));
+}
 
-    const completion = await completeText({
-      maxTokens: 2048,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    let out = completion.choices[0].message.content.trim()
-      .replace(/```json\s*/g, "").replace(/```\s*/g, "");
-    const start = out.indexOf("[");
-    const end = out.lastIndexOf("]") + 1;
-    const questions = JSON.parse(out.slice(start, end));
-    res.json({ questions });
+// POST /api/kmate/quiz/generate  { topic, count, language }
+exports.generateQuiz = async (req, res) => {
+  const { topic = "TOPIK vocabulary", count = 5, language = "en" } = req.body;
+  try {
+    res.json({ questions: await makeQuizQuestions({ topic, count, language }) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// POST /api/kmate/quiz/check  { questions, answers }
+// POST /api/kmate/quiz/followup  { weaknesses: ["..."], count, language }
+// Practice questions aimed at the points the student just got wrong (or the ones in their weakness list).
+exports.followupQuiz = async (req, res) => {
+  const weaknesses = (Array.isArray(req.body.weaknesses) ? req.body.weaknesses : []).map(quizStore.cleanWeakness).filter(Boolean).slice(0, 6);
+  if (weaknesses.length === 0) return res.status(400).json({ error: "weaknesses are required" });
+  const count = Math.min(Math.max(parseInt(req.body.count, 10) || weaknesses.length + 1, 2), 8);
+  try {
+    const questions = await makeQuizQuestions({ topic: "TOPIK II (targeted practice)", count, language: req.body.language || "en", focus: weaknesses });
+    res.json({ questions, weaknesses });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /api/kmate/quiz/check  { questions, answers, topic, language, kind }
+// Grades the answers, stores the attempt (and each answer's weak point) and returns the detailed review.
 exports.checkQuiz = async (req, res) => {
-  const { questions, answers } = req.body;
+  const { questions, answers, topic, language, kind } = req.body;
   if (!questions || !answers) return res.status(400).json({ error: "questions and answers are required" });
 
   try {
@@ -412,15 +435,33 @@ exports.checkQuiz = async (req, res) => {
       if (isCorrect) correct++;
       return {
         question: q.question,
+        options: q.options,
         yourAnswer: answers[i],
         correctAnswer: q.answer,
         isCorrect,
+        weakness: q.weakness || "",
         explanation: q.explanation,
       };
     });
 
     const score = Math.round((correct / questions.length) * 100);
-    res.json({ score, correct, total: questions.length, results });
+    let attemptId = null;
+    try {
+      // a storage problem must not take the student's result away
+      attemptId = (await quizStore.saveAttempt(pool, { userId: req.user.id, topic, language, kind, results })).attemptId;
+    } catch (storeErr) {
+      console.error("[Quiz] could not save the attempt:", storeErr.message);
+    }
+    res.json({ score, correct, total: questions.length, results, attemptId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /api/kmate/quiz/weaknesses -> { attempts, averageScore, weaknesses: [{ weakness, asked, wrong, accuracy, lastSeen }] }
+exports.quizWeaknesses = async (req, res) => {
+  try {
+    res.json(await quizStore.weaknessSummary(pool, req.user.id));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
