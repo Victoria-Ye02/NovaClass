@@ -117,7 +117,6 @@ export default function KMate() {
   }
   const [input, setInput]   = useState("");
   const [loading, setLoading] = useState(false);
-  const [quizMode, setQuizMode] = useState(false);
   // Own client integration (@elevenlabs/client) instead of the drop-in
   // <elevenlabs-convai> widget — the widget doesn't reliably stop its
   // already-buffered audio the instant its own "End call" is pressed, and
@@ -366,7 +365,7 @@ export default function KMate() {
                     ...(key === "code" ? { color: codeColors.panelBg, fontWeight: 700 } : {}),
                   } : {}),
                 }}
-                onClick={() => { setMode(key); setQuizMode(false); }}
+                onClick={() => setMode(key)}
               >
                 {MODES[key].label}
               </button>
@@ -382,10 +381,6 @@ export default function KMate() {
                     Talk to Nova
                   </button>
                 )}
-                <button style={{ ...s.quizToggleBtn, background: modeBackground(mode) }} onClick={() => setQuizMode(!quizMode)}>
-                  <Icon name={quizMode ? "chat" : "clipboard"} size={14} style={{ marginRight: "4px" }} />
-                  {quizMode ? "Back to Chat" : "Practice Quiz"}
-                </button>
               </>
             ) : (
               <span style={{ ...s.quizToggleBtn, background: codeColors.surfaceBg, color: codeColors.mutedTextColor, border: `1px solid ${codeColors.borderColor}`, cursor: "default" }}>
@@ -438,7 +433,7 @@ export default function KMate() {
           </div>
         )}
 
-        {quizMode ? <QuizMode /> : (
+        {(
           <>
             {/* Chat */}
             <div style={{
@@ -581,33 +576,18 @@ export default function KMate() {
 }
 
 // ── Quiz Mode ──────────────────────────────────────────────
-const LANG_CODE = { English: "en", Korean: "ko", Burmese: "my" };
-
-export function QuizMode() {
-  const [step, setStep]       = useState("settings"); // settings | loading | questions | results
+// `practice` is the shared TOPIK practice state (question type, difficulty, language) that the sidebar edits;
+// `followup` ({ weaknesses }) makes the quiz open straight on practice questions for those points.
+export function QuizMode({ practice, followup }) {
+  const { typeKey, level, langCode, refreshWeak } = practice;
+  const [step, setStep]       = useState(followup ? "loading" : "settings"); // settings | loading | questions | results
   const [topic, setTopic]     = useState("grammar");
   const [count, setCount]     = useState(null);
-  const [lang, setLang]       = useState("English");
   const [kind, setKind]       = useState("practice");  // practice | followup (questions aimed at weak points)
   const [questions, setQs]    = useState([]);
   const [answers, setAnswers] = useState([]);
   const [current, setCurrent] = useState(0);
   const [result, setResult]   = useState(null);
-  const [weak, setWeak]       = useState(null);        // { attempts, averageScore, weaknesses[] }
-  const [options, setOptions] = useState(null);        // { types[], difficulties[] } from the server
-  const [typeKey, setTypeKey] = useState("");          // "" = any question type
-  const [level, setLevel]     = useState("");          // "" = any difficulty
-
-  // the student's most-missed points, kept on the server across sessions
-  async function loadWeaknesses() {
-    try { setWeak((await API.get("/kmate/quiz/weaknesses")).data); } catch { /* the panel just stays hidden */ }
-  }
-  useEffect(() => {
-    let alive = true;
-    API.get("/kmate/quiz/weaknesses").then(r => { if (alive) setWeak(r.data); }).catch(() => {});
-    API.get("/kmate/quiz/options").then(r => { if (alive) setOptions(r.data); }).catch(() => {});
-    return () => { alive = false; };
-  }, []);
 
   function begin(newQuestions, newKind) {
     setQs(newQuestions);
@@ -621,29 +601,37 @@ export function QuizMode() {
   async function startQuiz() {
     setStep("loading");
     try {
-      const res = await API.post("/kmate/quiz/generate", { topic, count, language: LANG_CODE[lang], type: typeKey || undefined, difficulty: level || undefined });
+      const res = await API.post("/kmate/quiz/generate", { topic, count, language: langCode, type: typeKey || undefined, difficulty: level || undefined });
       begin(res.data.questions, "practice");
     } catch { setStep("settings"); alert("Quiz generation failed. Is the server running?"); }
   }
 
   // new questions about the points the student got wrong (or the ones in their weakness list)
-  async function startFollowup(weaknesses) {
-    setStep("loading");
-    try {
-      const res = await API.post("/kmate/quiz/followup", { weaknesses, count: Math.min(Math.max(weaknesses.length + 2, 3), 6), language: LANG_CODE[lang], type: typeKey || undefined, difficulty: level || undefined });
-      begin(res.data.questions, "followup");
-    } catch { setStep(result ? "results" : "settings"); alert("Could not make the practice questions."); }
+  function requestFollowup(weaknesses) {
+    return API.post("/kmate/quiz/followup", { weaknesses, count: Math.min(Math.max(weaknesses.length + 2, 3), 6), language: langCode, type: typeKey || undefined, difficulty: level || undefined })
+      .then(res => begin(res.data.questions, "followup"))
+      .catch(() => { setStep(result ? "results" : "settings"); alert("Could not make the practice questions."); });
   }
+  function startFollowup(weaknesses) {
+    setStep("loading");
+    requestFollowup(weaknesses);
+  }
+
+  // opened from the sidebar's "Practice" button: the first thing the quiz does is make those questions
+  useEffect(() => {
+    if (followup) requestFollowup(followup.weaknesses);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function submitQuiz() {
     setStep("loading");
     try {
       // the server grades by option letter ("A".."D"); the UI stores 1-based picks
       const letters = answers.map(n => "ABCD"[n - 1] || "");
-      const res = await API.post("/kmate/quiz/check", { questions, answers: letters, language: LANG_CODE[lang], topic, kind, type: typeKey || undefined, difficulty: level || undefined });
+      const res = await API.post("/kmate/quiz/check", { questions, answers: letters, language: langCode, topic, kind, type: typeKey || undefined, difficulty: level || undefined });
       setResult(res.data);
       setStep("results");
-      loadWeaknesses();
+      refreshWeak();
     } catch { setStep("questions"); alert("Check failed."); }
   }
 
@@ -662,24 +650,6 @@ export function QuizMode() {
   if (step === "settings") return (
     <div style={s.quizCard}>
       <h3 style={s.quizTitle}><Icon name="clipboard" size={20} style={{ marginRight: "6px" }} />TOPIK II Practice Quiz</h3>
-      {weak && weak.weaknesses.length > 0 && (
-        <div style={s.weakCard} data-testid="weak-points">
-          <div style={s.weakHead}>
-            <strong>Your weak points</strong>
-            <span style={s.weakMeta}>{weak.attempts} quizzes · average {weak.averageScore}%</span>
-          </div>
-          {weak.weaknesses.slice(0, 5).map(w => (
-            <div key={w.weakness} style={s.weakRow}>
-              <span style={s.weakName}>{w.weakness}</span>
-              <span style={s.weakMeta}>{w.wrong} wrong / {w.asked} · {w.accuracy}%</span>
-              <button style={s.weakBtn} onClick={() => startFollowup([w.weakness])}>Practice</button>
-            </div>
-          ))}
-          <button style={{ ...s.navBtn, ...s.navBtnPrimary, marginTop: "10px" }} onClick={() => startFollowup(weak.weaknesses.slice(0, 4).map(w => w.weakness))}>
-            <Icon name="target" size={14} style={{ marginRight: "4px" }} />Practice my weak points
-          </button>
-        </div>
-      )}
       <label style={s.qLabel}>Choose Topic</label>
       <div style={s.optRow}>
         {["grammar","vocabulary","mixed"].map(t => (
@@ -688,39 +658,14 @@ export function QuizMode() {
           </button>
         ))}
       </div>
-      {options && (
-        <>
-          <label style={s.qLabel}>Question Type</label>
-          <div style={s.optRow} data-testid="type-picker">
-            <button style={{ ...s.optBtn, ...(typeKey === "" ? s.optActive : {}) }} onClick={() => setTypeKey("")}>Any</button>
-            {options.types.map(t => (
-              <button key={t.key} title={t.description} style={{ ...s.optBtn, ...(typeKey === t.key ? s.optActive : {}) }} onClick={() => setTypeKey(t.key)}>
-                {t.label}<span style={s.typeKo}>{t.ko}</span>
-              </button>
-            ))}
-          </div>
-          <label style={s.qLabel}>Difficulty</label>
-          <div style={s.optRow} data-testid="level-picker">
-            <button style={{ ...s.optBtn, ...(level === "" ? s.optActive : {}) }} onClick={() => setLevel("")}>Any</button>
-            {options.difficulties.map(d => (
-              <button key={d.key} style={{ ...s.optBtn, ...(level === d.key ? s.optActive : {}) }} onClick={() => setLevel(d.key)}>{d.label}</button>
-            ))}
-          </div>
-        </>
-      )}
+      <p style={s.settingsNote} data-testid="practice-summary">
+        {typeKey || level ? "Practising" : "Any question type and difficulty"} — change the question type, difficulty and language in the panel on the left.
+      </p>
       <label style={s.qLabel}>Number of Questions</label>
       <div style={s.optRow}>
         {[3,5,10].map(n => (
           <button key={n} style={{ ...s.optBtn, ...(count===n ? s.optActive : {}) }} onClick={() => setCount(n)}>
             {n} Questions
-          </button>
-        ))}
-      </div>
-      <label style={s.qLabel}>Explanation Language</label>
-      <div style={s.optRow}>
-        {["English","Korean","Burmese"].map(l => (
-          <button key={l} style={{ ...s.optBtn, ...(lang===l ? s.optActive : {}) }} onClick={() => setLang(l)}>
-            {l === "English" ? "🇬🇧 English" : l === "Korean" ? "🇰🇷 Korean" : "🇲🇲 Burmese"}
           </button>
         ))}
       </div>
@@ -913,14 +858,7 @@ const s = {
     width: "40px", height: "40px", borderRadius: "10px", fontSize: "18px",
   },
   // Quiz styles
-  typeKo: { marginLeft: "6px", fontSize: "11px", opacity: 0.7 },
-  weakCard: { background: "var(--surface-2, var(--bg))", border: "1px solid var(--border)", borderRadius: "12px", padding: "14px 16px", marginBottom: "18px" },
-  weakHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", color: "var(--text)" },
-  weakRow: { display: "flex", alignItems: "center", gap: "10px", padding: "6px 0", borderTop: "1px solid var(--border)" },
-  weakName: { flex: 1, color: "var(--text)", fontWeight: 600 },
-  weakMeta: { color: "var(--text-muted, #8A8F98)", fontSize: "12px" },
-  weakBtn: { padding: "5px 12px", borderRadius: "8px", border: "1px solid var(--border)", background: "transparent", color: "var(--primary, #3B37C8)", fontWeight: 700, cursor: "pointer" },
-  weakChip: { display: "inline-block", marginLeft: "8px", padding: "2px 9px", borderRadius: "999px", background: "rgba(59,55,200,.12)", color: "var(--primary, #3B37C8)", fontSize: "12px", fontWeight: 700 },
+  settingsNote: { margin: "14px 0 0", color: "var(--text-muted, #8A8F98)", fontSize: "13px" },
   choiceRight: { borderColor: "#22C55E", background: "rgba(34,197,94,.12)" },
   choiceWrong: { borderColor: "#EF4444", background: "rgba(239,68,68,.10)" },
   feedbackOk: { margin: "14px 0 0", padding: "12px 14px", borderRadius: "10px", background: "rgba(34,197,94,.10)", border: "1px solid rgba(34,197,94,.45)", color: "var(--text)", lineHeight: 1.6 },

@@ -1,0 +1,713 @@
+{
+ "vi": {
+  "units": {
+   "core:11": {
+    "short": "vì (nhận ra) · vì trời nhiều mây",
+    "examples": [
+     "Trời nhiều mây nên tôi đã mang theo ô."
+    ]
+   },
+   "core:12": {
+    "short": "dù có ... đi nữa · dù có khó đi nữa",
+    "examples": [
+     "Dù có khó đi nữa, hãy cố gắng đến cùng."
+    ]
+   },
+   "core:13": {
+    "short": "nếu cứ tiếp tục ... · nếu cứ tiếp tục học",
+    "examples": [
+     "Nếu cứ tiếp tục học tiếng Hàn thì trình độ sẽ tiến bộ."
+    ]
+   },
+   "core:14": {
+    "short": "đang ... thì (bất chợt) · đang đi bộ thì",
+    "examples": [
+     "Tôi tình cờ gặp một người bạn khi đang đi trên phố."
+    ]
+   },
+   "core:15": {
+    "short": "sau khi làm xong · sau khi làm bài tập",
+    "examples": [
+     "Sau khi làm xong bài tập, tôi đã xem tivi."
+    ]
+   },
+   "core:6": {
+    "short": "nhân tiện · tiện thể đi",
+    "examples": [
+     "Vì định đi hiệu sách nên tôi tiện thể mua luôn một quyển sách."
+    ]
+   },
+   "core:7": {
+    "short": "vì (bất ngờ) · vì tuyết rơi",
+    "examples": [
+     "Tuyết đột nhiên rơi nên đường bị tắc."
+    ]
+   },
+   "core:8": {
+    "short": "cứ để nguyên như vậy · để cửa sổ mở",
+    "examples": [
+     "Tôi đã ngủ thiếp đi trong khi cửa sổ vẫn mở."
+    ]
+   },
+   "core:9": {
+    "short": "nhờ · nhờ thầy cô",
+    "examples": [
+     "Nhờ sự giúp đỡ của thầy cô mà tôi đã đỗ kỳ thi."
+    ]
+   },
+   "core:10": {
+    "short": "để (không) · cho đến khi · để không quên",
+    "examples": [
+     "Hãy ghi lại để bạn không quên.",
+     "Tôi đã hát cho đến khi giọng khản đặc."
+    ]
+   },
+   "core:1": {
+    "short": "nếu · nếu trời mưa",
+    "examples": [
+     "Nếu trời mưa thì tôi sẽ ở nhà."
+    ]
+   },
+   "core:2": {
+    "short": "dù thế nào · ăn hay không ăn",
+    "examples": [
+     "Dù ăn hay không ăn, bạn cứ làm theo ý mình."
+    ]
+   },
+   "core:3": {
+    "short": "ngoài ra · ngon, mà còn",
+    "examples": [
+     "Đồ ăn ở đây ngon, hơn nữa lại còn rẻ."
+    ]
+   },
+   "core:4": {
+    "short": "thay vì · thay vì làm việc",
+    "examples": [
+     "Thay vì làm việc vào cuối tuần, tôi nghỉ ngơi vào các ngày trong tuần."
+    ]
+   },
+   "core:5": {
+    "short": "dù · dù bận",
+    "examples": [
+     "Dù bận đến đâu cũng nhất định phải ăn."
+    ]
+   },
+   "core:16": {
+    "short": "nhưng / bối cảnh · Tôi đi, nhưng",
+    "examples": [
+     "Anh trai tôi cao, nhưng em tôi thì thấp.",
+     "Bây giờ tôi đi chợ. Bạn có muốn đi cùng không?"
+    ]
+   },
+   "core:17": {
+    "short": "để · để làm việc",
+    "examples": [
+     "Tôi đang học tiếng Hàn để làm việc ở Hàn Quốc."
+    ]
+   },
+   "core:18": {
+    "short": "nếu muốn · nếu muốn thi đậu",
+    "examples": [
+     "Nếu muốn thi đậu, bạn phải học chăm chỉ."
+    ]
+   },
+   "core:19": {
+    "short": "bận làm gì đó nên · bận làm bài tập",
+    "examples": [
+     "Vì mải làm bài tập nên tôi đã không ngủ được."
+    ]
+   },
+   "core:20": {
+    "short": "chỉ khi · chỉ khi luyện tập",
+    "examples": [
+     "Chỉ khi luyện tập nhiều thì bạn mới có thể giỏi lên."
+    ]
+   },
+   "core:21": {
+    "short": "sợ rằng · sợ bị muộn",
+    "examples": [
+     "Vì sợ bị muộn nên tôi đã đi taxi."
+    ]
+   },
+   "core:22": {
+    "short": "hoặc · xem phim hoặc đọc sách",
+    "examples": [
+     "Vào cuối tuần, tôi xem phim hoặc đọc sách."
+    ]
+   },
+   "core:23": {
+    "short": "ngay khi · ngay khi về đến nhà",
+    "examples": [
+     "Ngay khi về đến nhà, tôi đã đi tắm."
+    ]
+   },
+   "core:24": {
+    "short": "càng … càng · càng học",
+    "examples": [
+     "Càng học tiếng Hàn, tôi càng thấy thú vị."
+    ]
+   },
+   "core:25": {
+    "short": "vì / rồi · vì bị đau",
+    "examples": [
+     "Vì bị đau bụng nên tôi đã đến bệnh viện.",
+     "Tôi đến thư viện rồi mượn một cuốn sách."
+    ]
+   },
+   "core:26": {
+    "short": "có lẽ vì · có lẽ vì ngủ muộn",
+    "examples": [
+     "Có lẽ vì hôm qua đi ngủ muộn nên hôm nay tôi rất mệt."
+    ]
+   },
+   "core:27": {
+    "short": "thấy ... thì · trời quang, thì",
+    "examples": [
+     "Buổi sáng trời quang đãng, nhưng bây giờ buổi chiều thì trời đang mưa."
+    ]
+   },
+   "core:28": {
+    "short": "không biết liệu (không chắc) · không biết ăn gì",
+    "examples": [
+     "Tôi đang băn khoăn không biết nên ăn gì."
+    ]
+   },
+   "core:29": {
+    "short": "vừa ... vừa · vừa nghe",
+    "examples": [
+     "Tôi vừa nghe nhạc vừa dọn dẹp."
+    ]
+   },
+   "core:30": {
+    "short": "khi thử thì phát hiện ra · khi mở ra thì",
+    "examples": [
+     "Khi mở cửa ra thì không có ai ở đó."
+    ]
+   },
+   "similar:11": {
+    "diff": "Khi chỉ mục đích thì hai cấu trúc có thể thay thế cho nhau; chỉ có -도록 mới có thêm nghĩa \"cho đến khi / đến mức\" (밤새도록).",
+    "notes": [
+     "Để / theo cách mà; dùng trong lời nói hằng ngày.",
+     "Để; mang tính trang trọng. Còn có nghĩa \"cho đến khi\" hoặc \"đến mức\"."
+    ],
+    "why": "\"Suốt đêm\" dùng -도록 (밤이 새도록).",
+    "sentences": [
+     "Hãy giữ yên lặng để em bé có thể ngủ.",
+     "Hãy giữ yên lặng để em bé có thể ngủ."
+    ]
+   },
+   "similar:12": {
+    "diff": "-는 길에 thêm một việc làm tiện thể trên đường đi; -다가 có nghĩa là hành động đầu tiên bị gián đoạn hoặc chuyển sang hành động khác.",
+    "notes": [
+     "Trong lúc đang trên đường, bạn làm thêm một việc khác.",
+     "Hành động bị gián đoạn hoặc chuyển sang một hành động khác."
+    ],
+    "why": "Chuyến đi bị gián đoạn, nên dùng -다가.",
+    "sentences": [
+     "Tôi đã gặp một người bạn trên đường về nhà.",
+     "Tôi đang trên đường về nhà thì tình cờ gặp một người bạn."
+    ]
+   },
+   "similar:13": {
+    "diff": "-아/어 봐야 nhấn mạnh sự \"vô ích\"; -아/어도 và -다고 해도 chỉ là nhượng bộ thông thường (cấu trúc sau chấp nhận một lời nói/khẳng định).",
+    "notes": [
+     "Vô ích; kết quả cũng không thay đổi.",
+     "Dù cho / Cho dù.",
+     "Dù cho được nói hoặc được cho là như vậy."
+    ],
+    "why": "\"Dù làm cũng vô ích\" dùng -아/어 봐야.",
+    "sentences": [
+     "Bây giờ hối hận cũng vô ích.",
+     "Dù bây giờ có hối hận thì cũng vô ích.",
+     "Dù bây giờ có nói là hối hận thì cũng vô ích."
+    ]
+   },
+   "similar:14": {
+    "diff": "-(으)ㄹ 뿐이다 đi sau động từ/tính từ; -에 불과하다 và -에 지나지 않는다 đi sau danh từ.",
+    "notes": [
+     "Chỉ; gắn vào động từ và tính từ.",
+     "Không hơn gì; gắn vào danh từ.",
+     "Chẳng qua chỉ là; mạnh hơn một chút và dùng trong văn viết."
+    ],
+    "why": "Sau danh từ, \"chỉ là một phần\" dùng -에 불과하다.",
+    "sentences": [
+     "Đó chỉ là cái cớ.",
+     "Đó chẳng qua chỉ là cái cớ.",
+     "Đó không gì khác hơn là một cái cớ."
+    ]
+   },
+   "similar:15": {
+    "diff": "-았/었어야 했는데 mang cảm giác bỏ lỡ một bổn phận; -(으)ㄹ 걸 그랬다 là mong ước nhẹ nhàng muốn quay ngược thời gian.",
+    "notes": [
+     "Lẽ ra phải; có bổn phận hoặc điều đúng đắn cần làm.",
+     "\"Giá mà tôi đã…\" nhẹ nhàng hơn (thường nói là -(으)ㄹ 걸 그랬다)."
+    ],
+    "why": "Sự tiếc nuối nhẹ nhàng dùng -(으)ㄹ 걸 그랬다.",
+    "sentences": [
+     "Hôm qua lẽ ra tôi phải đi ngủ sớm nhưng lại thức khuya.",
+     "Giá mà hôm qua tôi đã đi ngủ sớm."
+    ]
+   },
+   "similar:1": {
+    "diff": "Cả bốn đều có nghĩa là \"có vẻ như\". -듯하다 dùng trong văn viết trang trọng; -나 보다 và -모양이다 cần có bằng chứng nhìn thấy được.",
+    "notes": [
+     "Cách phỏng đoán phổ biến nhất; dùng được cho mọi trường hợp, kể cả cảm xúc của chính mình.",
+     "Dùng trong văn viết và ngữ cảnh trang trọng; thường gặp trong báo cáo và bài báo.",
+     "Phỏng đoán dựa trên điều đã thấy hoặc đã nghe; không dùng cho trạng thái của chính mình.",
+     "Nhận định dựa trên tình huống bên ngoài hoặc các dấu hiệu."
+    ],
+    "why": "Báo cáo trang trọng dùng -(으)ㄴ/는 듯하다; các cấu trúc còn lại thiên về văn nói.",
+    "sentences": [
+     "Tôi nghĩ anh ấy đã biết tin này rồi.",
+     "Có vẻ như anh ấy đã biết tin này rồi.",
+     "Xét theo những gì tôi đã thấy, chắc hẳn anh ấy đã biết tin này rồi.",
+     "Trông có vẻ như anh ấy đã biết tin này rồi."
+    ]
+   },
+   "similar:3": {
+    "diff": "-기 마련이다 và -는 법이다 diễn tả chân lý tự nhiên; -게 돼 있다 diễn tả hệ thống hoặc quy tắc.",
+    "notes": [
+     "Điều gì đó xảy ra một cách tự nhiên.",
+     "Chân lý chung hoặc lẽ thường của cuộc sống; hơi giống tục ngữ.",
+     "Theo thiết kế hoặc theo quy tắc thì kết quả sẽ như vậy."
+    ],
+    "why": "Chân lý chung dùng -는 법이다 (hoặc -기 마련이다).",
+    "sentences": [
+     "Ai cũng có lúc mắc lỗi.",
+     "Việc ai cũng mắc lỗi là lẽ thường của cuộc sống.",
+     "Ai cũng được định sẵn là sẽ mắc lỗi."
+    ]
+   },
+   "similar:5": {
+    "diff": "Cả ba đều bổ sung thêm một sự thật thứ hai. -것은 물론이고 nghe trang trọng hơn; -데다가 là cách nói dùng hằng ngày.",
+    "notes": [
+     "Không những A mà còn B; trung tính.",
+     "Hơn nữa; hai sự việc cùng loại.",
+     "A là điều hiển nhiên, và B cũng được bao gồm."
+    ],
+    "why": "\"Không những … mà còn\" là -(으)ㄹ 뿐만 아니라.",
+    "sentences": [
+     "Đồ ăn ở đó không những ngon mà còn rẻ nữa.",
+     "Đồ ăn ở đó ngon, hơn nữa còn rẻ.",
+     "Đồ ăn ở đó ngon là điều đương nhiên, mà còn rẻ nữa."
+    ]
+   },
+   "similar:6": {
+    "diff": "-아/어서 mang tính trung lập. Bốn mẫu còn lại nêu lý do dẫn đến kết quả xấu; -느라고 đòi hỏi cùng một chủ ngữ thực hiện hành động.",
+    "notes": [
+     "Một nguyên nhân bất ngờ dẫn đến kết quả xấu.",
+     "Tình huống ồn ào hoặc hỗn loạn gây ra kết quả.",
+     "Một lý do đơn thuần; có thể tích cực hoặc tiêu cực.",
+     "Hành động của chính bạn tốn thời gian hoặc công sức nên việc khác bị ảnh hưởng.",
+     "Đổ lỗi cho nguyên nhân về kết quả xấu."
+    ],
+    "why": "Thời tiết không phải hành động của chính bạn nên không dùng được -느라고; một sự việc bất ngờ phù hợp với -는 바람에.",
+    "sentences": [
+     "Đứa trẻ đột nhiên khóc nên đêm qua tôi không ngủ được.",
+     "Vì đứa trẻ đột nhiên khóc và mọi sự ồn ào, tôi không ngủ được.",
+     "Đứa trẻ đột nhiên khóc nên tôi không ngủ được.",
+     "Đêm qua tôi bận học thi nên không ngủ được.",
+     "Vì đứa trẻ khóc nên đêm qua tôi không ngủ được."
+    ]
+   },
+   "similar:7": {
+    "diff": "-(으)ㄹ까 봐 mang theo sự lo lắng; hai mẫu còn lại chỉ đưa ra một phỏng đoán làm lý do.",
+    "notes": [
+     "Lo lắng về điều có thể xảy ra nên hành động trước.",
+     "Một phỏng đoán làm lý do; không cần có sự lo lắng.",
+     "Một khả năng yếu làm lý do."
+    ],
+    "why": "Lo lắng về một khả năng xấu là -(으)ㄹ까 봐.",
+    "sentences": [
+     "Tôi đã đi sớm phòng khi đường bị tắc.",
+     "Tôi đã đi sớm vì nghĩ rằng đường sẽ bị tắc.",
+     "Tôi đã đi sớm vì đường có thể bị tắc."
+    ]
+   },
+   "similar:8": {
+    "diff": "Chỉ -는 대로 và -(으)면 바로 đi tự nhiên với lời yêu cầu; -자마자 và -기가 무섭게 mô tả những việc đã xảy ra.",
+    "notes": [
+     "Ngay sau khi; việc tiếp theo xảy ra ngay lập tức.",
+     "Ngay khi; dùng được với lời yêu cầu và kế hoạch tương lai.",
+     "Ngay sau khi một việc xảy ra; mang tính trung lập.",
+     "Ngay tức khắc, gần như chưa kết thúc việc trước; thường được kể ở thì quá khứ."
+    ],
+    "why": "-자마자 nghe không tự nhiên với lời yêu cầu; -는 대로 phù hợp.",
+    "sentences": [
+     "Tôi sẽ đi tắm ngay khi về đến nhà.",
+     "Tôi sẽ đi tắm ngay khi về đến nhà.",
+     "Tôi sẽ đi tắm ngay sau khi về đến nhà.",
+     "Tôi đã đi tắm ngay khi vừa về đến nhà."
+    ]
+   },
+   "similar:9": {
+    "diff": "-셈이다 là một kết luận (\"nói tóm lại thì\"); các dạng 거나 nói rằng \"về bản chất thì giống nhau\".",
+    "notes": [
+     "Có thể nói như vậy; một kết luận rút ra từ các sự thật.",
+     "Thực tế giống như.",
+     "Giống hệt như; thường dùng để đưa ra nhận định.",
+     "Không khác gì; hơi trang trọng."
+    ],
+    "why": "\"Coi như người nhà\" là 가족이나 다름없다.",
+    "sentences": [
+     "Chúng tôi đã sống cùng nhau ba năm nên coi như ít nhiều là gia đình.",
+     "Chúng tôi đã sống cùng nhau ba năm nên chẳng khác gì gia đình.",
+     "Chúng tôi đã sống cùng nhau ba năm nên giống hệt như gia đình.",
+     "Chúng tôi đã sống cùng nhau ba năm nên họ chẳng khác gì người nhà."
+    ]
+   },
+   "similar:10": {
+    "diff": "-나 마나 và -볼 것도 없이 có nghĩa là kết quả đã rõ ràng; -아/어도 và -지 않아도 là sự nhượng bộ đơn thuần.",
+    "notes": [
+     "Làm cũng vô ích; kết quả đã rõ ràng.",
+     "Dù có; một sự nhượng bộ đơn thuần.",
+     "Dù không làm; thường mang nghĩa \"không cần phải\".",
+     "Không cần nhìn hay thử cũng biết; câu trả lời đã rõ."
+    ],
+    "why": "Một nỗ lực vô ích với kết quả hiển nhiên là -(으)나 마나.",
+    "sentences": [
+     "Hỏi anh ấy cũng vô ích; anh ấy sẽ từ chối.",
+     "Dù bạn có hỏi anh ấy, anh ấy cũng sẽ từ chối.",
+     "Dù không hỏi, anh ấy cũng sẽ từ chối.",
+     "Không cần hỏi cũng biết rõ anh ấy sẽ từ chối."
+    ]
+   },
+   "similar:26": {
+    "diff": "Cả hai đều dùng để đối chiếu hai sự thật. -는 데 반해 mang tính trang trọng hơn và so sánh hai đối tượng với nhau.",
+    "notes": [
+     "Mặt khác; ưu và nhược điểm.",
+     "Trái với; so sánh hai sự thật, mang tính trang trọng."
+    ],
+    "why": "Nêu một điểm tốt rồi đến một điểm xấu: -(으)ㄴ 반면에.",
+    "sentences": [
+     "Ngôi nhà này rộng rãi, nhưng mặt khác tiền thuê lại cao.",
+     "Trái với việc rộng rãi, tiền thuê ở đây lại cao."
+    ]
+   },
+   "similar:27": {
+    "diff": "Cả hai đều có nghĩa là \"mặc dù\". -(으)면서도 là diễn ra đồng thời; -고서도 là sau khi đã làm xong việc đó.",
+    "notes": [
+     "Trong khi; khi đi với 도 nghĩa là \"mặc dù\" xảy ra cùng lúc.",
+     "Ngay cả sau khi đã làm; cùng chủ ngữ, hơi trang trọng."
+    ],
+    "why": "\"Dù đã hứa rồi mà vẫn...\" là -고서도.",
+    "sentences": [
+     "Anh ấy biết nhưng vẫn giả vờ như không biết.",
+     "Dù đã biết rồi, anh ấy vẫn giả vờ không biết."
+    ]
+   },
+   "similar:28": {
+    "diff": "-지만 là \"nhưng\" thông thường; -(으)ㄴ/는데도 nhấn mạnh \"bất chấp điều đó, thật bất ngờ\".",
+    "notes": [
+     "Mặc dù; nhấn mạnh kết quả trái ngược với điều bạn mong đợi.",
+     "Nhưng; một sự đối lập đơn giản."
+    ],
+    "why": "Một sự đối lập đơn giản là -지만.",
+    "sentences": [
+     "Mặc dù đã học chăm chỉ, tôi vẫn trượt kỳ thi.",
+     "Tôi đã học chăm chỉ, nhưng tôi trượt kỳ thi."
+    ]
+   },
+   "similar:29": {
+    "diff": "-는가 하면 đặt hai trường hợp cạnh nhau; -기는 하지만 thừa nhận một điểm trước khi nói \"nhưng\".",
+    "notes": [
+     "Liệt kê hai trường hợp khác nhau: có người ... có người khác ...",
+     "Thừa nhận một điểm, rồi phản đối."
+    ],
+    "why": "\"Có người ... có người khác ...\" là -(으)ㄴ/는가 하면.",
+    "sentences": [
+     "Có người thích cà phê, trong khi có người khác lại thích trà.",
+     "Có những người thích cà phê, nhưng cũng có những người thích trà."
+    ]
+   },
+   "similar:30": {
+    "diff": "-든지 liệt kê các lựa chọn (A hay B, dù sao đi nữa); -더라도 giả định một tình huống (\"dù cho\").",
+    "notes": [
+     "Dù là cái nào; lựa chọn không quan trọng.",
+     "Dù cho; một tình huống được giả định."
+    ],
+    "why": "Một tình huống được giả định là -더라도; -든지 cần có các lựa chọn thay thế.",
+    "sentences": [
+     "Dù ngày mai trời có mưa, chúng ta vẫn sẽ đi dã ngoại.",
+     "Dù trời mưa hay không, chúng ta vẫn sẽ đi dã ngoại."
+    ]
+   },
+   "similar:21": {
+    "diff": "-(으)ㄹ 만하다 dùng để đánh giá giá trị (\"đáng để\"); -(으)ㄹ 수 있다 chỉ khả năng hoặc sự có thể xảy ra.",
+    "notes": [
+     "Đáng để làm; đủ tốt để làm.",
+     "Có thể; khả năng hoặc sự có thể xảy ra."
+    ],
+    "why": "\"Nơi đáng để đến thăm\" là 가 볼 만한 곳.",
+    "sentences": [
+     "Hãy giới thiệu một nơi ở Seoul đáng để đến thăm.",
+     "Hãy giới thiệu một nơi ở Seoul mà tôi có thể đi được."
+    ]
+   },
+   "similar:22": {
+    "diff": "-은/는커녕 theo sau là vế phủ định (thậm chí không); -은/는 물론이고 và 말할 것도 없고 thêm vào điều cùng loại.",
+    "notes": [
+     "Chưa nói đến; vế sau mang nghĩa phủ định.",
+     "Đương nhiên A, và cả B nữa; thường mang nghĩa khẳng định.",
+     "Không cần phải nói."
+    ],
+    "why": "\"Ăn thì không nói làm gì, đến nước cũng không uống được\" dùng -은/는커녕.",
+    "sentences": [
+     "Ăn thì chưa nói đến, đến nước tôi cũng không uống nổi.",
+     "Đương nhiên là tôi không ăn được, đến nước cũng không uống nổi.",
+     "Không cần nói là tôi không ăn được, ngay cả nước cũng không."
+    ]
+   },
+   "similar:23": {
+    "diff": "-척하다 và -체하다 có cùng nghĩa (-체 mang tính văn viết hơn); -것처럼 행동하다 diễn tả rõ việc giả vờ hành động.",
+    "notes": [
+     "Giả vờ.",
+     "Hành động như thể; mô tả cách cư xử.",
+     "Giống 척하다 nhưng mang tính văn viết hơn."
+    ],
+    "why": "\"Giả vờ ngủ\" là 잠든 척하다.",
+    "sentences": [
+     "Anh ấy giả vờ như không nghe thấy rồi đi ngang qua.",
+     "Anh ấy hành động như thể không nghe thấy rồi đi ngang qua.",
+     "Anh ấy làm bộ không nghe thấy rồi đi ngang qua."
+    ]
+   },
+   "similar:24": {
+    "diff": "-다가 보니까 nhận ra một kết quả sau khi lặp đi lặp lại việc gì đó; -는 탓에 đổ lỗi cho nguyên nhân gây ra kết quả xấu.",
+    "notes": [
+     "Sau khi cứ tiếp tục làm, bạn nhận ra điều gì đó; thường mang nghĩa tích cực.",
+     "Đổ lỗi cho một nguyên nhân gây ra kết quả xấu."
+    ],
+    "why": "Kết quả tốt nhận ra qua việc lặp lại là -다가 보니까.",
+    "sentences": [
+     "Cứ chơi game mãi rồi tôi nhận ra hết sạch thời gian.",
+     "Vì chơi game nên hết sạch thời gian."
+    ]
+   },
+   "similar:25": {
+    "diff": "Nghĩa gần nhau. -듯이 mang tính văn chương hơn và dùng cho các so sánh cố định; -는 것처럼 dùng trong đời thường.",
+    "notes": [
+     "Giống như; thường là so sánh sinh động, mang tính văn viết hơn.",
+     "Như / như thể; dùng trong đời thường."
+    ],
+    "why": "Cách so sánh cố định 비 오듯이 dùng -듯이.",
+    "sentences": [
+     "Mồ hôi chảy xuống như mưa.",
+     "Mồ hôi chảy xuống như thể trời đang mưa."
+    ]
+   },
+   "similar:31": {
+    "diff": "-도록 có thể diễn tả mục đích hoặc mức độ; -(으)ㄹ 때까지 chỉ đánh dấu giới hạn thời gian.",
+    "notes": [
+     "Để cho; cũng có nghĩa \"cho đến mức mà\".",
+     "Cho đến khi."
+    ],
+    "why": "Mục đích (để cho) là -도록.",
+    "sentences": [
+     "Hãy giữ yên lặng để đứa trẻ có thể ngủ.",
+     "Hãy giữ yên lặng cho đến khi đứa trẻ ngủ."
+    ]
+   },
+   "similar:32": {
+    "diff": "-다기에 nêu lý do nghe được dẫn đến hành động của chính mình; -다고 해서 còn tạo nên mẫu \"không phải cứ … là …\".",
+    "notes": [
+     "Vì nghe nói rằng …, nên tôi đã làm.",
+     "Vì người ta nói rằng; cũng có nghĩa \"không phải cứ\" trong -다고 해서 … 아니다."
+    ],
+    "why": "\"Không phải cứ … là …\" dùng -다고 해서.",
+    "sentences": [
+     "Bạn tôi nói bộ phim này thú vị nên tôi cũng đã xem.",
+     "Vì họ nói bộ phim này thú vị nên tôi cũng đã xem."
+    ]
+   },
+   "similar:33": {
+    "diff": "Nghĩa giống nhau; -기 위해서는 là dạng trang trọng, dùng trong văn viết của -(으)려면.",
+    "notes": [
+     "Nếu muốn; điều kiện mang ý định.",
+     "Để; trang trọng và dùng trong văn viết. (Danh sách của bạn có \"-(으)려고 하기 위해서는\"; đây là dạng tự nhiên.)"
+    ],
+    "why": "\"Nếu muốn đi\" là -(으)려면.",
+    "sentences": [
+     "Nếu muốn đi Hàn Quốc thì cần có visa.",
+     "Để đi Hàn Quốc thì cần có visa."
+    ]
+   },
+   "similar:34": {
+    "diff": "-아/어 보인다 dựa trên vẻ bề ngoài; -(으)ㄴ 것 같다 là sự phỏng đoán rộng hơn.",
+    "notes": [
+     "Trông có vẻ; nhận định dựa trên vẻ bề ngoài.",
+     "Tôi nghĩ là; phỏng đoán chung, không chỉ dựa vào vẻ bề ngoài."
+    ],
+    "why": "Vẻ ngoài của ai đó là -아/어 보이다.",
+    "sentences": [
+     "Mặc bộ đồ đó trông bạn cao.",
+     "Tôi nghĩ bạn cao khi mặc bộ đồ đó."
+    ]
+   },
+   "similar:35": {
+    "diff": "-(으)ㄹ 리가 없다 là sự chắc chắn mạnh; -지 않았을 것이다 là phỏng đoán nhẹ hơn về quá khứ.",
+    "notes": [
+     "Không thể nào; bạn chắc chắn điều đó không đúng.",
+     "Có lẽ đã không; phỏng đoán về quá khứ."
+    ],
+    "why": "Chắc chắn mạnh rằng điều đó không như vậy: -(으)ㄹ 리가 없다.",
+    "sentences": [
+     "Không thể nào anh ấy, người đã học chăm chỉ, lại nói dối.",
+     "Anh ấy, người đã học chăm chỉ, có lẽ đã không nói dối."
+    ]
+   },
+   "similar:36": {
+    "diff": "-기만 하다 = chỉ (làm gì đó) / cứ liên tục làm; -(으)ㄹ 때마다 = mỗi khi / mỗi lần.",
+    "notes": [
+     "Chẳng làm gì khác ngoài việc này; một hành động cứ tiếp diễn mãi.",
+     "Mỗi khi / mỗi lần như thế."
+    ],
+    "why": "\"Mỗi khi trời mưa\" dùng -(으)ㄹ 때마다.",
+    "sentences": [
+     "Em trai tôi về nhà là chỉ ăn thôi.",
+     "Mỗi lần em trai tôi ăn xong là lại buồn ngủ."
+    ]
+   },
+   "similar:37": {
+    "diff": "-(으)ㄴ 채(로) gợi ý trạng thái đó bất thường hoặc không lý tưởng; -고 mang tính trung lập.",
+    "notes": [
+     "Giữ nguyên một trạng thái trong khi làm việc khác, thường là trạng thái kỳ lạ hoặc không đúng.",
+     "Và / trong khi; trung lập."
+    ],
+    "why": "Giữ nguyên một trạng thái kỳ lạ (đi giày vào trong nhà) dùng -(으)ㄴ 채로.",
+    "sentences": [
+     "Anh ấy vào phòng mà vẫn còn mang nguyên giày.",
+     "Anh ấy đi giày rồi vào phòng."
+    ]
+   },
+   "similar:38": {
+    "diff": "-고도 cần cùng một chủ ngữ; -았/었는데도 cho phép mỗi vế có chủ ngữ khác nhau.",
+    "notes": [
+     "Dù đã làm xong; chủ ngữ phải giống nhau.",
+     "Mặc dù; chủ ngữ có thể khác nhau."
+    ],
+    "why": "Các chủ ngữ khác nhau (tôi / cả đội), nên dùng -았/었는데도.",
+    "sentences": [
+     "Dù đã mắc lỗi, anh ấy vẫn không xin lỗi.",
+     "Mặc dù anh ấy đã mắc lỗi, anh ấy vẫn không xin lỗi."
+    ]
+   },
+   "similar:39": {
+    "diff": "-줄 몰랐다 = đã không biết (ngạc nhiên); -지 않다고 생각했다 = tôi đã có ý kiến ngược lại.",
+    "notes": [
+     "Tôi đã không biết rằng...; mang sắc thái ngạc nhiên.",
+     "Tôi đã nghĩ là không...; chỉ là ý kiến trước đó của bạn."
+    ],
+    "why": "Không biết (sự việc) dùng -(으)ㄴ/는 줄 몰랐다.",
+    "sentences": [
+     "Tôi đã không biết bạn hát hay.",
+     "Tôi đã nghĩ bạn hát không hay."
+    ]
+   },
+   "similar:40": {
+    "diff": "-나머지 = cảm xúc quá mức dẫn đến một kết quả (loại nào cũng được); -탓에 = đổ lỗi một nguyên nhân cho kết quả xấu.",
+    "notes": [
+     "Kết quả của việc cảm xúc hoặc trạng thái quá mức; dùng trong văn viết.",
+     "Đổ lỗi cho một nguyên nhân gây ra kết quả xấu."
+    ],
+    "why": "Cảm xúc quá mức dẫn đến một phản ứng dùng -(으)ㄴ 나머지.",
+    "sentences": [
+     "Tôi buồn quá đến mức nước mắt tuôn rơi.",
+     "Vì tôi quá buồn nên nước mắt cứ trào ra."
+    ]
+   },
+   "similar:18": {
+    "diff": "-는 대로 có nghĩa là \"đúng như, y như\"; -것처럼 có nghĩa là \"như thể là\" (có thể không đúng sự thật); -것과 같이 là \"như\" mang tính trang trọng.",
+    "notes": [
+     "Đúng như; làm theo những gì đã được nói hoặc đã làm.",
+     "Giống như / như thể là; diễn tả sự tương đồng hoặc sự giả vờ.",
+     "Như (đã mô tả); mang tính trang trọng, dùng trong hướng dẫn và văn viết."
+    ],
+    "why": "Làm theo chỉ dẫn một cách chính xác thì dùng -는 대로.",
+    "sentences": [
+     "Hãy làm đúng như tôi nói.",
+     "Hãy lặp lại y như tôi nói.",
+     "Hãy làm theo như tôi đã nói."
+    ]
+   },
+   "similar:16": {
+    "diff": "-려던 참이다 = đúng vào thời điểm đó; -려고 했다 = một dự định, không giới hạn thời gian.",
+    "notes": [
+     "Vừa định làm gì đó; chính là khoảnh khắc ngay trước khi hành động.",
+     "Đã định làm gì đó; thời điểm nào cũng được và việc đó có thể chưa xảy ra."
+    ],
+    "why": "\"Vừa định\" là -(으)려던 참이다.",
+    "sentences": [
+     "Tôi vừa định gọi điện thì...",
+     "Tôi đã định gọi điện."
+    ]
+   },
+   "similar:17": {
+    "diff": "Cả ba đều diễn tả mục đích. -(으)려고 và -고자 không thể đi kèm câu mệnh lệnh; -기 위해서 thì được.",
+    "notes": [
+     "Để làm gì đó; có thể đi sau danh từ (을/를 위해서) và cũng xuất hiện trong câu yêu cầu.",
+     "Để làm gì đó; dùng trong văn nói hằng ngày, không có câu mệnh lệnh hay đề nghị theo sau.",
+     "Mong muốn hoặc mục đích mang tính trang trọng, dùng trong diễn văn và văn bản chính thức."
+    ],
+    "why": "Câu mệnh lệnh đứng sau mệnh đề chỉ mục đích thì cần dùng -기 위해서.",
+    "sentences": [
+     "Tôi tập thể dục để giảm cân.",
+     "Tôi tập thể dục nhằm mục đích giảm cân.",
+     "Tôi tập thể dục với mục tiêu giảm cân."
+    ]
+   },
+   "similar:20": {
+    "diff": "Cả hai đều có nghĩa là \"có thể\". -(으)ㄹ 수도 있다 nêu một khả năng; -(으)ㄹ지도 모르다 nghe như một suy đoán hoặc lo lắng.",
+    "notes": [
+     "Có thể; một suy đoán yếu, thường kèm theo sự lo lắng.",
+     "Có khả năng; một khả năng mang tính trung lập."
+    ],
+    "why": "Sự lo lắng về một khả năng phù hợp với -(으)ㄹ지도 몰라서.",
+    "sentences": [
+     "Ngày mai có thể trời sẽ mưa, nên hãy mang theo ô.",
+     "Ngày mai trời có khả năng mưa, nên hãy mang theo ô."
+    ]
+   },
+   "similar:2": {
+    "diff": "-정도로 nêu ví dụ về mức độ, -만큼 so sánh tương đương về lượng, còn 몰라보게 dùng cho sự thay đổi mang tính đột biến.",
+    "notes": [
+     "Cho thấy mức độ đi xa đến đâu, thường dùng với một ví dụ cực đoan.",
+     "So sánh về số lượng hoặc mức độ: \"nhiều như\", \"bằng với\".",
+     "몰라보게 là dạng cố định dùng cho sự thay đổi lớn đến mức không thể nhận ra."
+    ],
+    "why": "Sự thay đổi lớn đến mức không nhận ra được thì dùng 몰라보게.",
+    "sentences": [
+     "Chỉ trong một năm, anh ấy đã thay đổi nhiều đến mức không thể nhận ra.",
+     "Chỉ trong một năm, anh ấy đã thay đổi đến mức không thể nhận ra.",
+     "Chỉ trong một năm, anh ấy đã thay đổi đến mức không nhận ra nổi."
+    ]
+   },
+   "similar:19": {
+    "diff": "-에 달려 있다 đứng sau danh từ; -기 나름이다 đứng sau gốc động từ.",
+    "notes": [
+     "Tùy thuộc vào; đi sau danh từ.",
+     "Tùy thuộc vào cách làm; đi sau động từ."
+    ],
+    "why": "Sau động từ (마음먹다) dùng -기 나름이다.",
+    "sentences": [
+     "Thành công phụ thuộc vào nỗ lực.",
+     "Thành công phụ thuộc vào cách bạn cố gắng."
+    ]
+   },
+   "similar:4": {
+    "diff": "-수밖에 없다 = không còn lựa chọn nào khác; -아/어야만 하다 = nghĩa vụ, bắt buộc phải; -지 않을 수 없다 = không thể không (phản ứng tự nhiên).",
+    "notes": [
+     "Không còn cách nào khác.",
+     "Là điều bắt buộc; một điều kiện cần thiết.",
+     "Không thể không làm; thường là một cảm xúc hoặc phản ứng."
+    ],
+    "why": "Một phản ứng không thể kiểm soát được thì dùng -지 않을 수 없다.",
+    "sentences": [
+     "Để thi đỗ, tuần này tôi không còn cách nào khác ngoài việc phải học.",
+     "Để thi đỗ, tuần này tôi phải học.",
+     "Để thi đỗ, tuần này tôi không thể không học."
+    ]
+   }
+  }
+ }
+}

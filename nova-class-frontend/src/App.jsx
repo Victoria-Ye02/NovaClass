@@ -5,6 +5,9 @@ import { ThemeProvider } from "./ThemeContext";
 import Login from "./pages/victoria/Login";
 import Dashboard from "./pages/victoria/Dashboard";
 import KMate from "./pages/victoria/KMate";
+import GrammarMeaning from "./pages/victoria/GrammarMeaning";
+import TopikBooster from "./pages/victoria/TopikBooster";
+import SmartDrill from "./pages/victoria/SmartDrill";
 import Classroom from "./pages/victoria/Classroom";
 import ClassDetail from "./pages/victoria/ClassDetail";
 import MaterialPreview from "./pages/victoria/MaterialPreview";
@@ -34,6 +37,9 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/kmate" element={<ProtectedRoute><KMate /></ProtectedRoute>} />
+        <Route path="/topik-hub/grammar" element={<ProtectedRoute><GrammarMeaning /></ProtectedRoute>} />
+        <Route path="/topik-hub/booster" element={<ProtectedRoute><TopikBooster /></ProtectedRoute>} />
+        <Route path="/topik-hub/smart-drill" element={<ProtectedRoute><SmartDrill /></ProtectedRoute>} />
         <Route path="/classroom" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
         <Route path="/classroom/:id" element={<ProtectedRoute><ClassDetail /></ProtectedRoute>} />
         <Route path="/classroom/:id/material/:materialId" element={<ProtectedRoute><MaterialPreview /></ProtectedRoute>} />

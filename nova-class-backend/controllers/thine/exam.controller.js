@@ -1,4 +1,5 @@
 const pool = require("../../config/db");
+const { syncExamResults } = require("../../services/topik/examSync");
 
 const TOPIK_AI_URL = process.env.TOPIK_AI_URL || "http://localhost:8010";
 
@@ -80,6 +81,9 @@ exports.submitExam = async (req, res) => {
     });
     if (!upstream.ok) return relay(res, upstream);
     res.json(await upstream.json());
+    // The exam service keeps its results in its own SQLite file. Copy the new ones into MySQL (and refresh this
+    // student's weakness profile) once the response is on its way; a failure here never touches the exam result.
+    syncExamResults(pool, { userId: req.user.id }).catch(err => console.error("[Exam] could not sync the result to MySQL:", err.message));
   } catch (err) {
     res.status(502).json({ error: err.message });
   }
@@ -91,7 +95,7 @@ exports.getAnalytics = async (req, res) => {
     const topikUserId = await ensureTopikUser(req.user.id);
     const upstream = await fetch(`${TOPIK_AI_URL}/api/user/${topikUserId}/analytics`, {
       // Weakness analysis + Myanmar study-plan generation is LLM-backed and
-      // can run well past 30s under real network latency to OpenRouter.
+      // can run well past 30s under real network latency to the LLM provider.
       signal: AbortSignal.timeout(90000),
     });
     if (!upstream.ok) return relay(res, upstream);

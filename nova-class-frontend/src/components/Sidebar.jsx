@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useLang } from "../LanguageContext";
 import { useTheme } from "../ThemeContext";
 import Icon from "./Icon";
@@ -6,17 +7,28 @@ import Icon from "./Icon";
 // `dark` lets a page (currently K_MATE's Code Assistant mode) force the
 // Devline dark-IDE palette on the sidebar without touching every other page,
 // which still follows the app's normal light/dark theme toggle.
+// TOPIK Hub opens a short list of its own pages. "Old Questions" is the past-paper exam (kept at /exam).
+const HUB_ITEMS = [
+  { path: "/topik-hub/grammar",     icon: "book",   key: "hubGrammar" },
+  { path: "/topik-hub/booster",     icon: "flash-on", key: "hubBooster" },
+  { path: "/topik-hub/smart-drill", icon: "target", key: "hubSmartDrill" },
+  { path: "/exam",                  icon: "note",   key: "hubOldQuestions" },
+];
+
 export default function Sidebar({ dark }) {
   const navigate = useNavigate();
   const name = localStorage.getItem("nova_name") || "Student";
   const { t } = useLang();
   const { theme, toggleTheme } = useTheme();
+  const { pathname } = useLocation();
+  const inHub = HUB_ITEMS.some(h => pathname === h.path || pathname.startsWith(`${h.path}/`));
+  const [hubOpen, setHubOpen] = useState(inHub);
 
   const navItems = [
     { path: "/",         icon: "dashboard",      key: "dashboard"  },
     { path: "/classroom",icon: "graduation-cap", key: "classroom"  },
     { path: "/kmate",    icon: "bot",            key: "kmate"      },
-    { path: "/exam",     icon: "exam",           key: "examMode"   },
+    { key: "topikHub", icon: "exam", children: HUB_ITEMS },
     { path: "/settings", icon: "settings",       key: "settings"   },
   ];
 
@@ -38,7 +50,39 @@ export default function Sidebar({ dark }) {
       </div>
 
       <nav style={styles.nav}>
-        {navItems.map(item => (
+        {navItems.map(item => item.children ? (
+          <div key={item.key}>
+            <button
+              type="button"
+              aria-expanded={hubOpen || inHub}
+              onClick={() => setHubOpen(o => !o)}
+              style={{ ...styles.navItem, ...styles.navGroupBtn, ...(inHub ? { color: "var(--primary)", background: "var(--surface-alt)" } : {}), ...(c && !inHub ? { color: c.mutedTextColor } : {}) }}
+            >
+              <Icon name={item.icon} size={16} style={styles.navIcon} />
+              <span style={{ flex: 1, textAlign: "left" }}>{t(item.key)}</span>
+              <span aria-hidden="true" style={{ fontSize: "10px" }}>{hubOpen || inHub ? "▾" : "▸"}</span>
+            </button>
+            {(hubOpen || inHub) && (
+              <div style={styles.subNav}>
+                {item.children.map(sub => (
+                  <NavLink
+                    key={sub.path}
+                    to={sub.path}
+                    style={({ isActive }) => ({
+                      ...styles.navItem, ...styles.subItem,
+                      ...(c && !isActive ? { color: c.mutedTextColor } : {}),
+                      ...(isActive ? styles.navActive : {}),
+                      ...(isActive && c ? { background: c.accent, color: c.panelBg } : {}),
+                    })}
+                  >
+                    <Icon name={sub.icon} size={14} style={styles.navIcon} />
+                    {t(sub.key)}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
           <NavLink
             key={item.path}
             to={item.path}
@@ -113,6 +157,9 @@ const styles = {
     padding: "10px 12px", borderRadius: "8px", fontSize: "14px",
     fontWeight: 500, color: "var(--text-muted)", transition: "all 0.2s",
   },
+  navGroupBtn: { width: "100%", border: "none", background: "transparent", cursor: "pointer" },
+  subNav: { display: "flex", flexDirection: "column", gap: "2px", margin: "2px 0 4px 18px", paddingLeft: "8px", borderLeft: "1px solid var(--border)" },
+  subItem: { padding: "8px 10px", fontSize: "13px" },
   navActive: { background: "var(--primary)", color: "#fff" },
   navIcon: { flexShrink: 0 },
   bottom: { borderTop: "1px solid var(--border)", paddingTop: "16px" },

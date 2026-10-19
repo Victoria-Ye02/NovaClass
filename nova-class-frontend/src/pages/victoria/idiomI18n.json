@@ -1,0 +1,1442 @@
+{
+ "idiom:1": {
+  "en": "To find a way to solve a problem; to get a handle on it.",
+  "vi": "Tìm ra hướng giải quyết vấn đề."
+ },
+ "idiom:2": {
+  "en": "To find a clue or lead toward solving a problem.",
+  "vi": "Tìm ra manh mối để giải quyết vấn đề."
+ },
+ "idiom:3": {
+  "en": "To be unable to find a way forward; not know where to start.",
+  "vi": "Không tìm ra hướng giải quyết, không biết bắt đầu từ đâu."
+ },
+ "idiom:4": {
+  "en": "To engrave in one's heart; to remember firmly so as never to forget.",
+  "vi": "Khắc cốt ghi tâm, ghi nhớ kỹ để không quên."
+ },
+ "idiom:5": {
+  "en": "To feel relieved; to breathe a sigh of relief.",
+  "vi": "Cảm thấy nhẹ nhõm, thở phào yên tâm."
+ },
+ "idiom:6": {
+  "en": "To touch someone's heart; to be deeply moved.",
+  "vi": "Làm lay động trái tim, khiến người ta xúc động."
+ },
+ "idiom:7": {
+  "en": "To beat one's breast; to regret something with deep sorrow.",
+  "vi": "Đấm ngực hối tiếc, tiếc nuối vô cùng."
+ },
+ "idiom:8": {
+  "en": "To feel a pang of guilt; to be startled or worried over a wrongdoing.",
+  "vi": "Giật mình lo lắng, cảm thấy day dứt vì việc làm sai."
+ },
+ "idiom:9": {
+  "en": "To be overwhelmed with emotion; one's heart swells with joy.",
+  "vi": "Trái tim tràn đầy xúc động, vui sướng dâng trào."
+ },
+ "idiom:10": {
+  "en": "One's heart is torn apart; to be in terrible pain.",
+  "vi": "Đau lòng như xé ruột, vô cùng đau đớn."
+ },
+ "idiom:11": {
+  "en": "To be in the spotlight; to attract much public attention.",
+  "vi": "Được chú ý, trở thành tâm điểm của đông đảo mọi người."
+ },
+ "idiom:12": {
+  "en": "To watch with indifference, as if it's none of one's business.",
+  "vi": "Thờ ơ như người ngoài cuộc, coi như chuyện không liên quan đến mình."
+ },
+ "idiom:13": {
+  "en": "To stand by with hands behind one's back; to just watch without helping.",
+  "vi": "Khoanh tay đứng nhìn, làm như không liên quan."
+ },
+ "idiom:14": {
+  "en": "Devouring food in no time; wolfing down a meal.",
+  "vi": "Ăn rất nhanh, ngốn sạch đồ ăn trong chớp mắt."
+ },
+ "idiom:15": {
+  "en": "To bow one's head in respect; to feel admiration for someone.",
+  "vi": "Cúi đầu kính trọng, nảy sinh lòng khâm phục."
+ },
+ "idiom:16": {
+  "en": "To tilt one's head in doubt; to feel puzzled or skeptical.",
+  "vi": "Nghiêng đầu tỏ vẻ nghi ngờ, thắc mắc."
+ },
+ "idiom:17": {
+  "en": "To nod one's head in agreement; to agree.",
+  "vi": "Gật đầu tỏ ý đồng ý, tán thành."
+ },
+ "idiom:18": {
+  "en": "To admit a mistake or defeat, or to feel ashamed — hang one's head.",
+  "vi": "Cúi đầu nhận lỗi hoặc thất bại, hoặc cảm thấy xấu hổ."
+ },
+ "idiom:19": {
+  "en": "To shake one's head; to deny or refuse something.",
+  "vi": "Lắc đầu để phủ nhận hoặc từ chối."
+ },
+ "idiom:20": {
+  "en": "To shake one's head in refusal; to reject something.",
+  "vi": "Lắc đầu từ chối, bác bỏ."
+ },
+ "idiom:21": {
+  "en": "To drink a bitter cup; to fail or suffer defeat.",
+  "vi": "Nếm trái đắng; thất bại, thua cuộc."
+ },
+ "idiom:22": {
+  "en": "To rack one's brain over a problem with no solution in sight.",
+  "vi": "Đau đầu suy nghĩ vì không biết cách giải quyết."
+ },
+ "idiom:23": {
+  "en": "To have a headache over a problem; to be troubled — a real headache.",
+  "vi": "Đau đầu vì không tìm ra cách giải quyết vấn đề."
+ },
+ "idiom:24": {
+  "en": "To suffer a big loss all at once or fail badly; to get burned.",
+  "vi": "Chịu thiệt hại lớn một lúc hoặc thất bại nặng nề."
+ },
+ "idiom:25": {
+  "en": "To prick up one's ears; to become interested because it sounds plausible.",
+  "vi": "Chú ý lắng nghe vì thấy nghe có vẻ hợp lý, hấp dẫn."
+ },
+ "idiom:26": {
+  "en": "To be sick of hearing something because it was said too many times.",
+  "vi": "Nghe nhiều lần đến phát chán, nhức tai."
+ },
+ "idiom:27": {
+  "en": "To be easily swayed by what others say; gullible.",
+  "vi": "Dễ tin, dễ bị lung lay bởi lời người khác."
+ },
+ "idiom:28": {
+  "en": "To listen attentively to what others say — lend an ear.",
+  "vi": "Chăm chú lắng nghe lời người khác."
+ },
+ "idiom:29": {
+  "en": "To open one's ears; to get ready to listen.",
+  "vi": "Mở lòng, sẵn sàng lắng nghe."
+ },
+ "idiom:30": {
+  "en": "To doubt one's ears; to think one misheard something hard to believe.",
+  "vi": "Không tin vào tai mình khi nghe điều khó tin."
+ },
+ "idiom:31": {
+  "en": "To hear the same thing so many times that you are sick of it — to have heard it a thousand times.",
+  "vi": "Nghe đi nghe lại cùng một điều nhiều lần đến mức phát chán."
+ },
+ "idiom:32": {
+  "en": "To pretend to listen while paying no real attention — to turn a deaf ear.",
+  "vi": "Nghe cho có, giả vờ nghe mà không để tâm — như nước đổ lá khoai."
+ },
+ "idiom:33": {
+  "en": "To be left speechless by something shocking or absurd — to be stunned.",
+  "vi": "Quá bất ngờ, sửng sốt đến mức không nói nên lời."
+ },
+ "idiom:34": {
+  "en": "To be so dumbfounded that no words come out — to be flabbergasted.",
+  "vi": "Quá vô lý đến mức không nói được gì, dở khóc dở cười."
+ },
+ "idiom:35": {
+  "en": "To place hope or expectations on someone or something.",
+  "vi": "Đặt hy vọng, kỳ vọng vào ai hoặc điều gì."
+ },
+ "idiom:36": {
+  "en": "To run rampant or intensify, as weather, disease, or heat.",
+  "vi": "Hoành hành, trở nên dữ dội (thời tiết, dịch bệnh)."
+ },
+ "idiom:37": {
+  "en": "To raise a banner for a cause — to openly advocate a goal.",
+  "vi": "Giương cao ngọn cờ, công khai nêu mục tiêu để theo đuổi."
+ },
+ "idiom:38": {
+  "en": "No need to say much — there is no need for a long explanation.",
+  "vi": "Không cần nói dài dòng, không cần giải thích nhiều."
+ },
+ "idiom:39": {
+  "en": "To follow one after another without a break — to continue in succession.",
+  "vi": "Nối đuôi nhau, hết cái này đến cái khác liên tiếp."
+ },
+ "idiom:40": {
+  "en": "To have one's secret or wrongdoing discovered by others — to be caught out.",
+  "vi": "Bị người khác phát hiện tung tích hoặc lỗi lầm — bị lộ đuôi."
+ },
+ "idiom:41": {
+  "en": "To be outstanding and far more capable than others — to be a real star.",
+  "vi": "Giỏi giang, xuất chúng hơn hẳn người khác."
+ },
+ "idiom:42": {
+  "en": "To sell like hotcakes — products selling very fast.",
+  "vi": "Bán chạy như tôm tươi, hàng bán rất nhanh."
+ },
+ "idiom:43": {
+  "en": "To feel one's face burn with embarrassment — to be ashamed.",
+  "vi": "Xấu hổ đến đỏ mặt, nóng cả mặt."
+ },
+ "idiom:44": {
+  "en": "Without exception — everyone, you and I alike.",
+  "vi": "Không trừ ai, tất cả mọi người đều như nhau."
+ },
+ "idiom:45": {
+  "en": "To be in a daze or lose one's presence of mind — to be spaced out.",
+  "vi": "Mất hồn, thẫn thờ, không còn tỉnh táo."
+ },
+ "idiom:46": {
+  "en": "In the blink of an eye; in a very short moment.",
+  "vi": "Trong chớp mắt; trong khoảnh khắc rất ngắn."
+ },
+ "idiom:47": {
+  "en": "To lose someone's trust and fall out of favor with them.",
+  "vi": "Mất lòng tin và bị người khác ghét bỏ."
+ },
+ "idiom:48": {
+  "en": "To give attention or interest to something; to cast a glance at it.",
+  "vi": "Dành sự chú ý hoặc quan tâm, đưa mắt nhìn tới."
+ },
+ "idiom:49": {
+  "en": "To catch the eye; to attract attention.",
+  "vi": "Thu hút sự chú ý của mọi người."
+ },
+ "idiom:50": {
+  "en": "To have one's eye on something greedily and watch it closely.",
+  "vi": "Để mắt thèm muốn và dõi theo một thứ."
+ },
+ "idiom:51": {
+  "en": "To frown in displeasure at something one dislikes.",
+  "vi": "Cau mày vì không hài lòng."
+ },
+ "idiom:52": {
+  "en": "To be extremely adorable and precious, like the apple of one's eye.",
+  "vi": "Cực kỳ đáng yêu, quý như con ngươi của mắt."
+ },
+ "idiom:53": {
+  "en": "To be intensely greedy or eager about something.",
+  "vi": "Cực kỳ tham muốn hoặc dồn hết sự quan tâm."
+ },
+ "idiom:54": {
+  "en": "To turn a blind eye and forgive someone's mistake.",
+  "vi": "Nhắm mắt làm ngơ và bỏ qua lỗi lầm cho người khác."
+ },
+ "idiom:55": {
+  "en": "To get some sleep; to catch a nap.",
+  "vi": "Chợp mắt; ngủ một lát."
+ },
+ "idiom:56": {
+  "en": "To avoid being seen by others.",
+  "vi": "Tránh để người khác nhìn thấy."
+ },
+ "idiom:57": {
+  "en": "To have low standards in judging or choosing things.",
+  "vi": "Tiêu chuẩn thưởng thức, đánh giá thấp."
+ },
+ "idiom:58": {
+  "en": "To be blinded by something, such as money or love, and lose judgment.",
+  "vi": "Bị mờ mắt vì điều gì đó và mất khả năng phán đoán."
+ },
+ "idiom:59": {
+  "en": "To wait so long that one's eyes feel ready to fall out.",
+  "vi": "Chờ đợi rất lâu đến mỏi mắt."
+ },
+ "idiom:60": {
+  "en": "To be quick at sensing what others think or feel.",
+  "vi": "Nhanh nhạy nhận ra suy nghĩ, tâm trạng của người khác."
+ },
+ "idiom:61": {
+  "en": "To read others' moods and reactions and act carefully (to watch someone's face).",
+  "vi": "Quan sát sắc mặt, thái độ của người khác để hành động cho khéo."
+ },
+ "idiom:62": {
+  "en": "To be so busy one has no time to breathe (to be swamped).",
+  "vi": "Bận tối mắt tối mũi, không có thời gian nghỉ ngơi."
+ },
+ "idiom:63": {
+  "en": "To act as a go-between connecting two parties (to build a bridge).",
+  "vi": "Làm cầu nối, đứng giữa kết nối hai bên."
+ },
+ "idiom:64": {
+  "en": "To cut off interest or contact with something (to build a wall).",
+  "vi": "Cắt đứt quan tâm hoặc quan hệ, dựng bức tường ngăn cách."
+ },
+ "idiom:65": {
+  "en": "So good or perfect that nothing more could be added.",
+  "vi": "Hoàn hảo, tốt đến mức không còn gì để nói thêm."
+ },
+ "idiom:66": {
+  "en": "To suffer a severe blow or great hardship (to be hit by a hard frost).",
+  "vi": "Gặp phải khó khăn, đòn giáng nặng nề."
+ },
+ "idiom:67": {
+  "en": "To break ties and turn against a former ally (to turn one's back).",
+  "vi": "Quay lưng, cắt đứt quan hệ với người hoặc tổ chức từng cùng chí hướng."
+ },
+ "idiom:68": {
+  "en": "To force someone to do something (to push someone's back).",
+  "vi": "Ép buộc ai đó làm việc gì."
+ },
+ "idiom:69": {
+  "en": "To make a fresh resolution and settle one's mind.",
+  "vi": "Quyết tâm làm lại, ổn định tinh thần."
+ },
+ "idiom:70": {
+  "en": "To pick on a weak point in someone's words (to nitpick).",
+  "vi": "Bắt bẻ, vin vào điểm yếu trong lời nói của người khác."
+ },
+ "idiom:71": {
+  "en": "To trail off vaguely when speaking, without confidence.",
+  "vi": "Nói lấp lửng, không rõ ràng ở cuối câu, thiếu tự tin."
+ },
+ "idiom:72": {
+  "en": "To be all talk and no action.",
+  "vi": "Chỉ nói trước mà không thực hiện."
+ },
+ "idiom:73": {
+  "en": "To lose tension and become spaced out or blank.",
+  "vi": "Thả lỏng căng thẳng rồi ngẩn ngơ, đờ đẫn."
+ },
+ "idiom:74": {
+  "en": "To lose all energy or strength (to feel deflated).",
+  "vi": "Mất hết sức lực, nản chí."
+ },
+ "idiom:75": {
+  "en": "To show up or make an appearance somewhere (to stick one's head out).",
+  "vi": "Xuất hiện, lộ diện ở một nơi nào đó."
+ },
+ "idiom:76": {
+  "en": "To put heads together and discuss something jointly.",
+  "vi": "Cùng nhau bàn bạc, chụm đầu lại thảo luận."
+ },
+ "idiom:77": {
+  "en": "To bow one's head, showing respect or submission.",
+  "vi": "Cúi đầu thể hiện sự kính trọng hoặc khuất phục."
+ },
+ "idiom:78": {
+  "en": "To cool one's head, calming down or relaxing a tense mind.",
+  "vi": "Làm dịu đầu óc, thư giãn sau khi căng thẳng."
+ },
+ "idiom:79": {
+  "en": "To use one's head, thinking up ideas or clever solutions.",
+  "vi": "Dùng đầu óc suy nghĩ để tìm ra ý tưởng."
+ },
+ "idiom:80": {
+  "en": "To rack one's brain, thinking very hard.",
+  "vi": "Vắt óc suy nghĩ, cố gắng hết sức để nghĩ ra."
+ },
+ "idiom:81": {
+  "en": "To wet one's throat, having a drink of water.",
+  "vi": "Làm dịu cổ họng, uống chút nước."
+ },
+ "idiom:82": {
+  "en": "To not know where to put oneself, feeling embarrassed or unsure how to act.",
+  "vi": "Không biết để mình vào đâu, bối rối không biết cư xử sao."
+ },
+ "idiom:83": {
+  "en": "To drive a nail in, making one's stance on something firm and clear.",
+  "vi": "Đóng đinh, khẳng định rõ ràng và dứt khoát thái độ."
+ },
+ "idiom:84": {
+  "en": "To go through fire and water, acting regardless of danger or difficulty.",
+  "vi": "Bất chấp nước lửa, làm bất kể nguy hiểm hay khó khăn."
+ },
+ "idiom:85": {
+  "en": "With no gap for water to leak, perfectly thorough and tight.",
+  "vi": "Kín như bưng, không một kẽ hở, hết sức chặt chẽ."
+ },
+ "idiom:86": {
+  "en": "To eat seaweed soup, meaning to fail an exam.",
+  "vi": "Ăn canh rong biển, nghĩa là thi trượt."
+ },
+ "idiom:87": {
+  "en": "To scrape the gourd, a wife nagging or complaining to her husband.",
+  "vi": "Vợ cằn nhằn, phàn nàn với chồng."
+ },
+ "idiom:88": {
+  "en": "To put a gourd on someone, overcharging them — rip off.",
+  "vi": "Bán giá cắt cổ, chặt chém khách hàng."
+ },
+ "idiom:89": {
+  "en": "To stir up a wind, creating a big stir or influence in society.",
+  "vi": "Tạo nên làn sóng, gây ảnh hưởng lớn trong xã hội."
+ },
+ "idiom:90": {
+  "en": "To take off one's shoes and step up, acting eagerly — roll up one's sleeves.",
+  "vi": "Xắn tay áo vào làm, tích cực đứng ra hành động."
+ },
+ "idiom:91": {
+  "en": "To hold back and avoid getting involved, to play it safe.",
+  "vi": "Giữ mình, tránh né không chịu nhúng tay vào việc gì."
+ },
+ "idiom:92": {
+  "en": "To act in step with others, to align actions and intentions - 'be on the same page'.",
+  "vi": "Đồng bộ hành động và ý chí với người khác, cùng chung một hướng."
+ },
+ "idiom:93": {
+  "en": "To act in unison with others, to coordinate - 'fall into step'.",
+  "vi": "Phối hợp ăn ý, thống nhất hành động và suy nghĩ với nhau."
+ },
+ "idiom:94": {
+  "en": "To turn away and leave, to turn one's back on someone or something.",
+  "vi": "Quay lưng bỏ đi, ngoảnh mặt làm ngơ."
+ },
+ "idiom:95": {
+  "en": "An urgent problem suddenly demands immediate action - 'the heat is on'.",
+  "vi": "Việc cấp bách ập đến, phải giải quyết ngay - lửa đã cháy đến chân."
+ },
+ "idiom:96": {
+  "en": "To be betrayed by someone you trusted - 'be stabbed in the back'.",
+  "vi": "Bị người mình tin tưởng phản bội - bị đâm sau lưng."
+ },
+ "idiom:97": {
+  "en": "To hinder someone, or to hold someone's weakness against them.",
+  "vi": "Cản trở người khác, hoặc nắm điểm yếu của người khác để kìm chân."
+ },
+ "idiom:98": {
+  "en": "To make excuses to dodge responsibility for something one is involved in.",
+  "vi": "Chối bỏ trách nhiệm và viện cớ cho việc mình có liên quan."
+ },
+ "idiom:99": {
+  "en": "To completely cut ties with something and withdraw - 'wash one's hands of it'.",
+  "vi": "Rút chân, cắt đứt hoàn toàn mọi liên quan đến một việc."
+ },
+ "idiom:100": {
+  "en": "To know many people and have a wide range of connections.",
+  "vi": "Quen biết rộng, có nhiều mối quan hệ."
+ },
+ "idiom:101": {
+  "en": "To be extremely fickle, changing words and actions constantly - 'blow hot and cold'.",
+  "vi": "Thay đổi thất thường, lúc thế này lúc thế kia như nước sôi."
+ },
+ "idiom:102": {
+  "en": "To be obvious without even seeing it - 'plain as day'.",
+  "vi": "Rõ như ban ngày, không cần nhìn cũng đoán được."
+ },
+ "idiom:103": {
+  "en": "To make someone's trouble worse - 'add fuel to the fire'.",
+  "vi": "Làm tình cảnh khó khăn của người khác thêm tồi tệ - đổ thêm dầu vào lửa."
+ },
+ "idiom:104": {
+  "en": "To praise someone excessively - 'lay it on thick'.",
+  "vi": "Khen ngợi quá mức, tâng bốc ai đó."
+ },
+ "idiom:105": {
+  "en": "To be extremely worried and anxious - 'eat one's heart out'.",
+  "vi": "Lo lắng đến mức nóng ruột, sốt ruột bồn chồn."
+ },
+ "idiom:106": {
+  "en": "To be extremely worried and anxious inside.",
+  "vi": "Lo lắng đến mức nóng ruột, sốt ruột."
+ },
+ "idiom:107": {
+  "en": "To grow attached to something after using it for a long time.",
+  "vi": "Gắn bó, quý mến vật dụng vì dùng lâu ngày."
+ },
+ "idiom:108": {
+  "en": "To wave one's hands to refuse or deny something.",
+  "vi": "Xua tay từ chối hoặc phủ nhận."
+ },
+ "idiom:109": {
+  "en": "To work in perfect harmony — in step with each other.",
+  "vi": "Ăn ý, phối hợp ăn khớp với nhau."
+ },
+ "idiom:110": {
+  "en": "To be on the edge of one's seat — tense and thrilled. (hold one's breath)",
+  "vi": "Hồi hộp, căng thẳng vì tình huống nguy hiểm, gay cấn."
+ },
+ "idiom:111": {
+  "en": "To become familiar with and skilled at a task.",
+  "vi": "Trở nên quen tay, thuần thục với công việc."
+ },
+ "idiom:112": {
+  "en": "To be able to concentrate and work well because one's mind is at ease.",
+  "vi": "Tâm trí yên ổn nên làm việc suôn sẻ, tập trung được."
+ },
+ "idiom:113": {
+  "en": "To get what one aimed for — to have it in hand.",
+  "vi": "Đạt được mục tiêu, nắm được trong tay."
+ },
+ "idiom:114": {
+  "en": "To stop or pause what one was doing.",
+  "vi": "Dừng lại hoặc tạm ngưng việc đang làm."
+ },
+ "idiom:115": {
+  "en": "To have one's work made easier thanks to help.",
+  "vi": "Công việc nhẹ bớt nhờ được giúp đỡ."
+ },
+ "idiom:116": {
+  "en": "To quit or withdraw from what one was doing. (wash one's hands of)",
+  "vi": "Bỏ, rút tay khỏi việc đang làm."
+ },
+ "idiom:117": {
+  "en": "To ask for help, especially money.",
+  "vi": "Xin xỏ, nhờ giúp đỡ (nhất là tiền)."
+ },
+ "idiom:118": {
+  "en": "To stop doing bad things one used to do. (wash one's hands of)",
+  "vi": "Chấm dứt, rửa tay gác kiếm khỏi việc xấu từng làm."
+ },
+ "idiom:119": {
+  "en": "To be short of workers or hands.",
+  "vi": "Thiếu nhân lực, thiếu người làm."
+ },
+ "idiom:120": {
+  "en": "To beg for forgiveness desperately, until one's hands wear down.",
+  "vi": "Van xin tha thứ hết lời, lạy lục khẩn thiết."
+ },
+ "idiom:121": {
+  "en": "To work quickly and be fast at doing tasks.",
+  "vi": "Làm việc nhanh nhẹn, thao tác nhanh."
+ },
+ "idiom:122": {
+  "en": "To be unskilled or not yet used to a task.",
+  "vi": "Chưa quen việc, vụng về, tay nghề còn non."
+ },
+ "idiom:123": {
+  "en": "To be stingy and spend little money — tight-fisted.",
+  "vi": "Chi tiêu dè sẻn, keo kiệt, không phóng tay."
+ },
+ "idiom:124": {
+  "en": "To feel relieved as a stifling problem gets resolved — breathe easy.",
+  "vi": "Cảm thấy nhẹ nhõm khi vấn đề bức bối được giải quyết."
+ },
+ "idiom:125": {
+  "en": "Frequently, at any time regardless of the hour — all the time.",
+  "vi": "Thường xuyên, bất kể lúc nào, không phân biệt thời gian."
+ },
+ "idiom:126": {
+  "en": "To pretend not to know — play dumb.",
+  "vi": "Giả vờ không biết, làm như không hay biết gì."
+ },
+ "idiom:127": {
+  "en": "To be equally matched in ability, rivaling each other.",
+  "vi": "Ngang tài ngang sức, cùng đứng đầu, không ai kém ai."
+ },
+ "idiom:128": {
+  "en": "To recover completely, as if the illness was washed away.",
+  "vi": "Khỏi bệnh hoàn toàn, như được rửa sạch."
+ },
+ "idiom:129": {
+  "en": "To be hard to understand — puzzling, I can't figure it out.",
+  "vi": "Khó hiểu, tưởng hiểu mà lại không hiểu."
+ },
+ "idiom:130": {
+  "en": "To act recklessly without thought or planning — throw caution to the wind.",
+  "vi": "Hành động liều lĩnh, không suy nghĩ trước sau."
+ },
+ "idiom:131": {
+  "en": "To weigh the pros and cons, calculating gains and losses.",
+  "vi": "Cân nhắc thiệt hơn, tính toán lợi và hại."
+ },
+ "idiom:132": {
+  "en": "To feel burdened by a heavy sense of responsibility — weight on one's shoulders.",
+  "vi": "Cảm thấy nặng gánh vì trách nhiệm lớn."
+ },
+ "idiom:133": {
+  "en": "To weigh heavily on one, as great responsibility becomes a burden.",
+  "vi": "Đè nặng lên vai, trách nhiệm lớn gây áp lực."
+ },
+ "idiom:134": {
+  "en": "To shoulder a heavy responsibility that feels burdensome.",
+  "vi": "Gánh vác trên vai trách nhiệm nặng nề."
+ },
+ "idiom:135": {
+  "en": "To feel dejected and lose energy from disappointment — shoulders slump.",
+  "vi": "Chán nản, mất tinh thần vì thất vọng, rũ vai."
+ },
+ "idiom:136": {
+  "en": "To feel proud and swagger, shrugging one's shoulders with pride.",
+  "vi": "Cảm thấy tự hào, vênh vang đắc ý."
+ },
+ "idiom:137": {
+  "en": "To blush out of embarrassment or shame.",
+  "vi": "Đỏ mặt vì xấu hổ."
+ },
+ "idiom:138": {
+  "en": "To be shameless — thick-skinned, with no sense of shame.",
+  "vi": "Mặt dày, không biết xấu hổ."
+ },
+ "idiom:139": {
+  "en": "To be slow to leave once seated; to sit for a long time.",
+  "vi": "Ngồi rồi thì khó chịu đứng dậy, ngồi lì một chỗ."
+ },
+ "idiom:140": {
+  "en": "No need for lengthy explanation; there is nothing more to say.",
+  "vi": "Không cần nói nhiều, chẳng cần giải thích dài dòng."
+ },
+ "idiom:141": {
+  "en": "To become passionately absorbed in something; to get fired up.",
+  "vi": "Hăng hái, say sưa dốc sức vào việc gì."
+ },
+ "idiom:142": {
+  "en": "To threaten someone with words and actions.",
+  "vi": "Đe dọa bằng lời nói và hành động."
+ },
+ "idiom:143": {
+  "en": "To grind one's teeth; to be furious and vow revenge.",
+  "vi": "Nghiến răng căm giận, quyết tâm trả thù."
+ },
+ "idiom:144": {
+  "en": "To say a thought or fact out loud; to speak it openly.",
+  "vi": "Nói thẳng ra một suy nghĩ hay sự việc."
+ },
+ "idiom:145": {
+  "en": "To say something habitually all the time; or to eat constantly.",
+  "vi": "Nói đi nói lại như thói quen; hoặc ăn uống liên tục."
+ },
+ "idiom:146": {
+  "en": "To touch to one's lips; to eat, drink, or smoke something.",
+  "vi": "Đụng đến miệng, tức là ăn, uống hoặc hút (thuốc)."
+ },
+ "idiom:147": {
+  "en": "To praise repeatedly until one's mouth runs dry; to praise endlessly.",
+  "vi": "Khen mãi khen hoài đến khô cả miệng."
+ },
+ "idiom:148": {
+  "en": "To barely scrape by and avoid starving; to make a bare living.",
+  "vi": "Chỉ vừa đủ ăn qua ngày, sống chật vật."
+ },
+ "idiom:149": {
+  "en": "To silence someone, stopping noise or unfavorable talk.",
+  "vi": "Bịt miệng, không cho nói ồn ào hay nói điều bất lợi."
+ },
+ "idiom:150": {
+  "en": "To get stories to match; to agree beforehand on what to say.",
+  "vi": "Thống nhất trước lời khai để nói cho khớp nhau."
+ },
+ "idiom:151": {
+  "en": "To say the same thing in unison; many people express the same opinion.",
+  "vi": "Nhiều người cùng đồng thanh nói lên một ý kiến."
+ },
+ "idiom:152": {
+  "en": "To be so happy that one grins from ear to ear.",
+  "vi": "Vui đến mức cười toe toét tận mang tai."
+ },
+ "idiom:153": {
+  "en": "To be good at keeping secrets - tight-lipped.",
+  "vi": "Kín miệng, giỏi giữ bí mật."
+ },
+ "idiom:154": {
+  "en": "To be so astonished that one's jaw drops.",
+  "vi": "Ngạc nhiên đến há hốc miệng."
+ },
+ "idiom:155": {
+  "en": "To be a picky eater or eat very little.",
+  "vi": "Kén ăn hoặc ăn rất ít."
+ },
+ "idiom:156": {
+  "en": "To take up a space, or to settle in and become established.",
+  "vi": "Chiếm một chỗ, hoặc ổn định vị trí, an cư."
+ },
+ "idiom:157": {
+  "en": "To sense trouble and run away - take to one's heels.",
+  "vi": "Nhận ra nguy hiểm rồi co giò bỏ chạy."
+ },
+ "idiom:158": {
+  "en": "Completely silent and still, as quiet as a mouse.",
+  "vi": "Im phăng phắc, lặng như tờ."
+ },
+ "idiom:159": {
+  "en": "To spend money - open one's wallet.",
+  "vi": "Chi tiền, móc hầu bao."
+ },
+ "idiom:160": {
+  "en": "To struggle hard in a tough situation - break out in a cold sweat.",
+  "vi": "Vất vả toát mồ hôi hột khi gặp việc khó."
+ },
+ "idiom:161": {
+  "en": "To use up all one's energy until it is hard to move - be drained.",
+  "vi": "Kiệt sức, cạn hết sức lực đến mức khó cử động."
+ },
+ "idiom:162": {
+  "en": "To spoil the mood of something going well - throw cold water on it.",
+  "vi": "Dội gáo nước lạnh, làm mất hứng việc đang suôn sẻ."
+ },
+ "idiom:163": {
+  "en": "To get off to a wrong start - button the first button wrong.",
+  "vi": "Bắt đầu sai ngay từ đầu, cài nhầm chiếc cúc đầu tiên."
+ },
+ "idiom:164": {
+  "en": "To begin something - take the first step.",
+  "vi": "Bắt đầu một việc, bước những bước đầu tiên."
+ },
+ "idiom:165": {
+  "en": "To be about to happen very soon - right under one's nose.",
+  "vi": "Sắp xảy ra ngay, cận kề trước mắt."
+ },
+ "idiom:166": {
+  "en": "To scoff at someone, looking down on them with a derisive snort.",
+  "vi": "Khinh thường và cười nhạo ai đó, cười khẩy."
+ },
+ "idiom:167": {
+  "en": "To be arrogant and show off — to have one's nose in the air.",
+  "vi": "Kiêu ngạo, làm ra vẻ giỏi giang, vênh váo."
+ },
+ "idiom:168": {
+  "en": "To feel tears welling up from emotion or sadness — to get a lump in one's throat.",
+  "vi": "Cay sống mũi, sắp rơi nước mắt vì xúc động hoặc buồn."
+ },
+ "idiom:169": {
+  "en": "To barely pass a standard or cutoff — to scrape through.",
+  "vi": "Vừa đủ đạt tiêu chuẩn, suýt soát mới qua."
+ },
+ "idiom:170": {
+  "en": "To have no customers because business is slow — to have only flies buzzing around.",
+  "vi": "Ế ẩm, vắng khách, chỉ có ruồi bay."
+ },
+ "idiom:171": {
+  "en": "To be exactly the same throughout, or to look strikingly alike — like peas in a pod.",
+  "vi": "Giống hệt nhau, rập khuôn; hoặc giống như đúc."
+ },
+ "idiom:172": {
+  "en": "To roll up one's sleeves — get ready to work eagerly or to fight.",
+  "vi": "Xắn tay áo, sẵn sàng làm việc hăng hái hoặc chuẩn bị đánh nhau."
+ },
+ "idiom:173": {
+  "en": "To stand by with arms folded, watching without trying to solve the problem.",
+  "vi": "Khoanh tay đứng nhìn, không tìm cách giải quyết việc trước mắt."
+ },
+ "idiom:174": {
+  "en": "To show outstanding ability — to be on fire.",
+  "vi": "Thể hiện năng lực xuất sắc, tung hoành."
+ },
+ "idiom:175": {
+  "en": "To look dispirited and lacking confidence — to be downcast.",
+  "vi": "Ủ rũ, mất tự tin, trông chán nản."
+ },
+ "idiom:176": {
+  "en": "To be extremely high-spirited or powerful — sky-high.",
+  "vi": "Khí thế ngút trời, cực kỳ mạnh mẽ."
+ },
+ "idiom:177": {
+  "en": "To share the same fate — to be in the same boat.",
+  "vi": "Cùng chung số phận, cùng thuyền."
+ },
+ "idiom:178": {
+  "en": "To grasp the whole picture at a glance.",
+  "vi": "Nhìn thoáng qua là thấy được toàn bộ."
+ },
+ "idiom:179": {
+  "en": "To let one's attention wander from the task at hand.",
+  "vi": "Xao nhãng, để tâm trí sang chuyện khác thay vì việc cần làm."
+ },
+ "idiom:180": {
+  "en": "To go one step further when it's already excessive — to top it all.",
+  "vi": "Đã quá đáng lại còn làm quá hơn một bậc nữa."
+ },
+ "idiom:181": {
+  "en": "To become widely known and receive recognition or good reviews.",
+  "vi": "Được nhiều người biết đến và được đánh giá cao."
+ },
+ "idiom:182": {
+  "en": "To tighten one's belt — to economize and cut spending.",
+  "vi": "Thắt lưng buộc bụng — tiết kiệm, cắt giảm chi tiêu."
+ },
+ "idiom:183": {
+  "en": "To be so amazed or dumbfounded that one is left speechless.",
+  "vi": "Quá kinh ngạc hoặc sững sờ đến mức không nói nên lời."
+ },
+ "idiom:184": {
+  "en": "To click one's tongue to show disapproval or displeasure.",
+  "vi": "Tặc lưỡi để thể hiện sự không hài lòng, không vừa ý."
+ },
+ "idiom:185": {
+  "en": "To curry favor — to try various ways to win someone's liking.",
+  "vi": "Lấy lòng — cố gắng bằng nhiều cách để được người khác yêu mến."
+ },
+ "idiom:186": {
+  "en": "To act freely and energetically, feeling satisfied and unrestrained.",
+  "vi": "Hành động thoải mái, hăng hái vì cảm thấy hài lòng, không bị kiềm chế."
+ },
+ "idiom:187": {
+  "en": "To join forces and cooperate.",
+  "vi": "Chung sức, hợp tác với nhau."
+ },
+ "proverb:1": {
+  "en": "Bad timing — an unexpected circumstance spoils what one set out to do.",
+  "vi": "Đi đúng ngày chợ — gặp chuyện bất ngờ nên không đạt được mục đích."
+ },
+ "proverb:2": {
+  "en": "Speak kindly to others and they will speak kindly back — what goes around comes around.",
+  "vi": "Lời nói chẳng mất tiền mua, lựa lời mà nói cho vừa lòng nhau — mình đối tốt thì người đối tốt lại."
+ },
+ "proverb:3": {
+  "en": "Very rare — something appears only once in a great while.",
+  "vi": "Hiếm hoi, thỉnh thoảng mới có một lần."
+ },
+ "proverb:4": {
+  "en": "Feeling as if sitting on pins and needles — very uncomfortable.",
+  "vi": "Như ngồi trên đống lửa — vô cùng khó chịu, bất an."
+ },
+ "proverb:5": {
+  "en": "Birds of a feather flock together — people in similar situations side with each other.",
+  "vi": "Nồi nào úp vung nấy — người cùng cảnh ngộ thường bênh vực nhau."
+ },
+ "proverb:6": {
+  "en": "Parents with many children never run out of worries.",
+  "vi": "Cha mẹ có nhiều con thì lo lắng không bao giờ dứt."
+ },
+ "proverb:7": {
+  "en": "Out of the frying pan into the fire — things get harder and harder.",
+  "vi": "Càng đi càng gặp núi cao — tình hình càng lúc càng khó khăn."
+ },
+ "proverb:8": {
+  "en": "If the price is the same, choose the better one.",
+  "vi": "Cùng giá thì chọn thứ tốt hơn."
+ },
+ "proverb:9": {
+  "en": "Someone who has risen forgets their humble past and acts arrogant.",
+  "vi": "Người khá lên quên thời khó khăn trước kia mà ra vẻ ta đây."
+ },
+ "proverb:10": {
+  "en": "Something that doesn't suit its wearer or setting — like a pearl before swine.",
+  "vi": "Đồ vật hay trang phục không hợp với người hay hoàn cảnh."
+ },
+ "proverb:11": {
+  "en": "Outwardly one way, inwardly another; two-faced and insincere.",
+  "vi": "Bề ngoài khác bên trong; giả tạo, miệng nam mô bụng một bồ dao găm."
+ },
+ "proverb:12": {
+  "en": "A hopeless fight you can't possibly win — like hitting a rock with an egg.",
+  "vi": "Việc không thể thắng nổi — lấy trứng chọi đá."
+ },
+ "proverb:13": {
+  "en": "The weak get hurt when the powerful fight — when elephants fight, the grass suffers.",
+  "vi": "Kẻ yếu bị thiệt khi kẻ mạnh đánh nhau — trâu bò húc nhau ruồi muỗi chết."
+ },
+ "proverb:14": {
+  "en": "Hard work and hardship eventually lead to good results.",
+  "vi": "Chịu khó vất vả rồi sẽ có kết quả tốt — khổ tận cam lai."
+ },
+ "proverb:15": {
+  "en": "A tower built with devotion won't collapse; sincere effort always pays off.",
+  "vi": "Dốc lòng nỗ lực thì chắc chắn sẽ có kết quả."
+ },
+ "proverb:16": {
+  "en": "Gradually spending away savings one bit at a time.",
+  "vi": "Tiêu dần từng chút số của cải tích cóp được."
+ },
+ "proverb:17": {
+  "en": "Even good things are worthless until put to proper use.",
+  "vi": "Có của tốt đến mấy cũng phải biết dùng mới có giá trị."
+ },
+ "proverb:18": {
+  "en": "An unexpected windfall or piece of good luck.",
+  "vi": "Món lộc hay may mắn bất ngờ đến — từ trên trời rơi xuống."
+ },
+ "proverb:19": {
+  "en": "Don't meddle in others' affairs; just watch and take the benefits.",
+  "vi": "Đừng xen vào việc người khác, cứ đứng xem rồi hưởng lợi."
+ },
+ "proverb:20": {
+  "en": "Something appealing but out of reach — pie in the sky.",
+  "vi": "Thứ ưng ý nhưng không thể có được — bánh vẽ."
+ },
+ "proverb:21": {
+  "en": "Someone already caught and unable to escape.",
+  "vi": "Kẻ đã sa lưới, bị bắt và không thể thoát."
+ },
+ "proverb:22": {
+  "en": "Making a small matter worse by needless meddling.",
+  "vi": "Việc nhỏ làm thành to, tự chuốc rắc rối — vẽ rắn thêm chân."
+ },
+ "proverb:23": {
+  "en": "Even beautiful sights can't be enjoyed on an empty stomach.",
+  "vi": "Có bụng no mới thưởng thức được cảnh đẹp — có thực mới vực được đạo."
+ },
+ "proverb:24": {
+  "en": "You only know who is better by actually testing it — The proof of the pudding is in the eating.",
+  "vi": "Phải thử thực tế mới biết ai giỏi ai kém — Thực tiễn mới kiểm chứng được."
+ },
+ "proverb:25": {
+  "en": "Putting a good spin on something bad; the interpretation is better than the dream.",
+  "vi": "Giải thích điều không tốt thành điều tốt; lời giải mộng hay hơn giấc mơ."
+ },
+ "proverb:26": {
+  "en": "Using a similar substitute when the right thing is unavailable — Any port in a storm.",
+  "vi": "Dùng thứ tương tự thay thế khi không có thứ cần — Không có cá thì lấy rau làm trọng."
+ },
+ "proverb:27": {
+  "en": "Gaining two or more benefits from one action — Killing two birds with one stone.",
+  "vi": "Làm một việc mà được hai lợi ích trở lên — Một mũi tên trúng hai đích."
+ },
+ "proverb:28": {
+  "en": "Others' things look better and their work easier — The grass is always greener on the other side.",
+  "vi": "Đồ của người khác trông tốt hơn, việc của họ trông dễ hơn — Đứng núi này trông núi nọ."
+ },
+ "proverb:29": {
+  "en": "Being completely illiterate or ignorant, unable to recognize even the simplest letter.",
+  "vi": "Hoàn toàn dốt nát, đến chữ đơn giản nhất cũng không biết — Một chữ bẻ đôi không biết."
+ },
+ "proverb:30": {
+  "en": "The lost opportunity seems better than what you have — The one that got away is always bigger.",
+  "vi": "Thứ đã bỏ lỡ có vẻ tốt hơn thứ đang có — Cá mất là cá to."
+ },
+ "proverb:31": {
+  "en": "Something extremely easy — A piece of cake.",
+  "vi": "Việc cực kỳ dễ dàng — Dễ như ăn bánh, dễ như trở bàn tay."
+ },
+ "proverb:32": {
+  "en": "Trying to harm others but ending up harming yourself — Cutting off your nose to spite your face.",
+  "vi": "Định hại người khác nhưng lại tự chuốc hại vào mình — Há miệng chờ sung, ngậm máu phun người thì dơ miệng mình."
+ },
+ "proverb:33": {
+  "en": "Good for both sides; a win-win situation.",
+  "vi": "Cả hai bên đều có lợi — Đôi bên cùng có lợi."
+ },
+ "proverb:34": {
+  "en": "Ruining a job that is nearly finished — Spoiling the broth at the last minute.",
+  "vi": "Phá hỏng việc gần hoàn thành — Công cốc sát ngày thành công."
+ },
+ "proverb:35": {
+  "en": "Going in circles without making progress — Like a hamster on a wheel.",
+  "vi": "Cứ quanh quẩn tại chỗ, không tiến bộ — Như chuột chạy trong bánh xe."
+ },
+ "proverb:36": {
+  "en": "Urging someone on who is already doing their best — Flogging a willing horse.",
+  "vi": "Thúc ép thêm người đang hết sức cố gắng — Đã chạy còn quất roi."
+ },
+ "proverb:37": {
+  "en": "Being left helpless after your efforts fail, like a dog watching a chicken fly out of reach.",
+  "vi": "Công sức thất bại, đành bó tay bất lực — Như chó đuổi gà nhìn lên mái nhà."
+ },
+ "proverb:38": {
+  "en": "Gaining two benefits from one job; or, doing things in the wrong order with no reward.",
+  "vi": "Làm một việc được hai lợi ích; hoặc làm sai thứ tự nên chẳng được gì — Nạo mương bắt tôm."
+ },
+ "proverb:39": {
+  "en": "Comparing things that are all about equal, so comparison is pointless — six of one, half a dozen of the other.",
+  "vi": "So sánh những thứ ngang ngửa nhau thì vô ích — tám lạng nửa cân."
+ },
+ "proverb:40": {
+  "en": "Even if you know a task well, be careful — look before you leap.",
+  "vi": "Dù việc đã quen thuộc vẫn phải cẩn thận kỹ lưỡng — cẩn tắc vô áy náy."
+ },
+ "proverb:41": {
+  "en": "Giving a little and getting back many times more in return.",
+  "vi": "Cho đi một ít nhưng nhận lại nhiều gấp bội."
+ },
+ "proverb:42": {
+  "en": "What is closest to you is often the hardest to notice — it's darkest under the lamp.",
+  "vi": "Cái ở gần mình nhất lại khó nhận ra nhất — đèn nhà ai nấy rạng, nhưng dưới chân đèn lại tối."
+ },
+ "proverb:43": {
+  "en": "Something very easy or completely certain — a piece of cake.",
+  "vi": "Việc rất dễ dàng hoặc hoàn toàn chắc chắn — dễ như ăn kẹo."
+ },
+ "proverb:44": {
+  "en": "Taking advantage of a lucky chance to do something you wanted to do — kill two birds with one stone.",
+  "vi": "Nhân cơ hội may mắn tình cờ mà làm luôn việc mình định làm — một công đôi việc."
+ },
+ "proverb:45": {
+  "en": "There is always someone even more skilled, so don't show off.",
+  "vi": "Luôn có người giỏi hơn người giỏi, nên đừng khoe khoang — núi cao còn có núi cao hơn."
+ },
+ "proverb:46": {
+  "en": "A sudden, unexpected disaster — a bolt from the blue.",
+  "vi": "Tai họa bất ngờ ập đến không ai ngờ — sét đánh giữa trời quang."
+ },
+ "proverb:47": {
+  "en": "Ordinary-sounding words carry a hidden, pointed meaning.",
+  "vi": "Lời nói bình thường nhưng ẩn chứa ý sâu xa, ngầm ý châm chích."
+ },
+ "proverb:48": {
+  "en": "With the right words, you can settle even a huge debt or difficulty.",
+  "vi": "Chỉ cần nói khéo là giải quyết được cả việc khó — lời nói chẳng mất tiền mua."
+ },
+ "proverb:49": {
+  "en": "The method doesn't matter as long as the goal is achieved — all roads lead to Rome.",
+  "vi": "Không quan trọng cách làm, miễn đạt được mục đích — đường nào cũng đến La Mã."
+ },
+ "proverb:50": {
+  "en": "Not knowing anything keeps your mind at ease — ignorance is bliss.",
+  "vi": "Không biết gì thì lòng lại thanh thản — không biết thì không lo."
+ },
+ "proverb:51": {
+  "en": "No news is as good as good news — no news is good news.",
+  "vi": "Không có tin tức chính là tin vui — không tin tức là tin tốt."
+ },
+ "proverb:52": {
+  "en": "In desperate times, people grab at anything — a drowning man clutches at straws.",
+  "vi": "Lúc nguy cấp thì người ta víu vào bất cứ thứ gì — chết đuối vớ được cọc."
+ },
+ "proverb:53": {
+  "en": "Be extra kind to someone you dislike so they cause no trouble later.",
+  "vi": "Càng ghét ai càng đối xử tốt với họ để tránh hậu họa về sau."
+ },
+ "proverb:54": {
+  "en": "Being hurt by someone you trusted — stabbed in the back.",
+  "vi": "Bị chính người mình tin tưởng phản bội và làm hại — bị đâm sau lưng."
+ },
+ "proverb:55": {
+  "en": "Effort that yields no result — like pouring water into a bottomless jar.",
+  "vi": "Cố gắng mà chẳng có kết quả — như đổ nước vào cái chum thủng đáy."
+ },
+ "proverb:56": {
+  "en": "Two people are closely bound and always go together — like needle and thread.",
+  "vi": "Hai người gắn bó mật thiết, đi đâu cũng có nhau — như kim với chỉ."
+ },
+ "proverb:57": {
+  "en": "In an extremely precarious situation — like a candle in the wind.",
+  "vi": "Đang ở trong tình thế vô cùng nguy hiểm — như ngọn đèn trước gió."
+ },
+ "proverb:58": {
+  "en": "Words spread fast, so be careful what you say.",
+  "vi": "Lời nói lan đi rất nhanh, nên phải cẩn thận khi nói."
+ },
+ "proverb:59": {
+  "en": "The incidental part is bigger than the main thing — the tail wagging the dog.",
+  "vi": "Phần phụ lại lớn hơn hoặc nhiều hơn phần chính — chủ khách đảo ngược."
+ },
+ "proverb:60": {
+  "en": "Even an easy task is easier with cooperation — many hands make light work.",
+  "vi": "Việc dễ mà hợp sức thì càng dễ hơn — nhiều tay thì việc nhẹ."
+ },
+ "proverb:61": {
+  "en": "Harming someone, then pretending to help them — a cunning act.",
+  "vi": "Làm hại người rồi lại giả vờ cứu giúp — hành động xảo quyệt."
+ },
+ "proverb:62": {
+  "en": "Good-looking things taste good too; good substance deserves good presentation.",
+  "vi": "Cái đẹp mắt thì ăn cũng ngon; bên trong tốt thì vẻ ngoài cũng nên đẹp."
+ },
+ "proverb:63": {
+  "en": "No child can match a parent's love, however devoted the child is.",
+  "vi": "Con cái dù hiếu thảo mấy cũng không bằng tình thương của cha mẹ."
+ },
+ "proverb:64": {
+  "en": "After hardship, one becomes stronger — after rain, the ground hardens.",
+  "vi": "Sau thử thách con người trở nên vững vàng hơn — sau mưa trời lại sáng."
+ },
+ "proverb:65": {
+  "en": "You reap what you sow; results match the effort made.",
+  "vi": "Gieo gì gặt nấy; kết quả tương xứng với nỗ lực."
+ },
+ "proverb:66": {
+  "en": "Too many cooks spoil the broth; too many opinions derail the work.",
+  "vi": "Lắm thầy nhiều ma; nhiều người ai cũng cố chấp thì việc khó thành."
+ },
+ "proverb:67": {
+  "en": "Being jealous instead of happy when others succeed — green with envy.",
+  "vi": "Không vui mà ghen tị khi người khác thành công — ghen ăn tức ở."
+ },
+ "proverb:68": {
+  "en": "Things keep getting harder — out of the frying pan into the fire.",
+  "vi": "Càng đi càng gặp khó khăn hơn — khó khăn chồng chất."
+ },
+ "proverb:69": {
+  "en": "However hard life gets, people always find a way to eat and survive.",
+  "vi": "Dù khó khăn đến đâu, con người vẫn tìm được cách kiếm sống."
+ },
+ "proverb:70": {
+  "en": "A trivial matter or tiny amount — a drop in the ocean.",
+  "vi": "Việc rất nhỏ nhặt hoặc số lượng ít ỏi — muối bỏ biển."
+ },
+ "proverb:71": {
+  "en": "Stay long in a field and you gain knowledge — practice makes perfect.",
+  "vi": "Ở lâu trong một lĩnh vực thì sẽ có kiến thức và kinh nghiệm — gần mực thì đen."
+ },
+ "proverb:72": {
+  "en": "Searching vaguely for someone without name or address — a needle in a haystack.",
+  "vi": "Tìm người mà không biết tên hay địa chỉ — như mò kim đáy bể."
+ },
+ "proverb:73": {
+  "en": "An unskilled person acting recklessly causes serious harm — a little knowledge is dangerous.",
+  "vi": "Kẻ bất tài làm bừa gây ra hậu quả nghiêm trọng — một biết nửa vời gây họa."
+ },
+ "proverb:74": {
+  "en": "Habits formed in childhood last a lifetime — old habits die hard.",
+  "vi": "Thói quen từ nhỏ khó bỏ đến già — nết đánh chết không chừa."
+ },
+ "proverb:75": {
+  "en": "Time heals even the most painful wounds — time heals all wounds.",
+  "vi": "Thời gian chữa lành mọi nỗi đau — thời gian là liều thuốc tốt nhất."
+ },
+ "proverb:76": {
+  "en": "Achieving success purely by accident — blind luck.",
+  "vi": "Vô tình đạt được thành công nhờ may mắn — vớ được của may."
+ },
+ "proverb:77": {
+  "en": "Regret after the damage is done is useless — closing the barn door after the horse has bolted.",
+  "vi": "Việc đã hỏng rồi mới hối tiếc thì vô ích — mất bò mới lo làm chuồng."
+ },
+ "proverb:78": {
+  "en": "Something hyped up turns out to have little substance — all talk, little reward.",
+  "vi": "Nổi tiếng ầm ĩ nhưng thực chất chẳng có gì — tiếng đồn to hơn thực tế."
+ },
+ "proverb:79": {
+  "en": "Looks impressive outside but is empty inside — all show and no substance.",
+  "vi": "Bề ngoài đẹp đẽ nhưng bên trong trống rỗng — vỏ ngoài hào nhoáng."
+ },
+ "proverb:80": {
+  "en": "A constant worry that nags at the mind — a thorn in one's side.",
+  "vi": "Chuyện luôn canh cánh trong lòng — cái gai trong mắt."
+ },
+ "proverb:81": {
+  "en": "Teaching someone who cannot or will not understand — talking to a brick wall.",
+  "vi": "Dạy mãi mà người ta không hiểu hay không có tác dụng — đàn gảy tai trâu."
+ },
+ "proverb:82": {
+  "en": "Once you decide to do something, act at once without hesitating — strike while the iron is hot.",
+  "vi": "Đã định làm thì hành động ngay, đừng do dự — việc hôm nay chớ để ngày mai."
+ },
+ "proverb:83": {
+  "en": "Touching only the surface without knowing the substance — skimming the surface.",
+  "vi": "Chỉ chạm vào bề ngoài mà không hiểu nội dung — cưỡi ngựa xem hoa."
+ },
+ "proverb:84": {
+  "en": "Things going smoothly as planned — like a ship sailing with a fair wind.",
+  "vi": "Mọi việc diễn ra thuận lợi như ý — như thuận buồm xuôi gió."
+ },
+ "proverb:85": {
+  "en": "Time is precious — time is money.",
+  "vi": "Thời gian rất quý giá — thời gian là vàng bạc."
+ },
+ "proverb:86": {
+  "en": "Time heals all wounds; even painful things are forgotten as time passes.",
+  "vi": "Thời gian là liều thuốc chữa lành; nỗi đau rồi sẽ nguôi theo thời gian."
+ },
+ "proverb:87": {
+  "en": "Well begun is half done; starting makes finishing likely.",
+  "vi": "Bắt đầu là đã xong một nửa; có khởi đầu thì dễ hoàn thành."
+ },
+ "proverb:88": {
+  "en": "Very easy — a piece of cake.",
+  "vi": "Việc cực kỳ dễ dàng — dễ như ăn cháo nguội."
+ },
+ "proverb:89": {
+  "en": "Cheap things tend to be poor quality — you get what you pay for.",
+  "vi": "Đồ rẻ thường chất lượng kém — tiền nào của nấy."
+ },
+ "proverb:90": {
+  "en": "A little knowledge can be a worry; inaccurate knowledge causes anxiety.",
+  "vi": "Biết nửa vời lại thành nỗi lo — hiểu biết không chính xác gây phiền muộn."
+ },
+ "proverb:91": {
+  "en": "Even on a familiar road, ask the way — be careful even with what you know.",
+  "vi": "Đường quen cũng nên hỏi — việc đã biết rõ vẫn phải cẩn thận."
+ },
+ "proverb:92": {
+  "en": "There's no smoke without fire; nothing happens without a cause.",
+  "vi": "Không có lửa làm sao có khói — không có nguyên nhân thì không có kết quả."
+ },
+ "proverb:93": {
+  "en": "A great relief after being freed from a trouble — like a bad tooth pulled out.",
+  "vi": "Nhẹ nhõm khi thoát khỏi chuyện phiền phức — như nhổ được chiếc răng đau."
+ },
+ "proverb:94": {
+  "en": "A temporary fix that ends up making things worse.",
+  "vi": "Giải pháp tạm thời rồi tình hình lại tệ hơn — như đổ nước ấm lên chân đóng băng."
+ },
+ "proverb:95": {
+  "en": "If at first you don't succeed, try again — persistence pays off.",
+  "vi": "Cố gắng nhiều lần sẽ thành công — có công mài sắt có ngày nên kim."
+ },
+ "proverb:96": {
+  "en": "Don't covet what is beyond your ability from the start.",
+  "vi": "Đừng tham muốn những việc ngoài khả năng ngay từ đầu — đừng mơ cành cao."
+ },
+ "proverb:97": {
+  "en": "A small flaw in something excellent — a fly in the ointment.",
+  "vi": "Một khuyết điểm nhỏ trong thứ rất tốt đẹp — ngọc còn có vết."
+ },
+ "proverb:98": {
+  "en": "A person with a narrow outlook — a frog in a well.",
+  "vi": "Người hiểu biết hạn hẹp — ếch ngồi đáy giếng."
+ },
+ "proverb:114": {
+  "en": "You reap what you sow; every result follows from its cause.",
+  "vi": "Gieo nhân nào gặt quả nấy; mọi kết quả đều do nguyên nhân tương ứng."
+ },
+ "proverb:115": {
+  "en": "Many a little makes a mickle; tiny things add up to something big.",
+  "vi": "Tích tiểu thành đại; những thứ nhỏ góp lại sẽ thành điều lớn."
+ },
+ "proverb:116": {
+  "en": "To see only one side of a matter and miss the other.",
+  "vi": "Chỉ biết một mà không biết hai; chỉ thấy một mặt của vấn đề."
+ },
+ "proverb:117": {
+  "en": "From seeing one part, you can infer the whole.",
+  "vi": "Nhìn một biết mười; thấy một phần mà suy ra được toàn bộ."
+ },
+ "proverb:118": {
+  "en": "God helps those who help themselves; one's own effort is key.",
+  "vi": "Trời giúp người biết tự giúp mình; nỗ lực của bản thân là quan trọng."
+ },
+ "proverb:119": {
+  "en": "Extremely difficult, like picking a star from the sky.",
+  "vi": "Việc cực kỳ khó, như hái sao trên trời."
+ },
+ "proverb:120": {
+  "en": "To devote oneself to one thing and see it through to the end.",
+  "vi": "Chuyên tâm vào một việc và theo đuổi đến cùng."
+ },
+ "proverb:121": {
+  "en": "Speak of the devil; don't gossip, or the person appears just as you talk.",
+  "vi": "Nhắc Tào Tháo, Tào Tháo đến; đừng nói xấu người khác, hoặc người đó bất ngờ xuất hiện."
+ },
+ "news:1": {
+  "en": "A person's influence; their opinion has an effect on something.",
+  "vi": "Sức ảnh hưởng của một người; ý kiến của họ tác động đến việc khác."
+ },
+ "news:2": {
+  "en": "The bubble bursts; temporary, inflated, negative things disappear.",
+  "vi": "Bong bóng xẹp đi; những thứ nhất thời, phù phiếm biến mất."
+ },
+ "news:3": {
+  "en": "To stretch and slowly become active again.",
+  "vi": "Vươn vai thức dậy; dần dần hoạt động trở lại."
+ },
+ "news:4": {
+  "en": "To follow one after another in a chain reaction.",
+  "vi": "Nối đuôi nhau; xảy ra liên tiếp như phản ứng dây chuyền."
+ },
+ "news:5": {
+  "en": "Age is just a number; age doesn't matter.",
+  "vi": "Tuổi tác chỉ là con số; tuổi không quan trọng."
+ },
+ "news:6": {
+  "en": "In the blink of an eye; in a very short moment.",
+  "vi": "Trong nháy mắt; trong khoảng thời gian rất ngắn."
+ },
+ "news:7": {
+  "en": "To lower one's standards or expectations.",
+  "vi": "Hạ thấp tiêu chuẩn; giảm kỳ vọng."
+ },
+ "proverb:99": {
+  "en": "Doing something unwanted because you have no choice — like 'biting the bullet'.",
+  "vi": "Bất đắc dĩ phải làm việc mình không muốn — như 'nuốt đắng cắn răng'."
+ },
+ "proverb:100": {
+  "en": "You can't be nasty to someone who treats you kindly.",
+  "vi": "Không thể đối xử tệ với người đối xử tử tế với mình."
+ },
+ "proverb:101": {
+  "en": "Enjoying honors thanks to someone else and feeling proud of it — riding on another's coattails.",
+  "vi": "Nhờ ơn người khác mà được trọng đãi rồi lấy làm tự hào — mượn oai người."
+ },
+ "proverb:102": {
+  "en": "Even experts make mistakes — even Homer nods.",
+  "vi": "Người giỏi đến mấy cũng có lúc sai sót — nghĩa là 'cả khỉ cũng có lúc rơi khỏi cây'."
+ },
+ "proverb:103": {
+  "en": "When superiors set a good example, subordinates follow — the fish rots from the head.",
+  "vi": "Cấp trên làm tốt thì cấp dưới cũng noi theo — 'thượng bất chính, hạ tắc loạn'."
+ },
+ "proverb:104": {
+  "en": "People can't solve their own problems and need others' help — physician, heal thyself.",
+  "vi": "Việc của chính mình khó tự giải quyết, cần người khác giúp — 'thầy thuốc không tự chữa bệnh mình'."
+ },
+ "proverb:105": {
+  "en": "Advice or criticism is unpleasant to hear but beneficial if accepted.",
+  "vi": "Lời khuyên hay lời phê bình khó nghe nhưng tiếp thu thì có lợi — 'thuốc đắng dã tật'."
+ },
+ "proverb:106": {
+  "en": "The fault is so clear that there is no room for excuses.",
+  "vi": "Lỗi quá rõ ràng nên không còn chỗ để biện minh — có mười cái miệng cũng không nói được gì."
+ },
+ "proverb:107": {
+  "en": "A small person can be more talented than a big one — small but mighty.",
+  "vi": "Người nhỏ bé có thể tài giỏi hơn người to lớn — 'ớt nhỏ cay hơn'."
+ },
+ "proverb:108": {
+  "en": "Knowing only one part yet acting as if you know the whole, or discussing big matters without ability — blind men and the elephant.",
+  "vi": "Chỉ biết một phần mà tưởng biết cả, hoặc bàn việc lớn khi thiếu năng lực — 'thầy bói xem voi'."
+ },
+ "proverb:109": {
+  "en": "Even something poor looks good if you like it — beauty is in the eye of the beholder.",
+  "vi": "Thứ không tốt mà mình thích thì vẫn thấy đẹp — 'tình nhân nhìn ra tây thi'."
+ },
+ "proverb:110": {
+  "en": "Unable to protest where you were wronged, you vent anger elsewhere — kick the dog.",
+  "vi": "Bị ức hiếp nơi này không dám nói, lại trút giận ở nơi khác — 'giận cá chém thớt'."
+ },
+ "proverb:111": {
+  "en": "Sincere effort moves even heaven — hard things work out well.",
+  "vi": "Hết lòng hết sức thì việc khó cũng thành — 'có công mài sắt có ngày nên kim'."
+ },
+ "proverb:112": {
+  "en": "A journey of a thousand miles begins with a single step; the importance of starting.",
+  "vi": "Đường ngàn dặm cũng bắt đầu từ một bước chân — tầm quan trọng của việc bắt đầu."
+ },
+ "proverb:113": {
+  "en": "Doing something you didn't want to do because you were dragged along by others.",
+  "vi": "Không muốn làm nhưng bị người khác lôi kéo nên làm theo — 'theo bạn đi Gangnam'."
+ },
+ "news:8": {
+  "en": "To become popular again; to make a comeback.",
+  "vi": "Lại được yêu thích, nổi tiếng trở lại."
+ },
+ "news:9": {
+  "en": "To be reborn through recycling; to be reused in a new form.",
+  "vi": "Được tái chế, tái sử dụng và có đời sống mới."
+ },
+ "news:10": {
+  "en": "Untimely; happening at the wrong time.",
+  "vi": "Trái mùa, không đúng lúc."
+ },
+ "news:11": {
+  "en": "Too early; premature.",
+  "vi": "Còn quá sớm, chưa đến lúc."
+ },
+ "news:12": {
+  "en": "To put heads together; to discuss and think something through jointly.",
+  "vi": "Chụm đầu bàn bạc cùng nhau."
+ },
+ "news:13": {
+  "en": "Voices are raised; many opinions or demands are being made.",
+  "vi": "Có nhiều ý kiến, yêu cầu được nêu lên mạnh mẽ."
+ },
+ "news:14": {
+  "en": "To suffer from strain; to be hit by a negative situation.",
+  "vi": "Chịu khổ sở, gặp khó khăn vì tình huống tiêu cực."
+ },
+ "news:15": {
+  "en": "To feel light and refreshed in body or mind.",
+  "vi": "Cơ thể hoặc tâm trạng nhẹ nhõm, sảng khoái."
+ },
+ "news:16": {
+  "en": "To be like a fish in water; to find the right moment and place.",
+  "vi": "Như cá gặp nước — gặp đúng thời cơ, đúng chỗ."
+ },
+ "news:17": {
+  "en": "To step up the pace; to put extra effort into a task.",
+  "vi": "Tăng tốc, đẩy mạnh thêm sức lực cho việc gì."
+ },
+ "news:18": {
+  "en": "The response is hot; it is very popular.",
+  "vi": "Phản ứng sôi nổi, rất được ưa chuộng."
+ },
+ "news:19": {
+  "en": "To roll up one's sleeves; to step forward actively.",
+  "vi": "Xắn tay áo vào cuộc, tích cực đứng ra làm."
+ },
+ "news:20": {
+  "en": "To walk with a light step; to feel light-hearted.",
+  "vi": "Bước chân nhẹ nhàng, lòng thanh thản."
+ },
+ "news:21": {
+  "en": "To be tied down; unable to move or take action.",
+  "vi": "Bị trói chân, không thể di chuyển hay hoạt động."
+ },
+ "news:22": {
+  "en": "A war of the stars; competition among star celebrities.",
+  "vi": "Cuộc chiến của những ngôi sao — sự cạnh tranh giữa các ngôi sao."
+ },
+ "news:23": {
+  "en": "Spring breeze: a feeling of positive expectation and hope.",
+  "vi": "Gió xuân: cảm giác kỳ vọng tích cực, đầy hy vọng."
+ },
+ "news:24": {
+  "en": "When a floodgate bursts: orders or demands pour in all at once.",
+  "vi": "Như vỡ đê: đơn hàng, yêu cầu đổ về cùng một lúc."
+ },
+ "news:25": {
+  "en": "To catch fire: competition becomes intense.",
+  "vi": "Bùng cháy: sự cạnh tranh trở nên gay gắt."
+ },
+ "news:26": {
+  "en": "Red light: a warning sign of negative prospects.",
+  "vi": "Đèn đỏ: dấu hiệu cảnh báo, dự báo tiêu cực."
+ },
+ "news:27": {
+  "en": "Green light: a sign of positive prospects.",
+  "vi": "Đèn xanh: dấu hiệu tích cực, dự báo tốt đẹp."
+ },
+ "news:28": {
+  "en": "To grow horns: to get angry.",
+  "vi": "Mọc sừng: nổi giận, tức giận."
+ },
+ "news:29": {
+  "en": "A new wind: a fresh atmosphere or change.",
+  "vi": "Làn gió mới: bầu không khí mới, sự thay đổi mới."
+ },
+ "news:30": {
+  "en": "To join hands: to team up and work together.",
+  "vi": "Bắt tay: hợp lực cùng làm việc với nhau."
+ },
+ "news:31": {
+  "en": "Bitter words: honest advice or criticism.",
+  "vi": "Lời đắng: lời khuyên, lời góp ý thẳng thắn."
+ },
+ "news:32": {
+  "en": "To freeze over: to turn cold, or (a market) to become gloomy and stagnant.",
+  "vi": "Đóng băng: trở nên lạnh lẽo, hoặc (thị trường) ảm đạm, trì trệ."
+ },
+ "news:33": {
+  "en": "Dead of winter: severe cold, or a very grave situation.",
+  "vi": "Giữa mùa đông: rét buốt, hoặc tình hình rất nghiêm trọng."
+ },
+ "news:34": {
+  "en": "Opinions diverge: people do not agree.",
+  "vi": "Ý kiến trái chiều: mọi người không đồng quan điểm."
+ },
+ "news:35": {
+  "en": "To burn with determination: to have a fiery will.",
+  "vi": "Đốt cháy ý chí: có quyết tâm mãnh liệt."
+ },
+ "news:36": {
+  "en": "Enough now: a call to stop.",
+  "vi": "Đủ rồi: lời kêu gọi dừng lại."
+ },
+ "news:37": {
+  "en": "Into the arms of nature: returning to nature.",
+  "vi": "Về với lòng thiên nhiên: trở về với thiên nhiên."
+ },
+ "news:38": {
+  "en": "A shift to a younger generation; generational change in leadership.",
+  "vi": "Sự thay đổi thế hệ, chuyển giao sang lớp người trẻ."
+ },
+ "news:39": {
+  "en": "Marking time; making no progress and staying in the same place.",
+  "vi": "Giậm chân tại chỗ, không tiến triển."
+ },
+ "news:40": {
+  "en": "To follow one after another; to appear in succession.",
+  "vi": "Nối tiếp nhau xuất hiện, liên tiếp xảy ra."
+ },
+ "news:41": {
+  "en": "A joyful scream; being overwhelmed by happy, busy work.",
+  "vi": "Tiếng kêu sung sướng; bận rộn đến mức vừa vui vừa mệt."
+ },
+ "news:42": {
+  "en": "Hell subway; a hopelessly crowded subway during rush hour.",
+  "vi": "Tàu điện ngầm địa ngục; tàu quá đông giờ cao điểm."
+ },
+ "news:43": {
+  "en": "Stepping stones; something that links two sides or serves as a bridge.",
+  "vi": "Cầu đá bước; vai trò cầu nối giữa hai bên."
+ },
+ "news:44": {
+  "en": "Cold water; a damper that dashes hopes and causes disappointment.",
+  "vi": "Dội gáo nước lạnh; làm thất vọng, mất hứng."
+ },
+ "news:45": {
+  "en": "Cold rice; being treated as unimportant or neglected.",
+  "vi": "Cơm nguội; bị coi thường, không được coi trọng."
+ },
+ "news:46": {
+  "en": "To break ground; to start a construction project.",
+  "vi": "Xúc nhát xẻng đầu tiên; khởi công xây dựng."
+ },
+ "news:47": {
+  "en": "Countdown; a situation where time is running out.",
+  "vi": "Đếm ngược; tình thế gấp rút, sắp hết thời gian."
+ },
+ "news:48": {
+  "en": "Right under one's nose; the near future that is about to arrive.",
+  "vi": "Ngay trước mũi; sắp đến rất gần."
+ },
+ "news:49": {
+  "en": "To hit home; to be felt directly and personally.",
+  "vi": "Cảm nhận trực tiếp, chạm đến bản thân."
+ },
+ "news:50": {
+  "en": "Picking a star from the sky; something extremely difficult.",
+  "vi": "Hái sao trên trời; việc cực kỳ khó khăn."
+ },
+ "news:51": {
+  "en": "A sigh; worry and anxiety.",
+  "vi": "Tiếng thở dài; nỗi lo lắng, âu lo."
+ },
+ "news:52": {
+  "en": "To subside; to lose some of its intensity or momentum.",
+  "vi": "Giảm bớt đà; yếu đi, dịu xuống."
+ }
+}

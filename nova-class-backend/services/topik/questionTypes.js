@@ -19,7 +19,14 @@ const QUESTION_TYPES = [
     format: "a short passage of three to five sentences; the four options are statements, and only one is the main idea." },
   { key: "news_headline", label: "Headline", ko: "신문 기사 제목", skill: "reading",
     description: "Choose the headline that matches the article.",
-    format: "a short news-style paragraph; the four options are headlines written in the compact newspaper style (nouns, no endings), and only one summarises the article." },
+    format: "a short news-style paragraph of three or four sentences; the four options are newspaper headlines, and only one summarises the article.",
+    // Real TOPIK headlines are compact noun phrases, not sentences. Without this the model writes full sentences.
+    styleRules: "HEADLINE STYLE (strict, like the real exam): every option is ONE noun phrase of about 8-25 characters. It must NOT end with a verb or a sentence ending (no -다, -요, -ㅂ니다, -았/었다, -는다): end with a noun or a noun form (-기, -함, -화, -성, -세, -률) or with a bare stem as newspapers do. Particles may be dropped. Two facts may be joined with '…' or ','. Use numbers and quotation marks the way newspapers do. Good: '청년 일자리 3만 개 늘어… 지방은 \'구인난\'', '금리 동결에 가계 대출 증가세 주춤', '폭염에 전력 수요 역대 최고'. Bad: '청년 일자리가 3만 개 늘었습니다', '정부가 지원을 확대한다'.",
+    levelNotes: {
+      easy: "Use everyday news topics (weather, sports, school, prices) and common nouns; the wrong headlines are about clearly different things.",
+      medium: "Use society and economy topics; the wrong headlines change one fact (a number, a place or who did it).",
+      hard: "Use abstract topics (economy, policy, environment, science) and Sino-Korean compound nouns. The correct headline must need inference, not repeat the paragraph's own words. Every wrong headline has the SAME compact shape and sounds plausible but distorts exactly one nuance: cause versus result, increase versus decrease, scope (all versus some), or who is affected.",
+    } },
   { key: "notice_sign", label: "Notices & signs", ko: "안내문·표지판", skill: "reading",
     description: "Read a sign or notice and choose what it is for.",
     format: "the text of a short notice, sign or advertisement; the four options say where it would be seen or what it asks people to do." },
@@ -38,6 +45,7 @@ const typeByKey = key => QUESTION_TYPES.find(t => t.key === key) || null;
 const difficultyByKey = key => DIFFICULTIES.find(d => d.key === key) || null;
 
 // What the screen needs: no prompt text, just names.
+// `format` / `styleRules` / `levelNotes` are for the model; the screen only gets names and descriptions.
 const publicOptions = () => ({
   types: QUESTION_TYPES.map(({ key, label, ko, skill, description }) => ({ key, label, ko, skill, description })),
   difficulties: DIFFICULTIES.map(({ key, label }) => ({ key, label })),

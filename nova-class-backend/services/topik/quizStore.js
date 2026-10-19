@@ -1,6 +1,7 @@
-// MySQL storage for the K-Mate TOPIK practice quiz: every attempt, every answer (with the grammar / vocabulary
-// point it tested) and the per-student weakness summary built from them. The tables are created on first use
-// (CREATE TABLE IF NOT EXISTS), so there is no separate migration step; scripts/setup_db.js has the same DDL.
+// MySQL storage for K-Mate TOPIK: the practice quiz (every attempt and answer, with the grammar / vocabulary point
+// it tested), the exam-mode results synced from Thine's exam service (see examSync.js), and ONE weakness profile per
+// student built from both. The tables are created on first use (CREATE TABLE IF NOT EXISTS), so there is no separate
+// migration step; scripts/setup_db.js has the same DDL.
 const TABLES = [
   `CREATE TABLE IF NOT EXISTS topik_quiz_attempts (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -32,6 +33,53 @@ const TABLES = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_weakness (user_id, weakness),
     INDEX idx_attempt (attempt_id)
+  )`,
+  // Exam mode (Reading / Listening / Writing): one row per graded section, one per question
+  `CREATE TABLE IF NOT EXISTS topik_exam_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    exam_paper_id VARCHAR(64) NOT NULL,
+    skill_area VARCHAR(20) NOT NULL,
+    total_questions INT NOT NULL DEFAULT 0,
+    correct_count INT NOT NULL DEFAULT 0,
+    total_score DOUBLE NOT NULL DEFAULT 0,
+    max_score DOUBLE NOT NULL DEFAULT 0,
+    started_at DATETIME NULL,
+    completed_at DATETIME NULL,
+    synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_exam_section (user_id, exam_paper_id, skill_area)
+  )`,
+  `CREATE TABLE IF NOT EXISTS topik_exam_answers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id INT NOT NULL,
+    user_id INT NOT NULL,
+    skill_area VARCHAR(20) NOT NULL,
+    question_id VARCHAR(64) NOT NULL,
+    question_type VARCHAR(50) NOT NULL,
+    difficulty VARCHAR(20),
+    user_answer TEXT,
+    correct_answer TEXT,
+    is_correct TINYINT(1) NOT NULL,
+    points_earned DOUBLE NOT NULL DEFAULT 0,
+    points_possible DOUBLE NOT NULL DEFAULT 0,
+    answered_at DATETIME NULL,
+    INDEX idx_user_type (user_id, skill_area, question_type),
+    INDEX idx_session (session_id)
+  )`,
+  // The student's weak points from quiz practice and from exams, side by side
+  `CREATE TABLE IF NOT EXISTS topik_weakness_profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    source ENUM('quiz','exam') NOT NULL,
+    skill_area VARCHAR(20) NOT NULL DEFAULT '',
+    weakness VARCHAR(120) NOT NULL,
+    attempts INT NOT NULL,
+    correct_count INT NOT NULL,
+    accuracy DOUBLE NOT NULL,
+    last_seen DATETIME NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_profile (user_id, source, skill_area, weakness),
+    INDEX idx_user (user_id)
   )`,
 ];
 
@@ -72,37 +120,68 @@ async function saveAttempt(pool, { userId, topic, language, kind = "practice", q
       [attemptId, userId, String(r.question || ""), JSON.stringify(r.options || []), r.yourAnswer || "", r.correctAnswer || "", r.isCorrect ? 1 : 0, cleanWeakness(r.weakness) || null, questionType || null, difficulty || null, String(r.explanation || "")]
     );
   }
+  await refreshWeaknessProfiles(pool, userId);
   return { attemptId, correct, score };
 }
 
-// The points a student gets wrong most, with how often they are asked and how well they are answered.
+// Rebuilds the student's weakness profile from everything stored: quiz answers grouped by the point they tested,
+// exam answers grouped by section and question type. Cheap (a few hundred rows), so it simply starts over each time.
+async function refreshWeaknessProfiles(pool, userId) {
+  await ensureTables(pool);
+  await pool.query("DELETE FROM topik_weakness_profiles WHERE user_id = ?", [userId]);
+  await pool.query(
+    `INSERT INTO topik_weakness_profiles (user_id, source, skill_area, weakness, attempts, correct_count, accuracy, last_seen)
+     SELECT user_id, 'quiz', '', weakness, COUNT(*), SUM(is_correct), ROUND(SUM(is_correct) / COUNT(*) * 100), MAX(created_at)
+       FROM topik_quiz_answers
+      WHERE user_id = ? AND weakness IS NOT NULL AND weakness <> ''
+      GROUP BY weakness`,
+    [userId]
+  );
+  await pool.query(
+    `INSERT INTO topik_weakness_profiles (user_id, source, skill_area, weakness, attempts, correct_count, accuracy, last_seen)
+     SELECT user_id, 'exam', skill_area, REPLACE(question_type, '_', ' '), COUNT(*), SUM(is_correct), ROUND(SUM(is_correct) / COUNT(*) * 100), MAX(answered_at)
+       FROM topik_exam_answers
+      WHERE user_id = ?
+      GROUP BY skill_area, question_type`,
+    [userId]
+  );
+}
+
+// The points a student gets wrong most, from quiz practice and exams together, with how often they were asked and
+// how well they were answered. `source` says where a point comes from; exam points also carry their skill area.
 async function weaknessSummary(pool, userId, limit = 8) {
   await ensureTables(pool);
   const [rows] = await pool.query(
-    `SELECT weakness, COUNT(*) AS asked, SUM(is_correct = 0) AS wrong, MAX(created_at) AS lastSeen
-       FROM topik_quiz_answers
-      WHERE user_id = ? AND weakness IS NOT NULL AND weakness <> ''
-      GROUP BY weakness
-     HAVING wrong > 0
-      ORDER BY wrong DESC, lastSeen DESC
+    `SELECT source, skill_area, weakness, attempts, correct_count, last_seen
+       FROM topik_weakness_profiles
+      WHERE user_id = ? AND attempts > correct_count
+      ORDER BY (attempts - correct_count) DESC, last_seen DESC
       LIMIT ?`,
     [userId, limit]
   );
-  const [totals] = await pool.query(
+  const [quiz] = await pool.query(
     "SELECT COUNT(*) AS attempts, COALESCE(ROUND(AVG(score)), 0) AS averageScore FROM topik_quiz_attempts WHERE user_id = ?",
     [userId]
   );
+  const [exam] = await pool.query(
+    "SELECT COUNT(*) AS sessions, COALESCE(ROUND(AVG(total_score / NULLIF(max_score, 0) * 100)), 0) AS averageScore FROM topik_exam_sessions WHERE user_id = ?",
+    [userId]
+  );
   return {
-    attempts: Number(totals[0]?.attempts || 0),
-    averageScore: Number(totals[0]?.averageScore || 0),
+    attempts: Number(quiz[0]?.attempts || 0),
+    averageScore: Number(quiz[0]?.averageScore || 0),
+    examSessions: Number(exam[0]?.sessions || 0),
+    examAverage: Number(exam[0]?.averageScore || 0),
     weaknesses: rows.map(r => ({
       weakness: r.weakness,
-      asked: Number(r.asked),
-      wrong: Number(r.wrong),
-      accuracy: Math.round(((Number(r.asked) - Number(r.wrong)) / Number(r.asked)) * 100),
-      lastSeen: r.lastSeen,
+      source: r.source,
+      skillArea: r.skill_area || null,
+      asked: Number(r.attempts),
+      wrong: Number(r.attempts) - Number(r.correct_count),
+      accuracy: Math.round((Number(r.correct_count) / Number(r.attempts)) * 100),
+      lastSeen: r.last_seen,
     })),
   };
 }
 
-module.exports = { ensureTables, saveAttempt, weaknessSummary, cleanWeakness, TABLES };
+module.exports = { ensureTables, saveAttempt, refreshWeaknessProfiles, weaknessSummary, cleanWeakness, TABLES };

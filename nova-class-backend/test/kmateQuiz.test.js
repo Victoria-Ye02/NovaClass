@@ -101,16 +101,37 @@ test("a storage failure never takes the student's result away", async t => {
   assert.equal(res.body.attemptId, null);
 });
 
-test("quizWeaknesses lists the student's most-missed points with their accuracy", async t => {
+test("quizWeaknesses lists quiz and exam weak points together, most-missed first, with where each comes from", async t => {
   const { controller } = load(t, "[]");
   pool.query = async q => {
-    if (/FROM topik_quiz_answers/.test(q)) return [[{ weakness: "피동 표현", asked: 4, wrong: 3, lastSeen: "2026-10-13T10:00:00.000Z" }]];
+    if (/FROM topik_weakness_profiles/.test(q)) return [[
+      { source: "exam", skill_area: "reading", weakness: "long article comprehension", attempts: 16, correct_count: 0, last_seen: "2026-10-13T11:00:00.000Z" },
+      { source: "quiz", skill_area: "", weakness: "피동 표현", attempts: 4, correct_count: 1, last_seen: "2026-10-13T10:00:00.000Z" },
+    ]];
     if (/FROM topik_quiz_attempts/.test(q)) return [[{ attempts: 5, averageScore: 62 }]];
+    if (/FROM topik_exam_sessions/.test(q)) return [[{ sessions: 2, averageScore: 6 }]];
     return [{}];
   };
   const { req, res } = http();
   await controller.quizWeaknesses(req, res);
-  assert.deepEqual(res.body, { attempts: 5, averageScore: 62, weaknesses: [{ weakness: "피동 표현", asked: 4, wrong: 3, accuracy: 25, lastSeen: "2026-10-13T10:00:00.000Z" }] });
+  assert.deepEqual(res.body, {
+    attempts: 5, averageScore: 62, examSessions: 2, examAverage: 6,
+    weaknesses: [
+      { weakness: "long article comprehension", source: "exam", skillArea: "reading", asked: 16, wrong: 16, accuracy: 0, lastSeen: "2026-10-13T11:00:00.000Z" },
+      { weakness: "피동 표현", source: "quiz", skillArea: null, asked: 4, wrong: 3, accuracy: 25, lastSeen: "2026-10-13T10:00:00.000Z" },
+    ],
+  });
+});
+
+test("saving a quiz attempt rebuilds the student's weakness profile (quiz and exam rows)", async t => {
+  const { controller } = load(t, "[]");
+  const sql = [];
+  pool.query = async q => { sql.push(q.replace(/\s+/g, " ")); return /INSERT INTO topik_quiz_attempts/.test(q) ? [{ insertId: 3 }] : [{}]; };
+  const { req, res } = http({ questions: JSON.parse(MODEL_QUESTIONS), answers: ["A", "A"] });
+  await controller.checkQuiz(req, res);
+  assert.ok(sql.some(q => /DELETE FROM topik_weakness_profiles/.test(q)));
+  assert.ok(sql.some(q => /INSERT INTO topik_weakness_profiles .* 'quiz'/.test(q)));
+  assert.ok(sql.some(q => /INSERT INTO topik_weakness_profiles .* 'exam'/.test(q)));
 });
 
 test("quizOptions lists the question types and difficulty levels the screen offers (no prompt text)", async t => {
@@ -168,4 +189,23 @@ test("older tables get the new columns added, and 'already there' is not an erro
   await controller.quizWeaknesses(req, res);
   assert.equal(res.statusCode, 200);
   assert.equal(ddl.filter(q => /^ALTER TABLE topik_quiz_(attempts|answers) ADD COLUMN (question_type|difficulty)/.test(q)).length, 4);
+});
+
+test("Hard headline questions are asked for compact newspaper noun phrases, not sentences", async t => {
+  const { controller, calls } = load(t, MODEL_QUESTIONS);
+  await controller.generateQuiz(http({ topic: "reading", count: 2, type: "news_headline", difficulty: "hard" }).req, http().res);
+  const prompt = calls[0].messages[0].content;
+  assert.match(prompt, /HEADLINE STYLE \(strict/);
+  assert.match(prompt, /ONE noun phrase of about 8-25 characters/);
+  assert.match(prompt, /NOT end with a verb or a sentence ending/);
+  assert.match(prompt, /Good: .*금리 동결에 가계 대출 증가세 주춤/);        // a real-looking example is given
+  assert.match(prompt, /Sino-Korean compound nouns/);                         // the hard-level note
+  assert.match(prompt, /distorts exactly one nuance/);
+
+  await controller.generateQuiz(http({ topic: "reading", count: 2, type: "news_headline", difficulty: "easy" }).req, http().res);
+  assert.match(calls[1].messages[0].content, /everyday news topics/);          // each level has its own note
+  assert.doesNotMatch(calls[1].messages[0].content, /Sino-Korean compound nouns/);
+
+  await controller.generateQuiz(http({ topic: "reading", count: 2, type: "main_idea", difficulty: "hard" }).req, http().res);
+  assert.doesNotMatch(calls[2].messages[0].content, /HEADLINE STYLE/);          // other types are not affected
 });

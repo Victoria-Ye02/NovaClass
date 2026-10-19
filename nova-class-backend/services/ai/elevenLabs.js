@@ -23,11 +23,28 @@ function assertConfigured() {
   throw error;
 }
 
-async function textToSpeech(text, voiceId) {
+// Lectures are pre-generated and replayed, so quality beats first-byte speed:
+// the multilingual v2 model is the most expressive one that still honours
+// pause tags, and the voice settings lean toward warmth and variation.
+const LECTURE_TTS_MODEL_ID = "eleven_multilingual_v2";
+const LECTURE_VOICE_SETTINGS = { stability: 0.4, similarity_boost: 0.8, style: 0.5, use_speaker_boost: true, speed: 0.97 };
+
+// Burmese lectures: eleven_v4 is the first ElevenLabs model that lists Burmese
+// (multilingual_v2 rejects language_code "my"). "Sarah" was picked by ear from
+// a side-by-side of five voices; override with ELEVENLABS_BURMESE_VOICE_ID.
+const BURMESE_LECTURE_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
+const BURMESE_LECTURE_MODEL_ID = "eleven_v4";
+
+async function textToSpeech(text, voiceId, { lecture = false, modelId: modelOverride, languageCode, speed } = {}) {
   assertConfigured();
   const activeVoiceId = voiceId || process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE_ID;
-  const modelId = process.env.ELEVENLABS_TTS_MODEL_ID || DEFAULT_TTS_MODEL_ID;
-  const res = await fetch(`${ELEVENLABS_API_URL}/text-to-speech/${activeVoiceId}?optimize_streaming_latency=3`, {
+  const modelId = modelOverride || (lecture
+    ? (process.env.ELEVENLABS_LECTURE_MODEL_ID || LECTURE_TTS_MODEL_ID)
+    : (process.env.ELEVENLABS_TTS_MODEL_ID || DEFAULT_TTS_MODEL_ID));
+  // optimize_streaming_latency is a first-byte-speed knob for chat replies; the v4
+  // models reject it outright, and lectures are pre-generated so they don't need it.
+  const latencyQuery = lecture ? "" : "?optimize_streaming_latency=3";
+  const res = await fetch(`${ELEVENLABS_API_URL}/text-to-speech/${activeVoiceId}${latencyQuery}`, {
     method: "POST",
     headers: {
       "xi-api-key": process.env.ELEVENLABS_API_KEY,
@@ -37,14 +54,16 @@ async function textToSpeech(text, voiceId) {
     body: JSON.stringify({
       text,
       model_id: modelId,
+      ...(languageCode ? { language_code: languageCode } : {}),
       // Lower stability than the 0.5 default trades a little consistency for
       // more natural pitch/pace variation — 0.5+ reads as flat/robotic,
       // especially for a voice speaking a language it wasn't recorded in.
       // A touch of style plus speaker_boost pushes expressiveness back
       // toward how the source voice actually sounds, rather than an average.
-      voice_settings: { stability: 0.35, similarity_boost: 0.8, style: 0.35, use_speaker_boost: true },
+      voice_settings: lecture ? LECTURE_VOICE_SETTINGS : { stability: 0.35, similarity_boost: 0.8, style: 0.35, use_speaker_boost: true, ...(speed ? { speed } : {}) },
     }),
-    signal: AbortSignal.timeout(20000),
+    // Lectures are long, and eleven_v4 needs ~20 s per minute of speech.
+    signal: AbortSignal.timeout(lecture ? 90000 : 20000),
   });
 
   if (!res.ok) {
@@ -111,4 +130,4 @@ async function speechToText(audio, { filename = "audio.webm", languageCode } = {
   return (data.text || "").trim();
 }
 
-module.exports = { textToSpeech, getSignedUrl, speechToText, DEFAULT_VOICE_ID, DEFAULT_TTS_MODEL_ID };
+module.exports = { BURMESE_LECTURE_VOICE_ID, BURMESE_LECTURE_MODEL_ID, textToSpeech, getSignedUrl, speechToText, DEFAULT_VOICE_ID, DEFAULT_TTS_MODEL_ID };

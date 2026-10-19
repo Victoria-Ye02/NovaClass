@@ -1,0 +1,794 @@
+{
+ "vi": {
+  "units": {
+   "r-11-12": {
+    "sub": "Chọn nội dung phù hợp với đoạn văn ngắn",
+    "tips": [
+     "Lấy các từ khóa (danh từ và số) từ 4 phương án rồi tìm chúng trong đoạn văn.",
+     "Các bẫy thường gặp: thay đổi thời gian (이미 so với 아직), đảo ngược nguyên nhân và kết quả, và các từ mang tính tuyệt đối như 모든 / 항상 (tất cả / luôn luôn) hiếm khi là đáp án đúng."
+    ]
+   },
+   "r-13-15": {
+    "sub": "Sắp xếp lại các câu (가, 나, 다, 라) theo đúng thứ tự",
+    "tips": [
+     "4 phương án thường chỉ có 2 câu đầu tiên khác nhau. Trước hết hãy quyết định xem trong hai câu đó câu nào có thể mở đầu đoạn văn.",
+     "Những câu không thể đứng đầu: các câu có từ nối và từ chỉ định như 그래서, 하지만, 이, 그, 이것, 또한, 따라서.",
+     "Khi đã xác định được câu đầu tiên, bạn chỉ còn phải chọn giữa 2 phương án còn lại."
+    ]
+   },
+   "r-16-18": {
+    "sub": "Chọn câu điền vào chỗ trống trong đoạn văn",
+    "tips": [
+     "Chủ yếu hãy đọc câu đứng trước và câu đứng sau chỗ trống.",
+     "Từ nối giúp tìm ra đáp án: 그래서 (kết quả), 하지만 (đối lập), 즉 (diễn đạt lại).",
+     "Phương án diễn đạt lại một từ trong đoạn văn bằng những từ khác thường là đáp án đúng."
+    ]
+   },
+   "r-19-20": {
+    "sub": "Chọn ý chính và cảm xúc hoặc thái độ của người viết",
+    "tips": [
+     "19: Chỗ trống thường cần một từ nối hoặc phó từ (게다가, 오히려, 결코, 마치). Hãy xem mối quan hệ giữa phần trước và phần sau (bổ sung, đối lập hoặc ví dụ).",
+     "20: Ý chính của người viết thường nằm ở cuối đoạn văn. Hãy tìm câu có -아야 한다, -는 것이 중요하다 hoặc -ㄹ 필요가 있다."
+    ]
+   },
+   "r-1-2": {
+    "sub": "Chọn ngữ pháp phù hợp với chỗ trống trong câu",
+    "tips": [
+     "Hãy nhìn các từ ngay trước và sau chỗ trống trước khi đọc toàn bộ câu.",
+     "Kiểm tra xem các từ chỉ thời gian (어제, 내일, -았/었을 때) và dạng động từ (thì) có khớp nhau không.",
+     "Ví dụ: nếu bạn nắm được sắc thái và cách dùng của các ngữ pháp như -는 바람에 (kết quả xấu), -도록 (mục đích) và -더니 (điều đã thấy trước đó), bạn có thể trả lời ngay.",
+     "Không dành quá 30 giây cho một câu hỏi."
+    ]
+   },
+   "r-3-4": {
+    "sub": "Chọn ngữ pháp có cùng ý nghĩa với ngữ pháp được gạch chân",
+    "tips": [
+     "Trước tiên hãy nghĩ đến ý nghĩa của ngữ pháp được gạch chân bằng tiếng mẹ đẻ của bạn.",
+     "Hãy ghi nhớ các cặp thường gặp:\n• -는 김에 ≈ -는 길에\n• -기 마련이다 ≈ -는 법이다\n• -ㄹ 뿐만 아니라 ≈ -ㄹ 뿐더러\n• -다시피 하다 ≈ -는 것과 마찬가지다",
+     "Hãy đặt từng đáp án vào chỗ trống rồi đọc thử. Nếu ý nghĩa không thay đổi thì đó là đáp án đúng."
+    ]
+   },
+   "r-5-8": {
+    "sub": "Chọn tiêu đề hoặc ý nghĩa của quảng cáo, thông báo hoặc biển báo",
+    "tips": [
+     "Chỉ cần tìm 2-3 từ khóa. Bạn không cần hiểu toàn bộ văn bản.",
+     "Ví dụ:\n• 촉촉, 피부 → 화장품\n• 한 방울, 아껴요 → 물 절약\n• 클릭 한 번 → 인터넷 쇼핑",
+     "Câu 5-6 thường là quảng cáo sản phẩm hoặc địa điểm; câu 7-8 thường là chiến dịch, cảnh báo hoặc thông báo."
+    ]
+   },
+   "r-9-10": {
+    "sub": "Chọn nội dung phù hợp hoặc đúng với bảng, biểu đồ hoặc thông báo",
+    "tips": [
+     "Hãy đọc các đáp án trước, sau đó đối chiếu từng đáp án với bảng hoặc biểu đồ.",
+     "Trong biểu đồ, hãy chú ý các từ như 증가 (tăng), 감소 (giảm), 가장 높다/낮다 (cao nhất/thấp nhất) và 두 배 (gấp đôi).",
+     "Trong thông báo, hãy kiểm tra ngày, giờ, giá, 무료/유료 (miễn phí/mất phí), cách đăng ký (신청 방법) và đối tượng được tham gia."
+    ]
+   },
+   "r-21-22": {
+    "sub": "Chọn nội dung chính của đoạn văn có chứa thành ngữ hoặc tục ngữ",
+    "tips": [
+     "21: Hãy ghi nhớ các thành ngữ xuất hiện thường xuyên: 발이 넓다, 손을 놓다, 눈코 뜰 새 없다, 귀가 얇다, 발 벗고 나서다, 머리를 맞대다.",
+     "Nếu không biết thành ngữ nào đó, hãy đoán dựa trên tình huống trước và sau nó (tích cực hay tiêu cực).",
+     "22: Giống như câu 11-12, hãy đối chiếu các từ khóa với đoạn văn."
+    ]
+   },
+   "r-23-24": {
+    "sub": "Đọc đoạn văn và chọn cảm xúc của nhân vật cũng như nội dung phù hợp",
+    "tips": [
+     "23: Phần gạch chân hỏi về cảm xúc của nhân vật. Hãy xem các sự việc trước và sau đó.",
+     "Hãy ghi nhớ các từ chỉ cảm xúc: 서운하다, 당황스럽다, 안타깝다, 담담하다, 부끄럽다, 뿌듯하다, 섭섭하다, 후련하다.",
+     "24: Văn bản được kể ở ngôi thứ nhất, vì vậy hãy ghi chú theo thứ tự thời gian những việc \"나\" (tôi) đã làm."
+    ]
+   },
+   "r-25-27": {
+    "sub": "Chọn ý nghĩa đúng của các tiêu đề báo",
+    "tips": [
+     "Tiêu đề tin tức ngắn gọn và dùng nhiều từ Hán-Hàn (한자어).",
+     "Các từ thường gặp:\n• 껑충 (tăng đột ngột)\n• 뚝 (giảm đột ngột)\n• 주춤 (khựng lại)\n• 훈풍 (bầu không khí tốt đẹp)\n• 먹구름 (nguyên nhân gây lo ngại)\n• 발목 잡다 (cản trở)\n• 날개 달다 (có thêm động lực)",
+     "Khi tiêu đề được chia bằng dấu phẩy, vế đầu thường là nguyên nhân hoặc tình huống, còn vế sau là kết quả."
+    ]
+   },
+   "r-28-31": {
+    "sub": "Điền vào chỗ trống trong các đoạn văn trình độ trung cấp và cao cấp",
+    "tips": [
+     "Đây là một trong những phần khó nhất. Hãy nắm bắt chủ đề của đoạn văn từ câu đầu tiên.",
+     "Câu có chỗ trống thường nhắc lại ý chính, vì vậy câu sau chỗ trống thường chứa gợi ý.",
+     "Nếu không làm được, đừng mất quá nhiều thời gian. Hãy đánh dấu và quay lại sau."
+    ]
+   },
+   "r-32-34": {
+    "sub": "Chọn ý chính / nhan đề hoặc nội dung phù hợp với đoạn văn nâng cao",
+    "tips": [
+     "Lưu ý: trong đề thi thật, phần này thường là chọn nội dung phù hợp với đoạn văn, chứ không phải chọn chủ đề.",
+     "Các đoạn văn về khoa học, lịch sử và kinh tế sẽ xuất hiện. Hãy đọc các đáp án trước, tìm từ khóa của chúng trong bài rồi đối chiếu với nội dung bài.",
+     "Đáp án đúng thường không dùng nguyên từ trong bài mà được diễn đạt lại bằng một từ có nghĩa tương đương."
+    ]
+   },
+   "r-35-38": {
+    "sub": "Tìm câu không phù hợp với mạch văn của đoạn văn / sắp xếp các câu theo thứ tự",
+    "tips": [
+     "(Trong đề thi thật, phần này là chọn chủ đề của bài viết, 글의 주제 고르기.)",
+     "Ý chính nằm ở phần đầu hoặc phần cuối của đoạn văn. Hãy đặc biệt chú ý đến câu đứng sau 그러나, 하지만, 따라서, 그러므로, 결국.",
+     "Đáp án chỉ nói về một chi tiết nhỏ thì không phải là ý chính. Hãy chọn đáp án bao quát toàn bộ đoạn văn."
+    ]
+   },
+   "r-39-41": {
+    "sub": "Chọn vị trí đúng (ㄱ, ㄴ, ㄷ, ㄹ) cho câu đã cho",
+    "tips": [
+     "Trước tiên hãy xem các từ nối và từ chỉ định (이러한, 그, 이 때문에, 또한, 반면) trong câu đã cho.",
+     "Ví dụ: với 이러한 문제 thì câu đó phải đặt ngay sau chỗ mà một vấn đề đã được mô tả.",
+     "Hãy đặt câu vào từng vị trí (ㄱ)(ㄴ)(ㄷ)(ㄹ), đọc thử, rồi chọn vị trí mà phần văn bản đứng trước và đứng sau liền mạch tự nhiên."
+    ]
+   },
+   "r-42-50": {
+    "sub": "Đọc các bài luận, bài phê bình và truyện dài rồi trả lời câu hỏi (ý chính, thái độ của tác giả, chỗ trống, v.v.)",
+    "tips": [
+     "42-43 (truyện): cảm xúc của nhân vật + nội dung. Lời thoại thường chứa gợi ý.",
+     "44-45: chỗ trống + nhan đề của bài luận.",
+     "46-47: thái độ (태도) của tác giả. Hãy ghi nhớ 비판하고 있다, 우려하고 있다, 강조하고 있다, 기대하고 있다, 지지하고 있다.",
+     "48-50 (bài luận): mục đích viết (목적), chỗ trống và thái độ. Trước hết hãy xác định tác giả ủng hộ hay phản đối."
+    ]
+   },
+   "l-3": {
+    "sub": "Nghe bản tin hoặc bài phóng sự rồi chọn biểu đồ hoặc bảng đúng",
+    "tips": [
+     "Vừa nghe vừa phân biệt 2 loại biểu đồ: biến động số liệu / lý do theo %.",
+     "증가 / 감소 / 꾸준히 / 급격히 → hướng đi của đường trên biểu đồ đường",
+     "가장 많았으며, 그 뒤를 이었습니다 → thứ tự trong biểu đồ tròn (hạng 1 → hạng 2 → hạng 3)",
+     "Ví dụ 3: 꾸준히 증가 → ② (① sai vì lúc đầu giảm rồi sau đó mới tăng). Lý do 신선하고 품질이 좋아서 chiếm tỷ lệ lớn nhất → khớp với 43% ở ③. Vì vậy câu này cần bạn kiểm tra cả các con số."
+    ]
+   },
+   "l-4-8": {
+    "sub": "Chọn câu thích hợp nhất để nói tiếp ở cuối đoạn hội thoại",
+    "tips": [
+     "Câu cuối cùng là một câu hỏi hoặc một vấn đề. Hãy chọn câu đáp lại nó.",
+     "Nếu nhắc đến một vấn đề → lời khuyên (-지 그래요?, -는 게 어때요?)",
+     "Nếu nhắc đến các lựa chọn → một quyết định (그럼 ~로 할게)",
+     "Ví dụ 4: 약을 먹었는데 잘 안 나아요 → ③ 병원에 한번 가 보지 그래요?",
+     "Ví dụ 6: 음료수는 못 갖고 들어가나 봐 → ② 얼른 마시고 들어가자",
+     "Đáp án dùng lại từ có trong đoạn hội thoại (④ 음료수부터 사자) thường là bẫy."
+    ]
+   },
+   "l-9-12": {
+    "sub": "Chọn việc mà người phụ nữ (thường là vậy) sẽ làm tiếp theo sau đoạn hội thoại",
+    "tips": [
+     "Đó là \"việc họ sẽ làm ngay lập tức\", không phải kế hoạch ở tương lai xa.",
+     "Hãy chú ý nghe các câu có -ㄹ게요, -ㄹ 테니까, 지금 바로, 먼저.",
+     "Đọc kỹ câu hỏi để biết đó là hành động của ai (người phụ nữ / người đàn ông).",
+     "Ví dụ 9: 지금 바로 가지러 갈게 → ④ (여행을 간다 chỉ là việc của ngày mai)",
+     "Ví dụ 10: 계산 먼저 해 드릴 테니까 → ② 계산을 해 준다 (việc đóng gói thì để sau)"
+    ]
+   },
+   "l-13-16": {
+    "sub": "Chọn nội dung phù hợp với đoạn hội thoại, thông báo hoặc bản tin",
+    "tips": [
+     "Hãy đọc trước 4 đáp án và gạch chân các từ khóa.",
+     "3 loại bẫy: từ trái nghĩa (처음 ↔ 10주년), số lượng (모든 사람 ↔ 5만 원 이상) và đối tượng (người đàn ông ↔ người phụ nữ).",
+     "Ví dụ 14: 영업시간도 한 시간 연장 → ② 영업시간이 늘어난다",
+     "Ví dụ 13: 난 비 오는 날 캠핑은 안 해 봤는데 → ④ sai; người đàn ông nói 분위기가 좋더라고 → ③ đúng"
+    ]
+   },
+   "w-51-52": {
+    "sub": "Viết câu còn thiếu vào mỗi chỗ trống (㉠, ㉡)",
+    "steps": [
+     "Đọc toàn bộ đoạn văn và xác định chức năng của chỗ trống: nêu lý do, yêu cầu, điều kiện hay kết luận.",
+     "Viết đúng văn phong của đoạn văn (-ㅂ/습니다 hoặc -아/어요).",
+     "Viết một cụm từ ngắn, tự nhiên và có đuôi câu phù hợp.",
+     "Kiểm tra chính tả và khoảng cách giữa các từ: hai lỗi này đều bị trừ điểm."
+    ],
+    "tips": [
+     "Câu đứng trước và sau chỗ trống chính là manh mối của đáp án: lời yêu cầu kết thúc bằng -(으)세요 / -아/어 주시기 바랍니다, lý do kết thúc bằng -기 때문입니다.",
+     "Giữ nguyên thì của đoạn văn: nếu các câu xung quanh ở thì quá khứ thì đáp án cũng ở quá khứ.",
+     "Dành khoảng 5 phút cho mỗi câu."
+    ]
+   },
+   "w-53": {
+    "sub": "Mô tả biểu đồ hoặc đồ thị trong khoảng 200-300 chữ",
+    "steps": [
+     "Đọc tiêu đề, đơn vị và các năm hoặc nhóm đối tượng.",
+     "Viết một câu giới thiệu nội dung của cuộc khảo sát hoặc đồ thị.",
+     "Mô tả thay đổi hoặc con số lớn nhất, rồi đến cái lớn thứ hai, kèm số liệu cụ thể.",
+     "Thêm lý do hoặc xu hướng chung nếu đề bài yêu cầu.",
+     "Dùng văn viết trung tính (-ㄴ/는다, -았/었다) và giữ đúng độ dài quy định."
+    ],
+    "tips": [
+     "Các mẫu câu hữu ích: -(으)로 나타났다, 증가했다 / 감소했다, -에 비해, -(으)ㄴ 반면에, 이는 -기 때문으로 보인다.",
+     "Số liệu trong quá khứ dùng thì quá khứ (-았/었다); dự báo dùng -(으)ㄹ 것으로 예상된다.",
+     "Không đưa ra ý kiến cá nhân và không lặp lại cùng một đuôi câu; cả hai lỗi này đều bị mất điểm.",
+     "Dành khoảng 12 phút và chừa thời gian để đếm số chữ."
+    ]
+   },
+   "w-54": {
+    "sub": "Viết bài luận 600-700 chữ về chủ đề cho trước",
+    "steps": [
+     "Đọc chủ đề và các câu hỏi gợi ý; bài viết phải trả lời tất cả các câu hỏi đó.",
+     "Lập nhanh dàn ý: mở bài, thân bài (2-3 ý kèm lý do hoặc ví dụ), kết bài.",
+     "Viết bằng văn viết trung tính và nối các ý bằng từ nối (먼저, 또한, 그러나, 따라서).",
+     "Kiểm tra độ dài (600-700 chữ), chính tả và khoảng cách giữa các từ."
+    ],
+    "tips": [
+     "Dùng các câu hỏi gợi ý làm dàn ý; trả lời lần lượt từng câu sẽ tạo nên cấu trúc bài viết.",
+     "Thể hiện quan điểm rõ ràng bằng -다고 생각한다 / -(으)ㄹ 필요가 있다, và củng cố bằng -기 때문이다 cùng một ví dụ.",
+     "Không viết theo văn nói (-아/어요) và không viết quá 700 chữ.",
+     "Dành khoảng 25 phút: 5 phút lập dàn ý, 17 phút viết, 3 phút kiểm tra."
+    ]
+   },
+   "l-1-2": {
+    "sub": "Nghe đoạn hội thoại và chọn bức tranh phù hợp với tình huống",
+    "tips": [
+     "Chỉ cần nắm bắt \"họ đang làm gì bây giờ\" và \"họ đang ở đâu\".",
+     "Trước khi bắt đầu nghe, hãy xem 4 bức tranh và ghi nhớ trước những điểm khác nhau (cửa hàng / nhà bếp, ngồi / bê đồ).",
+     "Câu cuối của đoạn hội thoại thường cho biết hành động hiện tại.",
+     "Ví dụ 1: 손님, 접시 위에 있는 거 먹어 봐도 돼요? → trong cửa hàng, lấy đồ ăn nhẹ từ đĩa → ①",
+     "Ví dụ 2: 의자에 앉아 보니까, 이 부분을 잘라야겠다 → người phụ nữ đang ngồi, người đàn ông chỉ vào chỗ đó → ②"
+    ]
+   },
+   "l-17-20": {
+    "sub": "Chọn suy nghĩ chính của người đàn ông",
+    "tips": [
+     "Đáp án nằm ở những lời cuối cùng của người đàn ông.",
+     "Hãy nghe các đuôi câu thể hiện ý kiến: -아야/어야 ~, -는 게 좋다, -거든요, -잖아요.",
+     "Ví dụ 17: 팝콘이 있어야 영화관에 온 것 같지 → ③",
+     "Ví dụ 18: 시간이 지나면 오해가 더 커질 수도 → ① 사과를 빨리하는 것이 좋다",
+     "Bẫy thường là ý kiến của người phụ nữ (④ 말을 거는 것이 힘들다), được đặt ra để bạn chọn nhầm."
+    ]
+   },
+   "l-21-22": {
+    "sub": "Hội thoại công sở / công việc: ý kiến chính của người đàn ông + nội dung trùng khớp",
+    "tips": [
+     "Trước tiên hãy phân biệt rõ ai ủng hộ và ai phản đối.",
+     "Ví dụ 21: người đàn ông nói 신중해야 và 부담이 클 것 같아요 → anh ấy không muốn thay đổi → ④ 현재 디자인을 유지하고 싶다",
+     "Ví dụ 22: 캐릭터가 너무 사실적이라서 → ②. 아직 출시도 좀 남았는데 → ① là sai"
+    ]
+   },
+   "l-23-24": {
+    "sub": "Người đàn ông đang làm gì (hỏi / yêu cầu / giải thích) + nội dung trùng khớp",
+    "tips": [
+     "Hãy bắt được động từ chỉ việc người đàn ông đang làm trong cuộc gọi điện thoại.",
+     "문의하다 (hỏi thông tin), 신청하다 (đăng ký), 확인하다 (xác nhận), 요청하다 (yêu cầu), 항의하다 (khiếu nại)",
+     "Trong 2 câu đầu (~ 때문에 전화드렸는데요), mục đích cuộc gọi thường xuất hiện."
+    ]
+   },
+   "l-25-26": {
+    "sub": "Phỏng vấn: ý kiến chính + nội dung trùng khớp",
+    "tips": [
+     "Phần theo sau 무엇보다, 가장 중요한 것은 và 덕분이라고 생각합니다 chính là đáp án.",
+     "Ví dụ 25: 무엇보다 현장 대응력을 높이기 위한 훈련 덕분 + 모의 상황…반복해서 → ① 실제 상황을 가정한 반복 훈련",
+     "Ví dụ 26: 번화한 곳이라서 사건, 사고가 많지요 → ①"
+    ]
+   },
+   "l-27-28": {
+    "sub": "Ý định của người nói (의도) + nội dung phù hợp",
+    "tips": [
+     "\"Tại sao lại nói như vậy?\": hãy chọn động từ thể hiện ý định.",
+     "Dạng -려고: 알려 주려고 (để thông báo), 권유하려고 (để khuyên/mời), 불만을 제기하려고 (để phàn nàn), 설득하려고 (để thuyết phục)",
+     "Chú ý xem mục đích đó là của người phụ nữ hay của người đàn ông."
+    ]
+   },
+   "l-29-30": {
+    "sub": "Phỏng vấn: người đàn ông là ai (nghề nghiệp của anh ấy) + nội dung phù hợp",
+    "tips": [
+     "Hãy bắt các động từ thể hiện công việc (연구, 개발, 설치, 관리, 홍보).",
+     "Ví dụ câu 29: 20년 동안 제주 바다, 논문을 발표, 어종 분포에 대해 조사 → ① 해양 생태계를 연구하는 사람",
+     "Ví dụ câu 30: 다른 국가와 공동으로 팀을 꾸려서 → ②. Vì bài nói là 20년 동안 nên ③ 작년부터 시작 là sai"
+    ]
+   },
+   "l-31-32": {
+    "sub": "Tranh luận: ý kiến chính của người đàn ông + thái độ (태도) của anh ấy",
+    "tips": [
+     "Trước hết hãy xác định người đàn ông đứng về phía nào.",
+     "Phần đứng sau 하지만, 그런데요, 오히려 chính là ý kiến thật sự của anh ấy.",
+     "Thái độ (태도): 반박하고 있다 (đang phản bác), 동의하고 있다 (đang đồng ý), 우려하고 있다 (đang lo ngại), 근거를 들어 주장하고 있다 (đang khẳng định bằng dẫn chứng)"
+    ]
+   },
+   "l-33-34": {
+    "sub": "Bài giảng: nói về điều gì (chủ đề) + nội dung phù hợp",
+    "tips": [
+     "Chủ đề nằm ở 2-3 câu đầu. Hãy đặc biệt chú ý 이걸 ~라고 하죠 (gọi tên một khái niệm).",
+     "Ví dụ câu 33: 뇌의 신경망이 피부를 압박하는 자극을 위험한 신호로… → ③ 불편한 피부 자극에 대한 신경학적 설명\n④ 치료법 hoàn toàn không được nhắc đến: hãy loại đáp án chứa nội dung mà bạn không nghe thấy.",
+     "Ví dụ câu 34: 뇌의 신경망 → ① 뇌와 관련이 있다"
+    ]
+   },
+   "l-43-44": {
+    "sub": "Phim tài liệu: nội dung chính + chọn lý do (이유)",
+    "tips": [
+     "Khi người nói tự đặt câu hỏi \"왜 ~ㄹ까요?\" thì phần ngay sau đó chính là câu trả lời (lý do).",
+     "Hãy chú ý nghe các cấu trúc ~기 때문이다, ~ 덕분에, ~(으)므로.",
+     "Chủ đề động vật và thiên nhiên xuất hiện rất thường xuyên, vì vậy hãy ghi nhớ các từ vựng về sinh học."
+    ]
+   },
+   "l-45-46": {
+    "sub": "Bài giảng (khoa học / công nghệ): chọn nội dung phù hợp + cách nói (말하는 방식)",
+    "tips": [
+     "Hãy bắt những từ thể hiện cấu trúc bài nói:",
+     "첫째, 둘째 → 나열하다 (liệt kê)\n예를 들어 → 사례를 들다 (nêu ví dụ)\n~에 비해 → 비교하다 (so sánh)\n~라고 합니다 (định nghĩa) → 정의하다 / 규정하다",
+     "Ví dụ câu 45: 내부 압력이 올라가고 → ④. 중앙 부분은 두껍고 → ① sai; 익는 속도가 빨라집니다 → ③ sai",
+     "Ví dụ câu 46: 첫째…둘째… + 왜 그럴까요? → ③ 이유를 나열하며 원리를 알려 주고 있다"
+    ]
+   },
+   "l-47-48": {
+    "sub": "Talk show (chính sách / xã hội): chọn nội dung phù hợp + thái độ của người đàn ông",
+    "tips": [
+     "Hãy lắng nghe sắc thái cảm xúc của đuôi động từ.",
+     "-ㄹ까 걱정입니다 → 우려 (lo ngại)\n-아야 할 것입니다 → 촉구/강조 (thúc giục / nhấn mạnh)\n-다는 점에서 의미가 있습니다 → 긍정적 평가 (đánh giá tích cực)\n과연 ~ㄹ지 의문입니다 → 회의적 (hoài nghi)"
+    ]
+   },
+   "l-49-50": {
+    "sub": "Bài giảng học thuật: chọn nội dung phù hợp + cách nói / thái độ",
+    "tips": [
+     "Giống như câu 45-46, hãy chú ý đến mô hình triển khai của bài nói.",
+     "Ví dụ câu 49: 24시간 내내 태양을 볼 수 있는 궤도 → ④\n• 태양 전지를 부착 → ① sai\n• 전력 소비가 굉장해 → ③ sai\n• 얼마 전…발사됐는데요 → ② sai",
+     "Ví dụ câu 50: 왜 ~ 계산했을까요? 이는 ~ 때문이었습니다 → ① 발사 시각이 정해진 배경을 과학적으로 설명"
+    ]
+   },
+   "l-35-36": {
+    "sub": "Bài phát biểu / lời khai mạc: người nói đang làm gì + nội dung nào phù hợp",
+    "tips": [
+     "Xác định loại sự kiện + hành động của người nói.",
+     "감사드립니다 → 감사를 표하다 (bày tỏ lời cảm ơn) / 축하합니다 → 축하하다 (chúc mừng) / 소개합니다 → 소개하다 (giới thiệu) / 부탁드립니다 → 당부하다 (dặn dò, đề nghị)",
+     "Mục đích của bài phát biểu thể hiện ở phần đầu và phần cuối."
+    ]
+   },
+   "l-37-38": {
+    "sub": "Chương trình giáo dục: ý kiến chính của chuyên gia + nội dung nào phù hợp",
+    "tips": [
+     "Trong mẫu câu \"예전에는 ~ 하지만 최근에는 ~\", phần đứng sau 하지만 mới là ý kiến thực sự của người nói.",
+     "Ví dụ câu 37: 찾는 사람들의 생활을 분석하여 반영 → ③ 찾아오는 사람의 상황을 고려해 조성해야",
+     "Ví dụ câu 38: 인주시는 이 공원을 조성하면서 → ②. Vì có câu 빽빽하게 나무를 심어 nên ① sai"
+    ]
+   },
+   "l-39-40": {
+    "sub": "Talk show: đoán nội dung đã nói trước đoạn hội thoại + nội dung nào phù hợp",
+    "tips": [
+     "Câu đầu tiên tóm tắt những gì đã nói trước đó.",
+     "Hãy nhớ kỹ câu đầu tiên: trong đó có các cách diễn đạt như 말씀하신 것처럼, 그렇게 ~ 다면, 이런 ~.",
+     "Nếu bỏ lỡ 3 giây đầu, bạn sẽ mất câu 39. Hãy tập trung cao độ."
+    ]
+   },
+   "l-41-42": {
+    "sub": "Bài giảng (lịch sử / văn hóa): nội dung chính + nội dung nào phù hợp",
+    "tips": [
+     "Câu cuối cùng là phần tóm tắt toàn bài. Hãy nghe kỹ phần đi sau 이렇게 ~, 즉 và 결국.",
+     "Ví dụ câu 41: 이렇게 돈덕전은 근대 국가로서의 위상을…드러내고자 한 곳 → ③",
+     "Ví dụ câu 42: 연회를 베푸는 장소 → ②. 40주년 không phải là năm mà là kỷ niệm năm thứ 40 ngày lên ngôi → ① sai (mẹo đánh lừa bằng con số)"
+    ]
+   },
+   "guide:reading-time": {
+    "title": "Mẹo quản lý thời gian",
+    "listTitle": "3 mẹo quan trọng",
+    "tableHead": [
+     "Phần",
+     "Thời gian"
+    ],
+    "rowLabels": [
+     "1 ~ 12",
+     "13 ~ 27",
+     "28 ~ 41",
+     "42 ~ 50",
+     "Xem lại / phiếu trả lời"
+    ],
+    "list": [
+     "Không dành quá 2 phút cho một câu khó. Hãy bỏ qua và quay lại sau.",
+     "Đừng tô phiếu trả lời (OMR) một lần vào cuối giờ. Hãy tô ngay sau khi làm xong mỗi phần.",
+     "Dù không biết đáp án cũng đừng để trống. Không bị trừ điểm nên hãy đoán và tô đáp án."
+    ]
+   },
+   "guide:listening-habits": {
+    "title": "5 thói quen quan trọng nhất (cho phần Nghe)",
+    "list": [
+     "Trong lúc đang phát phần hướng dẫn bằng âm thanh, hãy đọc trước các đáp án của câu tiếp theo.",
+     "Trong khi nghe, hãy gạch X vào những đáp án sai. Như vậy bạn chỉ cần chọn giữa 1-2 đáp án còn lại.",
+     "Phần đứng sau 하지만, 그런데, 무엇보다, 결국, 이렇게 = đáp án.",
+     "처음, 이미, 아직, 작년부터, ~ 이상 là những cái bẫy thường gặp nhất.",
+     "Đáp án có nội dung không xuất hiện trong đoạn hội thoại (치료법, 외국 자본) luôn là đáp án sai."
+    ],
+    "leads": [
+     "Đọc trước",
+     "Loại trừ",
+     "Từ nối",
+     "Số và thời gian",
+     "Bỏ những gì không nghe thấy"
+    ]
+   },
+   "general": {
+    "text": "Hãy đọc câu hỏi trước khi đọc đoạn văn. Nếu biết mình cần tìm gì, bạn sẽ tiết kiệm được rất nhiều thời gian."
+   }
+  }
+ },
+ "ko": {
+  "units": {
+   "r-11-12": {
+    "sub": "짧은 글의 내용과 일치하는 것 고르기",
+    "tips": [
+     "4개의 선택지에서 핵심어(명사와 숫자)를 뽑아 글에서 찾아보세요.",
+     "함정: 바뀐 시간 표현(이미 vs 아직), 원인과 결과가 뒤바뀐 것, 그리고 '모든', '항상'처럼 단정하는 말이 들어 있는 선택지는 정답일 가능성이 낮습니다."
+    ]
+   },
+   "r-13-15": {
+    "sub": "문장(가, 나, 다, 라)을 순서대로 배열하기",
+    "tips": [
+     "4개의 선택지에는 보통 서로 다른 첫 문장이 2가지만 나옵니다. 먼저 그 둘 중 어느 것이 글의 시작이 될 수 있는지 판단하세요.",
+     "첫 문장이 될 수 없는 것: 그래서, 하지만, 이, 그, 이것, 또한, 따라서 같은 접속 표현과 지시 표현입니다.",
+     "첫 문장이 정해지면 남은 2가지 중에서만 고르면 됩니다."
+    ]
+   },
+   "r-16-18": {
+    "sub": "글의 빈칸에 들어갈 문장 고르기",
+    "tips": [
+     "빈칸 바로 앞 문장과 뒤 문장을 중심으로 읽으세요.",
+     "접속 표현이 정답의 단서가 됩니다: 그래서(결과), 하지만(대조), 즉(바꾸어 말하기).",
+     "글에 나온 말을 다른 표현으로 바꾸어 쓴 선택지가 정답인 경우가 많습니다."
+    ]
+   },
+   "r-19-20": {
+    "sub": "중심 생각과 필자의 심정이나 태도 고르기",
+    "tips": [
+     "19번: 빈칸에는 접속 부사나 부사(게다가, 오히려, 결코, 마치)가 들어가는 경우가 많습니다. 빈칸 앞뒤의 관계(추가, 대조, 예시)를 살펴보세요.",
+     "20번: 필자의 중심 생각은 보통 글의 끝부분에 있습니다. -아야 한다, -는 것이 중요하다, -ㄹ 필요가 있다가 쓰인 문장을 찾아보세요."
+    ]
+   },
+   "r-1-2": {
+    "sub": "문장의 빈칸에 들어갈 알맞은 문법을 고르세요",
+    "tips": [
+     "문장 전체를 읽기 전에 먼저 빈칸 바로 앞뒤에 있는 말을 살펴보세요.",
+     "시간을 나타내는 말(어제, 내일, -았/었을 때)과 동사의 형태(시제)가 서로 맞는지 확인하세요.",
+     "예: -는 바람에(좋지 않은 결과), -도록(목적), -더니(전에 보았던 일)와 같은 문법의 느낌과 쓰임을 알고 있으면 바로 답을 고를 수 있습니다.",
+     "한 문제에 30초 이상 쓰지 마세요."
+    ]
+   },
+   "r-3-4": {
+    "sub": "밑줄 친 문법과 의미가 같은 문법을 고르세요",
+    "tips": [
+     "먼저 밑줄 친 문법의 의미를 자신의 모국어로 생각해 보세요.",
+     "자주 나오는 짝을 외워 두세요:\n• -는 김에 ≈ -는 길에\n• -기 마련이다 ≈ -는 법이다\n• -ㄹ 뿐만 아니라 ≈ -ㄹ 뿐더러\n• -다시피 하다 ≈ -는 것과 마찬가지다",
+     "각 선택지를 빈칸에 넣어 읽어 보세요. 의미가 바뀌지 않으면 그것이 정답입니다."
+    ]
+   },
+   "r-5-8": {
+    "sub": "광고, 안내문 또는 표지판의 제목이나 의미를 고르세요",
+    "tips": [
+     "핵심 단어 2~3개만 찾으세요. 글 전체를 이해할 필요는 없습니다.",
+     "예:\n• 촉촉, 피부 → 화장품\n• 한 방울, 아껴요 → 물 절약\n• 클릭 한 번 → 인터넷 쇼핑",
+     "5~6번은 보통 상품이나 장소에 대한 광고이고, 7~8번은 보통 캠페인, 경고문 또는 안내문입니다."
+    ]
+   },
+   "r-9-10": {
+    "sub": "표, 그래프 또는 안내문의 내용과 일치하거나 맞는 것을 고르세요",
+    "tips": [
+     "선택지를 먼저 읽은 다음, 표나 그래프와 하나씩 비교하며 확인하세요.",
+     "그래프에서는 증가, 감소, 가장 높다/낮다, 두 배와 같은 표현에 주의하세요.",
+     "안내문에서는 날짜, 시간, 가격, 무료/유료, 신청 방법, 참가 가능한 대상을 확인하세요."
+    ]
+   },
+   "r-21-22": {
+    "sub": "관용어나 속담이 들어 있는 글의 중심 내용 고르기",
+    "tips": [
+     "21번: 자주 출제되는 관용어를 외워 두세요: 발이 넓다, 손을 놓다, 눈코 뜰 새 없다, 귀가 얇다, 발 벗고 나서다, 머리를 맞대다.",
+     "모르는 관용어가 나오면 그 앞뒤 상황이 긍정적인지 부정적인지를 보고 뜻을 추측하세요.",
+     "22번: 11~12번과 마찬가지로 핵심어를 지문의 내용과 대조하여 답을 고르세요."
+    ]
+   },
+   "r-23-24": {
+    "sub": "글을 읽고 인물의 심정과 글의 내용과 일치하는 것 고르기",
+    "tips": [
+     "23번: 밑줄 친 부분은 인물의 심정을 묻는 문제입니다. 밑줄 앞뒤에 나오는 사건을 살펴보세요.",
+     "심정을 나타내는 어휘를 외워 두세요: 서운하다, 당황스럽다, 안타깝다, 담담하다, 부끄럽다, 뿌듯하다, 섭섭하다, 후련하다.",
+     "24번: 글이 1인칭 시점으로 서술되어 있으므로, '나'가 한 일을 시간 순서대로 메모하며 읽으세요."
+    ]
+   },
+   "r-25-27": {
+    "sub": "신문 기사 제목의 의미로 알맞은 것 고르기",
+    "tips": [
+     "신문 기사 제목은 짧고 한자어가 많이 쓰입니다.",
+     "자주 나오는 어휘:\n• 껑충 (갑자기 오름)\n• 뚝 (갑자기 떨어짐)\n• 주춤 (잠시 멈춤)\n• 훈풍 (좋은 분위기)\n• 먹구름 (걱정되는 원인)\n• 발목 잡다 (앞으로 나아가지 못하게 막다)\n• 날개 달다 (힘을 얻어 속도가 붙다)",
+     "제목이 쉼표로 나뉘어 있을 때는 앞부분이 원인이나 상황, 뒷부분이 결과인 경우가 많습니다."
+    ]
+   },
+   "r-28-31": {
+    "sub": "중급·고급 글의 빈칸 채우기",
+    "tips": [
+     "가장 어려운 부분 중 하나입니다. 첫 문장에서 글의 주제를 파악하세요.",
+     "빈칸이 있는 문장은 글의 중심 내용을 다시 말하는 경우가 많으므로, 빈칸 다음 문장에 힌트가 있는 경우가 많습니다.",
+     "잘 모르겠으면 오래 붙들고 있지 마세요. 표시해 두고 나중에 다시 돌아와서 풀면 됩니다."
+    ]
+   },
+   "r-32-34": {
+    "sub": "수준 높은 지문의 주제·제목을 고르거나 내용과 일치하는 것을 고르기",
+    "tips": [
+     "참고: 실제 시험에서 이 유형은 주로 주제가 아니라 내용과 일치하는 것을 고르는 문제입니다.",
+     "과학, 역사, 경제 관련 지문이 출제됩니다. 먼저 선택지를 읽고 그 핵심어를 본문에서 찾아 본문 내용과 대조해 보세요.",
+     "정답은 본문에 나온 단어를 그대로 쓰지 않고 같은 뜻을 가진 다른 단어로 바꾸어 표현하는 경우가 많습니다."
+    ]
+   },
+   "r-35-38": {
+    "sub": "글의 흐름에 맞지 않는 문장을 찾거나 문장의 순서를 배열하기",
+    "tips": [
+     "(실제 시험에서 이 유형은 글의 주제 고르기입니다.)",
+     "글의 중심 내용은 글의 처음이나 끝에 있습니다. 특히 '그러나, 하지만, 따라서, 그러므로, 결국' 뒤에 오는 문장에 주의하세요.",
+     "한 가지 세부 내용만 말하는 선택지는 중심 내용이 아닙니다. 글 전체를 아우르는 선택지를 고르세요."
+    ]
+   },
+   "r-39-41": {
+    "sub": "주어진 문장이 들어갈 알맞은 위치(ㄱ, ㄴ, ㄷ, ㄹ) 고르기",
+    "tips": [
+     "먼저 주어진 문장에 있는 연결어와 지시어(이러한, 그, 이 때문에, 또한, 반면)를 살펴보세요.",
+     "예: '이러한 문제'가 있으면 그 문장은 문제가 설명된 부분 바로 뒤에 들어가야 합니다.",
+     "(ㄱ)(ㄴ)(ㄷ)(ㄹ) 각 위치에 문장을 넣어 읽어 보고 앞뒤 내용이 자연스럽게 이어지는 곳을 고르세요."
+    ]
+   },
+   "r-42-50": {
+    "sub": "긴 수필, 비평문, 이야기를 읽고 문제(중심 내용, 글쓴이의 태도, 빈칸 등)에 답하기",
+    "tips": [
+     "42-43번(이야기): 인물의 심정과 내용 파악이 중요합니다. 대화문에 힌트가 있는 경우가 많습니다.",
+     "44-45번: 빈칸 채우기와 글의 제목 고르기입니다.",
+     "46-47번: 글쓴이의 태도를 묻습니다. '비판하고 있다, 우려하고 있다, 강조하고 있다, 기대하고 있다, 지지하고 있다'를 꼭 외워 두세요.",
+     "48-50번(수필): 글을 쓴 목적, 빈칸, 태도를 묻습니다. 먼저 글쓴이가 지지하는지 반대하는지를 판단하세요."
+    ]
+   },
+   "l-3": {
+    "sub": "뉴스나 보도를 듣고 알맞은 그래프나 표를 고르세요",
+    "tips": [
+     "듣는 동안 두 가지 그래프를 구분하세요: 수치의 변화 / 이유(%).",
+     "증가 / 감소 / 꾸준히 / 급격히 → 꺾은선 그래프의 방향",
+     "가장 많았으며, 그 뒤를 이었습니다 → 원그래프의 순서 (1위 → 2위 → 3위)",
+     "예시 3: 꾸준히 증가 → ② (①은 처음에 감소했다가 다시 증가하므로 오답). 이유로 신선하고 품질이 좋아서가 가장 큼 → ③의 43%와 일치합니다. 따라서 이 문제는 수치를 확인해야 합니다."
+    ]
+   },
+   "l-4-8": {
+    "sub": "대화의 마지막 말 다음에 이어질 가장 알맞은 말을 고르세요",
+    "tips": [
+     "마지막 말은 질문이나 문제 상황입니다. 그에 대한 대답을 고르세요.",
+     "문제 상황이 나오면 → 조언 (-지 그래요?, -는 게 어때요?)",
+     "선택지가 언급되면 → 결정 (그럼 ~로 할게)",
+     "예시 4: 약을 먹었는데 잘 안 나아요 → ③ 병원에 한번 가 보지 그래요?",
+     "예시 6: 음료수는 못 갖고 들어가나 봐 → ② 얼른 마시고 들어가자",
+     "대화에 나온 단어를 그대로 다시 쓴 선택지(④ 음료수부터 사자)는 함정인 경우가 많습니다."
+    ]
+   },
+   "l-9-12": {
+    "sub": "대화가 끝난 후 여자(주로)가 이어서 할 행동을 고르세요",
+    "tips": [
+     "'곧바로 할 일'이지, 먼 미래의 계획이 아닙니다.",
+     "-ㄹ게요, -ㄹ 테니까, 지금 바로, 먼저가 들어간 문장에 집중해서 들으세요.",
+     "누구의 행동을 묻는지(여자 / 남자) 문제를 꼼꼼히 읽고 확인하세요.",
+     "예시 9: 지금 바로 가지러 갈게 → ④ (여행을 간다는 내일의 일일 뿐입니다)",
+     "예시 10: 계산 먼저 해 드릴 테니까 → ② 계산을 해 준다 (포장은 그다음입니다)"
+    ]
+   },
+   "l-13-16": {
+    "sub": "대화, 안내 방송 또는 뉴스의 내용과 일치하는 것을 고르세요",
+    "tips": [
+     "선택지 4개를 미리 읽고 핵심어에 밑줄을 그어 두세요.",
+     "함정은 3가지입니다: 반대말(처음 ↔ 10주년), 수량(모든 사람 ↔ 5만 원 이상), 대상(남자 ↔ 여자).",
+     "예시 14: 영업시간도 한 시간 연장 → ② 영업시간이 늘어난다",
+     "예시 13: 난 비 오는 날 캠핑은 안 해 봤는데 → ④는 오답이고, 남자가 분위기가 좋더라고라고 말했으므로 ③이 정답입니다."
+    ]
+   },
+   "w-51-52": {
+    "sub": "각 빈칸(㉠, ㉡)에 알맞은 문장을 쓰세요",
+    "steps": [
+     "글 전체를 읽고 빈칸이 이유, 요청, 조건, 결론 중 어떤 역할을 하는지 파악하세요.",
+     "글의 문체(-ㅂ/습니다 또는 -아/어요)에 맞추세요.",
+     "알맞은 어미를 사용하여 짧고 자연스러운 한 문장을 쓰세요.",
+     "맞춤법과 띄어쓰기를 확인하세요. 채점 대상입니다."
+    ],
+    "tips": [
+     "빈칸 앞뒤 문장이 정답의 단서가 됩니다. 요청은 -(으)세요 / -아/어 주시기 바랍니다로, 이유는 -기 때문입니다로 끝납니다.",
+     "글의 시제를 그대로 유지하세요. 주변 문장이 과거이면 정답도 과거로 씁니다.",
+     "문제당 약 5분을 배분하세요."
+    ]
+   },
+   "w-53": {
+    "sub": "200~300자로 도표나 그래프를 설명하세요",
+    "steps": [
+     "제목, 단위, 연도 또는 집단을 읽으세요.",
+     "조사나 그래프가 무엇에 관한 것인지 한 문장으로 쓰세요.",
+     "가장 큰 변화나 수치를 먼저, 그다음 두 번째 수치를 숫자와 함께 설명하세요.",
+     "문제에서 요구하면 이유나 전체적인 추세를 덧붙이세요.",
+     "평서형 문어체(-ㄴ/는다, -았/었다)를 사용하고 글자 수를 지키세요."
+    ],
+    "tips": [
+     "유용한 표현: -(으)로 나타났다, 증가했다 / 감소했다, -에 비해, -(으)ㄴ 반면에, 이는 -기 때문으로 보인다.",
+     "과거 자료에는 과거형(-았/었다)을, 전망에는 -(으)ㄹ 것으로 예상된다를 사용하세요.",
+     "자신의 의견을 쓰지 말고 같은 문장 끝맺음을 반복하지 마세요. 둘 다 감점됩니다.",
+     "약 12분을 배분하고 글자 수를 세어 볼 시간을 남기세요."
+    ]
+   },
+   "w-54": {
+    "sub": "주어진 주제에 대해 600~700자로 글을 쓰세요",
+    "steps": [
+     "주제와 안내 질문을 읽으세요. 글은 모든 질문에 답해야 합니다.",
+     "서론, 본론(이유나 예를 든 2~3가지 요점), 결론으로 간단히 개요를 짜세요.",
+     "평서형 문어체로 쓰고 접속 표현(먼저, 또한, 그러나, 따라서)으로 생각을 연결하세요.",
+     "글자 수(600~700자), 맞춤법, 띄어쓰기를 확인하세요."
+    ],
+    "tips": [
+     "안내 질문을 개요로 활용하세요. 각 질문에 순서대로 답하면 글의 구조가 잡힙니다.",
+     "-다고 생각한다 / -(으)ㄹ 필요가 있다로 분명한 의견을 밝히고, -기 때문이다와 예시로 뒷받침하세요.",
+     "구어체(-아/어요)로 쓰지 말고 700자를 넘기지 마세요.",
+     "약 25분을 배분하세요. 구상 5분, 작성 17분, 점검 3분입니다."
+    ]
+   },
+   "l-1-2": {
+    "sub": "대화를 듣고 상황에 맞는 그림을 고르세요",
+    "tips": [
+     "'지금 무엇을 하고 있는가'와 '어디에 있는가'만 잡으세요.",
+     "음성이 나오기 전에 그림 4개를 보고 차이점을 미리 메모해 두세요(가게 / 주방, 앉아 있음 / 들고 있음).",
+     "대화의 마지막 말이 보통 현재 행동을 보여 줍니다.",
+     "예시 1: 손님, 접시 위에 있는 거 먹어 봐도 돼요? → 가게 안에서 접시에 있는 간식을 집는 장면 → ①",
+     "예시 2: 의자에 앉아 보니까, 이 부분을 잘라야겠다 → 여자는 앉아 있고 남자는 그 부분을 가리키는 장면 → ②"
+    ]
+   },
+   "l-17-20": {
+    "sub": "남자의 중심 생각 고르기",
+    "tips": [
+     "정답은 남자의 마지막 말에 있습니다.",
+     "의견을 나타내는 어미에 주의해서 들으세요: -아야/어야 ~, -는 게 좋다, -거든요, -잖아요.",
+     "예시 17: 팝콘이 있어야 영화관에 온 것 같지 → ③",
+     "예시 18: 시간이 지나면 오해가 더 커질 수도 → ① 사과를 빨리하는 것이 좋다",
+     "함정은 대개 여자의 의견(④ 말을 거는 것이 힘들다)입니다. 실수로 고르도록 선택지에 놓아 둔 것이니 조심하세요."
+    ]
+   },
+   "l-21-22": {
+    "sub": "사무실/직장 대화: 남자의 중심 의견 + 내용과 일치하는 것",
+    "tips": [
+     "먼저 누가 찬성하고 누가 반대하는지 정리하세요.",
+     "예시 21: 남자가 신중해야, 부담이 클 것 같아요라고 말함 → 변경을 원하지 않음 → ④ 현재 디자인을 유지하고 싶다",
+     "예시 22: 캐릭터가 너무 사실적이라서 → ②. 아직 출시도 좀 남았는데 → ①은 오답"
+    ]
+   },
+   "l-23-24": {
+    "sub": "남자가 하고 있는 일(문의 / 요청 / 설명) + 내용과 일치하는 것",
+    "tips": [
+     "남자가 전화로 무엇을 하고 있는지 나타내는 동사를 잡으세요.",
+     "문의하다, 신청하다, 확인하다, 요청하다, 항의하다",
+     "처음 두 문장(~ 때문에 전화드렸는데요)에 목적이 나오는 경우가 많습니다."
+    ]
+   },
+   "l-25-26": {
+    "sub": "인터뷰: 중심 의견 + 내용과 일치하는 것",
+    "tips": [
+     "무엇보다, 가장 중요한 것은, 덕분이라고 생각합니다 뒤에 나오는 내용이 정답입니다.",
+     "예시 25: 무엇보다 현장 대응력을 높이기 위한 훈련 덕분 + 모의 상황…반복해서 → ① 실제 상황을 가정한 반복 훈련",
+     "예시 26: 번화한 곳이라서 사건, 사고가 많지요 → ①"
+    ]
+   },
+   "l-27-28": {
+    "sub": "화자의 의도 + 내용과 일치하는 것 고르기",
+    "tips": [
+     "\"왜 이 말을 하고 있는가?\"라는 질문에는 의도를 나타내는 동사를 고르세요.",
+     "-려고 형태: 알려 주려고(알리기 위해), 권유하려고(권하기 위해), 불만을 제기하려고(불평하기 위해), 설득하려고(설득하기 위해)",
+     "목적의 주체가 여자인지 남자인지 잘 확인하세요."
+    ]
+   },
+   "l-31-32": {
+    "sub": "토론: 남자의 중심 의견 + 남자의 태도",
+    "tips": [
+     "먼저 남자가 어느 쪽 입장인지 파악하세요.",
+     "하지만, 그런데요, 오히려 뒤에 나오는 말이 남자의 진짜 의견입니다.",
+     "태도: 반박하고 있다(상대 의견에 반대함), 동의하고 있다(상대 의견에 찬성함), 우려하고 있다(걱정함), 근거를 들어 주장하고 있다(근거를 제시하며 주장함)"
+    ]
+   },
+   "l-33-34": {
+    "sub": "강연: 무엇에 대한 내용인가(주제) + 내용과 일치하는 것 고르기",
+    "tips": [
+     "주제는 처음 두세 문장에 나옵니다. 특히 이걸 ~라고 하죠(이름을 붙이는 표현)에 주의해서 들으세요.",
+     "예시 33: 뇌의 신경망이 피부를 압박하는 자극을 위험한 신호로… → ③ 불편한 피부 자극에 대한 신경학적 설명\n④ 치료법은 언급된 적이 없습니다. 듣지 못한 내용이 들어 있는 선택지는 소거하세요.",
+     "예시 34: 뇌의 신경망 → ① 뇌와 관련이 있다"
+    ]
+   },
+   "l-35-36": {
+    "sub": "연설 / 인사말: 화자가 무엇을 하고 있는지 + 내용과 일치하는 것",
+    "tips": [
+     "행사의 종류와 화자가 하고 있는 행동을 파악하세요.",
+     "감사드립니다 → 감사를 표하다 / 축하합니다 → 축하하다 / 소개합니다 → 소개하다 / 부탁드립니다 → 당부하다",
+     "연설의 목적은 처음 부분과 마지막 부분에 드러납니다."
+    ]
+   },
+   "l-37-38": {
+    "sub": "교양 프로그램: 전문가의 중심 의견 + 내용과 일치하는 것",
+    "tips": [
+     "\"예전에는 ~ 하지만 최근에는 ~\" 형태에서는 하지만 뒤에 나오는 내용이 진짜 의견입니다.",
+     "37번 예시: 찾는 사람들의 생활을 분석하여 반영 → ③ 찾아오는 사람의 상황을 고려해 조성해야",
+     "38번 예시: 인주시는 이 공원을 조성하면서 → ②. 빽빽하게 나무를 심어라고 했으므로 ①은 오답입니다."
+    ]
+   },
+   "l-39-40": {
+    "sub": "토크쇼: 대화 앞에 나온 내용 추측하기 + 내용과 일치하는 것",
+    "tips": [
+     "맨 첫 문장이 앞에서 나온 내용을 요약해 줍니다.",
+     "첫 문장을 잘 기억하세요. 말씀하신 것처럼, 그렇게 ~ 다면, 이런 ~ 같은 표현이 들어 있습니다.",
+     "처음 3초를 놓치면 39번을 틀리게 됩니다. 끝까지 집중하세요."
+    ]
+   },
+   "l-41-42": {
+    "sub": "강연(역사 / 문화): 중심 내용 + 내용과 일치하는 것",
+    "tips": [
+     "마지막 문장이 전체를 요약합니다. 이렇게 ~, 즉, 결국 뒤에 나오는 내용을 들으세요.",
+     "41번 예시: 이렇게 돈덕전은 근대 국가로서의 위상을…드러내고자 한 곳 → ③",
+     "42번 예시: 연회를 베푸는 장소 → ②. 40주년은 연도가 아니라 즉위 기념 주년이므로 ①은 오답입니다(숫자 함정)."
+    ]
+   },
+   "l-43-44": {
+    "sub": "다큐멘터리: 주요 내용 + 이유 고르기",
+    "tips": [
+     "화자가 스스로 \"왜 ~ㄹ까요?\"라고 질문하면, 그다음에 나오는 내용이 답(이유)입니다.",
+     "~기 때문이다, ~ 덕분에, ~(으)므로 같은 표현에 귀를 기울이세요.",
+     "동물과 자연에 관한 내용이 자주 나오므로 생물 관련 어휘를 외워 두세요."
+    ]
+   },
+   "l-45-46": {
+    "sub": "강연(과학/기술): 내용과 일치하는 것 + 말하는 방식",
+    "tips": [
+     "글의 구조를 보여 주는 표현을 놓치지 마세요.",
+     "첫째, 둘째 → 나열하다\n예를 들어 → 사례를 들다\n~에 비해 → 비교하다\n~라고 합니다 (정의) → 정의하다 / 규정하다",
+     "예시 45: 내부 압력이 올라가고 → ④. 중앙 부분은 두껍고 → ①은 오답; 익는 속도가 빨라집니다 → ③은 오답",
+     "예시 46: 첫째…둘째… + 왜 그럴까요? → ③ 이유를 나열하며 원리를 알려 주고 있다"
+    ]
+   },
+   "l-47-48": {
+    "sub": "토크쇼(정책/사회): 내용과 일치하는 것 + 남자의 태도",
+    "tips": [
+     "서술어 어미가 주는 느낌에 귀를 기울이세요.",
+     "-ㄹ까 걱정입니다 → 우려\n-아야 할 것입니다 → 촉구/강조\n-다는 점에서 의미가 있습니다 → 긍정적 평가\n과연 ~ㄹ지 의문입니다 → 회의적"
+    ]
+   },
+   "l-49-50": {
+    "sub": "학술 강연: 내용과 일치하는 것 + 말하는 방식/태도",
+    "tips": [
+     "45~46번과 마찬가지로 이야기의 전개 방식을 살펴보세요.",
+     "예시 49: 24시간 내내 태양을 볼 수 있는 궤도 → ④\n• 태양 전지를 부착 → ①은 오답\n• 전력 소비가 굉장해 → ③은 오답\n• 얼마 전…발사됐는데요 → ②는 오답",
+     "예시 50: 왜 ~ 계산했을까요? 이는 ~ 때문이었습니다 → ① 발사 시각이 정해진 배경을 과학적으로 설명"
+    ]
+   },
+   "guide:reading-time": {
+    "title": "시간 관리 요령",
+    "listTitle": "핵심 요령 3가지",
+    "tableHead": [
+     "영역",
+     "시간"
+    ],
+    "rowLabels": [
+     "1 ~ 12",
+     "13 ~ 27",
+     "28 ~ 41",
+     "42 ~ 50",
+     "검토 / 답안지 작성"
+    ],
+    "list": [
+     "어려운 문제에 2분 이상 쓰지 마세요. 일단 넘어갔다가 나중에 다시 풀어 보세요.",
+     "답안지(OMR)를 마지막에 한꺼번에 마킹하지 마세요. 각 영역을 마칠 때마다 마킹하세요.",
+     "모르더라도 빈칸으로 두지 마세요. 감점이 없으니 찍어서라도 표시하세요."
+    ]
+   },
+   "guide:listening-habits": {
+    "title": "가장 중요한 5가지 습관 (듣기)",
+    "list": [
+     "음성으로 문제 안내가 나오는 동안 다음 문제의 선택지를 미리 읽으세요.",
+     "들으면서 틀린 내용은 X로 지우세요. 그러면 남은 1~2개 중에서만 고르면 됩니다.",
+     "하지만, 그런데, 무엇보다, 결국, 이렇게 뒤에 나오는 내용 = 정답입니다.",
+     "처음, 이미, 아직, 작년부터, ~ 이상은 가장 자주 나오는 함정입니다.",
+     "대화에 나오지 않은 내용(치료법, 외국 자본)이 있는 선택지는 항상 오답입니다."
+    ],
+    "leads": [
+     "미리 읽기",
+     "소거하기",
+     "연결어",
+     "숫자와 시간",
+     "듣지 못한 내용은 버리기"
+    ]
+   },
+   "general": {
+    "text": "지문을 읽기 전에 문제부터 읽으세요. 무엇을 찾아야 하는지 알면 시간을 많이 아낄 수 있습니다."
+   },
+   "l-29-30": {
+    "sub": "인터뷰: 남자는 누구인가(직업) + 내용과 일치하는 것은 무엇인가",
+    "tips": [
+     "하는 일을 보여 주는 동사(연구, 개발, 설치, 관리, 홍보)를 잡아내세요.",
+     "예시 29번: 20년 동안 제주 바다, 논문을 발표, 어종 분포에 대해 조사 → ① 해양 생태계를 연구하는 사람",
+     "예시 30번: 다른 국가와 공동으로 팀을 꾸려서 → ②. 20년 동안이라고 했으므로 ③ 작년부터 시작은 오답입니다"
+    ]
+   }
+  }
+ }
+}

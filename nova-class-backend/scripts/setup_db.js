@@ -126,6 +126,56 @@ async function setup() {
     )
   `);
 
+  // Slide-by-slide lecture narration for the PDF tutor. A script is a pure
+  // function of one page's text in one language, so it is generated once and
+  // reused for every student; content_hash invalidates it when the page text
+  // (or the prompt version) changes.
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS lecture_scripts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      material_id INT NOT NULL,
+      page_no INT NOT NULL,
+      lang VARCHAR(10) NOT NULL DEFAULT 'en',
+      content_hash CHAR(40) NOT NULL,
+      narration TEXT NOT NULL,
+      key_points JSON NULL,
+      model VARCHAR(64) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_lecture_slide (material_id, page_no, lang),
+      FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE
+    )
+  `);
+
+  // The whole-PDF "lesson map" (storyline + a gist per slide) that every slide
+  // script is written against, so the lecture flows as one story.
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS lecture_outlines (
+      material_id INT PRIMARY KEY,
+      content_hash CHAR(40) NOT NULL,
+      payload JSON NOT NULL,
+      model VARCHAR(64) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Pop-up quick checks, one per slide. `payload` holds the question, options
+  // and the correct answer; the answer is only ever sent back by the grading
+  // endpoint, never with the question.
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS lecture_quizzes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      material_id INT NOT NULL,
+      page_no INT NOT NULL,
+      lang VARCHAR(10) NOT NULL DEFAULT 'en',
+      content_hash CHAR(40) NOT NULL,
+      payload JSON NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_lecture_quiz (material_id, page_no, lang),
+      FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE
+    )
+  `);
+
   // AI Study Mentor (Auto-Summary / Practice Quiz / Smart Highlighting) —
   // pure functions of a material's own content, same result for every
   // student who opens it in the same language, so cache per (material,
@@ -355,6 +405,7 @@ async function setup() {
 
   // K-Mate TOPIK practice quiz history and weak points (also created on first use by quizStore)
   for (const ddl of require("../services/topik/quizStore").TABLES) await conn.query(ddl);
+  for (const ddl of require("../services/topik/guides").TABLES) await conn.query(ddl);   // cached strategy guides and grammar explanations
 
   console.log("✅ All tables created successfully");
   await conn.end();

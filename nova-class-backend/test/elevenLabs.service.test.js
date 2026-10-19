@@ -209,3 +209,77 @@ test("getSignedUrl throws a coded error on a non-OK response", async () => {
     },
   );
 });
+
+test("lecture mode uses the expressive multilingual model with slower, warmer voice settings", async () => {
+  process.env.ELEVENLABS_API_KEY = "test-key";
+  delete process.env.ELEVENLABS_TTS_MODEL_ID;
+  delete process.env.ELEVENLABS_LECTURE_MODEL_ID;
+  let body;
+  global.fetch = async (url, options) => {
+    body = JSON.parse(options.body);
+    return { ok: true, arrayBuffer: async () => new TextEncoder().encode("x").buffer };
+  };
+
+  await service.textToSpeech("Welcome to the lesson.", undefined, { lecture: true });
+
+  assert.equal(body.model_id, "eleven_multilingual_v2");
+  assert.equal(body.voice_settings.speed, 0.97);
+  assert.ok(body.voice_settings.style >= 0.45, "more expressive than the chat voice");
+  assert.ok(body.voice_settings.stability <= 0.45, "enough variation to avoid a monotone");
+});
+
+test("quick chat replies keep the fast turbo model and are unaffected by lecture mode", async () => {
+  process.env.ELEVENLABS_API_KEY = "test-key";
+  delete process.env.ELEVENLABS_TTS_MODEL_ID;
+  let body;
+  global.fetch = async (url, options) => {
+    body = JSON.parse(options.body);
+    return { ok: true, arrayBuffer: async () => new TextEncoder().encode("x").buffer };
+  };
+
+  await service.textToSpeech("Hi");
+
+  assert.equal(body.model_id, "eleven_turbo_v2_5");
+  assert.equal("speed" in body.voice_settings, false);
+});
+
+test("a model and language code can be passed for Burmese (eleven_v4), alongside lecture settings", async () => {
+  process.env.ELEVENLABS_API_KEY = "test-key";
+  let url, body;
+  global.fetch = async (u, options) => {
+    url = u;
+    body = JSON.parse(options.body);
+    return { ok: true, arrayBuffer: async () => new TextEncoder().encode("x").buffer };
+  };
+
+  await service.textToSpeech("မင်္ဂလာပါ", service.BURMESE_LECTURE_VOICE_ID, { lecture: true, modelId: service.BURMESE_LECTURE_MODEL_ID, languageCode: "my" });
+
+  assert.match(url, /text-to-speech\/EXAVITQu4vr4xnSDxMaL/);
+  assert.equal(body.model_id, "eleven_v4");
+  assert.equal(body.language_code, "my");
+  assert.equal(body.voice_settings.speed, 0.97);
+});
+
+test("no language_code is sent unless one is asked for", async () => {
+  process.env.ELEVENLABS_API_KEY = "test-key";
+  let body;
+  global.fetch = async (u, options) => {
+    body = JSON.parse(options.body);
+    return { ok: true, arrayBuffer: async () => new TextEncoder().encode("x").buffer };
+  };
+  await service.textToSpeech("Hello");
+  assert.equal("language_code" in body, false);
+});
+
+test("lecture requests omit optimize_streaming_latency (eleven_v4 rejects it) while chat requests keep it", async () => {
+  process.env.ELEVENLABS_API_KEY = "test-key";
+  const urls = [];
+  global.fetch = async (u) => {
+    urls.push(u);
+    return { ok: true, arrayBuffer: async () => new TextEncoder().encode("x").buffer };
+  };
+  await service.textToSpeech("Hi", undefined, { lecture: true, modelId: "eleven_v4", languageCode: "my" });
+  await service.textToSpeech("Hi");
+  assert.equal(urls[0].includes("optimize_streaming_latency"), false);
+  assert.equal(urls[1].includes("optimize_streaming_latency=3"), true);
+});
