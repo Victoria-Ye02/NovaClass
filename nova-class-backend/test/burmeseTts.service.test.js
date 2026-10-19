@@ -95,3 +95,53 @@ test("throws a coded error on a non-OK Azure response", async () => {
     },
   );
 });
+
+test("lecture mode sends SSML with sentence pauses and a gentler pace, with the text still escaped", async () => {
+  process.env.AZURE_SPEECH_KEY = "test-key";
+  process.env.AZURE_SPEECH_REGION = "southeastasia";
+  delete process.env.AZURE_SPEECH_VOICE;
+  let body;
+  global.fetch = async (url, options) => {
+    body = options.body;
+    return { ok: true, arrayBuffer: async () => new TextEncoder().encode("x").buffer };
+  };
+
+  await service.textToSpeech("မင်္ဂလာပါ။ ဒီနေ့သင်ခန်းစာက A & B ပါ။\nနောက်အပိုဒ်။", undefined, { lecture: true });
+
+  assert.match(body, /<prosody rate="-8%"/);
+  assert.match(body, /<break time="320ms"\/>/);
+  assert.match(body, /<break time="720ms"\/>/);
+  assert.match(body, /A &amp; B/);
+});
+
+// ---- trimTrailingSilence -----------------------------------------------------
+// 24 kHz / 48 kbps mono MPEG-2 Layer III: 144-byte frames of 24 ms each.
+const FRAME = Buffer.concat([Buffer.from([0xff, 0xf3, 0x64, 0xc4]), Buffer.alloc(140, 1)]);
+const frames = n => Buffer.concat(Array(n).fill(FRAME));
+
+test("trimTrailingSilence removes whole frames from the end and keeps the rest intact", () => {
+  const audio = frames(100); // 2.4 s
+  const trimmed = service.trimTrailingSilence(audio, 700); // 29 frames fit in 700 ms
+  assert.equal(trimmed.length, (100 - 29) * 144);
+  assert.equal(trimmed.compare(audio, 0, trimmed.length), 0, "the kept part is byte-for-byte the original");
+});
+
+test("trimTrailingSilence never trims a short clip down to nothing", () => {
+  const audio = frames(8);
+  assert.equal(service.trimTrailingSilence(audio, 700), audio, "too short to parse safely → untouched");
+  const mid = frames(20);
+  assert.ok(service.trimTrailingSilence(mid, 700).length >= 5 * 144, "always keeps a few frames");
+});
+
+test("trimTrailingSilence leaves anything that is not the expected MP3 layout untouched", () => {
+  const junk = Buffer.from("this is not an mp3 at all, just bytes".repeat(20));
+  assert.equal(service.trimTrailingSilence(junk, 700), junk);
+  const wrongLayer = Buffer.concat([Buffer.from([0xff, 0xfb, 0x90, 0x00]), Buffer.alloc(500)]); // MPEG-1 Layer III
+  assert.equal(service.trimTrailingSilence(wrongLayer, 700), wrongLayer);
+});
+
+test("trimTrailingSilence ignores a truncated final frame", () => {
+  const audio = Buffer.concat([frames(60), FRAME.subarray(0, 50)]);
+  const trimmed = service.trimTrailingSilence(audio, 700);
+  assert.equal(trimmed.length, (60 - 29) * 144);
+});

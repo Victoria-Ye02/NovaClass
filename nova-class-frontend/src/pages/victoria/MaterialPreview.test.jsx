@@ -262,6 +262,77 @@ describe("MaterialPreview PDF integration", () => {
     }
   });
 
+  describe("lesson language", () => {
+    async function openLesson() {
+      render(<MaterialPreview />);
+      await screen.findByTestId("controlled-pdf-viewer");
+      fireEvent.click(screen.getByLabelText("Open AI chat"));
+      await waitFor(() => expect(API.post).toHaveBeenCalledWith(
+        "/classroom/materials/9/ai",
+        expect.objectContaining({ teachingIntent: "start" }),
+      ));
+      await waitFor(() => expect(screen.getByLabelText("Type your question").disabled).toBe(false));
+    }
+
+    const aiCalls = () => API.post.mock.calls.filter(([url]) => url === "/classroom/materials/9/ai").map(([, body]) => body);
+
+    it("shows the Settings language as the teaching language and sends no override at first", async () => {
+      selectedLanguage.value = "my";
+      try {
+        API.post.mockResolvedValue({ data: { reply: "ဟုတ်ကဲ့။", replyLang: "my" } });
+        await openLesson();
+        expect(screen.getByText("မြန်မာ")).toBeTruthy();
+        expect(screen.queryByLabelText("Back to my Settings language")).toBeNull();
+        expect(aiCalls()[0]).not.toHaveProperty("lessonLang");
+      } finally {
+        selectedLanguage.value = "en";
+      }
+    });
+
+    it("keeps a language the student asked for: later requests carry it and the chip offers a way back", async () => {
+      selectedLanguage.value = "my";
+      try {
+        API.post.mockImplementation(async (url, body) => ({
+          data: { reply: "Sure.", replyLang: body.message?.includes("English") ? "en" : (body.lessonLang || "my") },
+        }));
+        await openLesson();
+
+        fireEvent.change(screen.getByLabelText("Type your question"), { target: { value: "Can you explain in English?" } });
+        fireEvent.click(screen.getByText("Ask"));
+        await waitFor(() => expect(screen.getByLabelText("Back to my Settings language")).toBeTruthy());
+        expect(screen.getByText("English")).toBeTruthy();
+
+        fireEvent.click(screen.getByText("Explain simply"));
+        await waitFor(() => expect(aiCalls().some(call => call.teachingIntent === "simplify")).toBe(true));
+        const simplify = aiCalls().find(call => call.teachingIntent === "simplify");
+        expect(simplify.lessonLang).toBe("en");
+        expect(simplify.lang).toBe("my");
+      } finally {
+        selectedLanguage.value = "en";
+      }
+    });
+
+    it("returns to the Settings language when the student taps the chip's ×", async () => {
+      selectedLanguage.value = "my";
+      try {
+        API.post.mockImplementation(async (url, body) => ({
+          data: { reply: "Sure.", replyLang: body.message?.includes("English") ? "en" : (body.lessonLang || "my") },
+        }));
+        await openLesson();
+        fireEvent.change(screen.getByLabelText("Type your question"), { target: { value: "explain in English" } });
+        fireEvent.click(screen.getByText("Ask"));
+        fireEvent.click(await screen.findByLabelText("Back to my Settings language"));
+        expect(screen.getByText("မြန်မာ")).toBeTruthy();
+
+        fireEvent.click(screen.getByText("Check my understanding"));
+        await waitFor(() => expect(aiCalls().some(call => call.teachingIntent === "check")).toBe(true));
+        expect(aiCalls().find(call => call.teachingIntent === "check")).not.toHaveProperty("lessonLang");
+      } finally {
+        selectedLanguage.value = "en";
+      }
+    });
+  });
+
   it("resets the AI chat panel when switching to a different material, instead of leaking the previous material's conversation into it", async () => {
     API.post.mockResolvedValueOnce({ data: { reply: "This lesson covers the POS system's Java/JDBC implementation." } });
 
@@ -280,7 +351,10 @@ describe("MaterialPreview PDF integration", () => {
     await screen.findByTestId("controlled-pdf-viewer");
 
     expect(screen.queryByText("This lesson covers the POS system's Java/JDBC implementation.")).toBeNull();
-    expect(screen.getByText("👋 Hello. I'm Professor Nova, ready to guide you through this lesson.")).toBeTruthy();
+    // The lecture stage shows only the current script, so a reset panel
+    // shows the new lesson's opening line (or its loading state), never the
+    // previous material's text.
+    expect(screen.getAllByLabelText("Professor Nova").length).toBeGreaterThan(0);
   });
 
   it("passes a referentially stable onPageChange callback across re-renders (regression: an inline callback here previously caused an infinite render loop)", async () => {
@@ -302,45 +376,14 @@ describe("MaterialPreview PDF integration", () => {
     expect(refAfter).toBe(refBefore);
   });
 
-  describe("AI Chat voice mode", () => {
-    // Voice input records raw audio (MediaRecorder) and transcribes it with
-    // Whisper server-side, rather than using the browser's own
-    // SpeechRecognition — so these fakes stand in for the Web Audio /
-    // MediaRecorder pipeline instead of a recognition API. The component's
-    // own voice-activity loop polls the fake analyser on each
-    // requestAnimationFrame tick and compares against Date.now(), so tests
-    // drive it by advancing a fake clock and firing queued rAF callbacks by
-    // hand — mirroring VOICE_MIN_SPEECH_MS / VOICE_SILENCE_TIMEOUT_MS from
-    // MaterialPreview.jsx.
-    const MIN_SPEECH_MS = 500;
-    const SILENCE_TIMEOUT_MS = 900;
-
-    class FakeAnalyserNode {
-      constructor() { this.fftSize = 512; this.volume = 0; }
-      getByteTimeDomainData(data) {
-        const deviation = Math.min(127, Math.round(this.volume * 128));
-        for (let i = 0; i < data.length; i++) data[i] = 128 + (i % 2 === 0 ? deviation : -deviation);
-      }
-    }
-
-    class FakeAudioContext {
-      constructor() {
-        this.analyser = new FakeAnalyserNode();
-        FakeAudioContext.instances.push(this);
-      }
-      createMediaStreamSource() { return { connect: () => {} }; }
-      createAnalyser() { return this.analyser; }
-      close() { return Promise.resolve(); }
-    }
-    FakeAudioContext.instances = [];
-
+  describe("Push-to-talk question", () => {
+    // MediaRecorder + getUserMedia are faked; the transcription is the
+    // mocked /multimodal/transcribe call.
     class FakeMediaRecorder {
       constructor(stream) {
         this.stream = stream;
         this.state = "inactive";
         this.mimeType = "audio/webm";
-        this.ondataavailable = null;
-        this.onstop = null;
         FakeMediaRecorder.instances.push(this);
       }
       start() { this.state = "recording"; }
@@ -353,59 +396,22 @@ describe("MaterialPreview PDF integration", () => {
     }
     FakeMediaRecorder.instances = [];
 
-    function fakeMicStream() {
-      return { getTracks: () => [{ stop: vi.fn() }] };
-    }
-
+    let trackStop;
     let systemNow;
-    let rafCallbacks;
-
-    function tickVad() {
-      const callbacks = rafCallbacks;
-      rafCallbacks = [];
-      callbacks.forEach(cb => cb());
-    }
-
-    function advance(ms) { systemNow += ms; }
-
-    function setVolume(level) {
-      FakeAudioContext.instances[FakeAudioContext.instances.length - 1].analyser.volume = level;
-    }
-
-    // Drives a full listening turn from silence, through enough sustained
-    // "speech" to count as a real answer, back to silence past the timeout —
-    // the same three-tick shape the component's own loop needs to notice
-    // speech started, confirm it lasted, then notice it stopped.
-    async function completeListeningTurn() {
-      setVolume(0.5);
-      advance(50);
-      tickVad();
-      advance(MIN_SPEECH_MS + 100);
-      tickVad();
-      setVolume(0);
-      advance(SILENCE_TIMEOUT_MS + 100);
-      tickVad();
-    }
 
     beforeEach(() => {
-      FakeAudioContext.instances.length = 0;
       FakeMediaRecorder.instances.length = 0;
+      trackStop = vi.fn();
       systemNow = 1_000_000;
-      rafCallbacks = [];
       vi.spyOn(Date, "now").mockImplementation(() => systemNow);
-      vi.stubGlobal("requestAnimationFrame", (cb) => { rafCallbacks.push(cb); return rafCallbacks.length; });
-      vi.stubGlobal("cancelAnimationFrame", () => {});
       vi.stubGlobal("MediaRecorder", FakeMediaRecorder);
-      vi.stubGlobal("AudioContext", FakeAudioContext);
       Object.defineProperty(window.navigator, "mediaDevices", {
-        value: { getUserMedia: vi.fn().mockResolvedValue(fakeMicStream()) },
+        value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop: trackStop }] }) },
         configurable: true,
       });
-      vi.stubGlobal("SpeechSynthesisUtterance", function (text) { this.text = text; });
-      vi.stubGlobal("speechSynthesis", { speak: vi.fn(), cancel: vi.fn() });
     });
 
-    async function openChatAndVoiceMode() {
+    async function openChat() {
       render(<MaterialPreview />);
       await screen.findByTestId("controlled-pdf-viewer");
       fireEvent.click(screen.getByLabelText("Open AI chat"));
@@ -413,188 +419,100 @@ describe("MaterialPreview PDF integration", () => {
         "/classroom/materials/9/ai",
         expect.objectContaining({ mode: "teacher", teachingIntent: "start" }),
       ));
-      fireEvent.click(screen.getByLabelText("Start voice chat"));
-      await screen.findByText("Listening…");
+      await waitFor(() => expect(screen.getByLabelText("Ask a question by voice").disabled).toBe(false));
     }
 
-    it("hides the microphone button when the browser has no voice input support", async () => {
+    async function recordAnd(transcript) {
+      API.post.mockImplementation(async (url) => {
+        if (url === "/multimodal/transcribe") return { data: { text: transcript } };
+        return { data: { reply: "Good question — a for loop repeats a block." } };
+      });
+      fireEvent.click(screen.getByLabelText("Ask a question by voice"));
+      await screen.findByText(/Listening…/);
+      systemNow += 2000;
+      fireEvent.click(screen.getByLabelText("Stop recording"));
+    }
+
+    it("hides the microphone button when the browser has no recording support", async () => {
       Object.defineProperty(window.navigator, "mediaDevices", { value: undefined, configurable: true });
       vi.stubGlobal("MediaRecorder", undefined);
-      render(<MaterialPreview />);
-      await screen.findByTestId("controlled-pdf-viewer");
-      fireEvent.click(screen.getByLabelText("Open AI chat"));
-      await waitFor(() => expect(API.post).toHaveBeenCalledWith(
-        "/classroom/materials/9/ai",
-        expect.objectContaining({ mode: "teacher", teachingIntent: "start" }),
-      ));
-
-      expect(screen.queryByLabelText("Start voice chat")).toBeNull();
+      await openChat().catch(() => {});
+      expect(screen.queryByLabelText("Ask a question by voice")).toBeNull();
+      expect(screen.getByLabelText("Type your question")).toBeTruthy();
     });
 
-    it("opens the voice overlay and starts recording as soon as the mic button is tapped", async () => {
-      await openChatAndVoiceMode();
+    it("records inside the panel without a full-screen takeover", async () => {
+      await openChat();
+      fireEvent.click(screen.getByLabelText("Ask a question by voice"));
+      await screen.findByText(/Listening…/);
 
-      expect(FakeMediaRecorder.instances).toHaveLength(1);
-      expect(FakeMediaRecorder.instances[0].state).toBe("recording");
+      expect(screen.queryByText("End Voice Chat")).toBeNull();
+      expect(screen.queryByLabelText("Close voice chat")).toBeNull();
+      expect(screen.getByTestId("controlled-pdf-viewer")).toBeTruthy();
     });
 
-    it("transcribes the recording, sends it to Nova Teacher, and speaks the reply", async () => {
-      API.post.mockImplementation((url) => {
-        if (url === "/multimodal/transcribe") return Promise.resolve({ data: { text: "what is the mitochondria" } });
-        if (url === "/classroom/materials/9/ai") return Promise.resolve({ data: { reply: "The mitochondria is the powerhouse of the cell." } });
-        return Promise.reject(new Error(`Unexpected POST ${url}`));
-      });
-      await openChatAndVoiceMode();
+    it("shows what it heard for the student to confirm and does not send anything yet", async () => {
+      await openChat();
+      await recordAnd("what is a for loop");
+      const draft = await screen.findByLabelText("What I heard");
+      expect(draft.value).toBe("what is a for loop");
 
-      await completeListeningTurn();
-
-      await waitFor(() => expect(API.post).toHaveBeenCalledWith("/multimodal/transcribe", expect.any(FormData)));
-      await waitFor(() => expect(API.post).toHaveBeenCalledWith(
-        "/classroom/materials/9/ai",
-        expect.objectContaining({ mode: "teacher", teachingIntent: "answer", message: "what is the mitochondria", voice: true }),
-      ));
-      // Appears twice: once in the chat log behind the overlay, once as the
-      // voice mode's on-screen caption of what the AI is saying.
-      await waitFor(() => expect(
-        screen.getAllByText("The mitochondria is the powerhouse of the cell.").length
-      ).toBeGreaterThanOrEqual(2));
-      expect(screen.getByText("You: what is the mitochondria")).toBeTruthy();
-      await waitFor(() => expect(speechSynthesis.speak).toHaveBeenCalledTimes(1));
-      expect(screen.getByText("Speaking…")).toBeTruthy();
+      const askCalls = API.post.mock.calls.filter(([url, body]) => url === "/classroom/materials/9/ai" && body.message === "what is a for loop");
+      expect(askCalls).toHaveLength(0);
     });
 
-    it("cuts Nova off and starts capturing the student's question as soon as they start talking over her — no tap needed", async () => {
-      API.post.mockImplementation((url) => {
-        if (url === "/multimodal/transcribe") return Promise.resolve({ data: { text: "first question" } });
-        if (url === "/classroom/materials/9/ai") return Promise.resolve({ data: { reply: "First answer." } });
-        return Promise.reject(new Error(`Unexpected POST ${url}`));
-      });
-      await openChatAndVoiceMode();
-      await completeListeningTurn();
-      await waitFor(() => expect(speechSynthesis.speak).toHaveBeenCalledTimes(1));
-      expect(screen.getByText("Speaking…")).toBeTruthy();
-
-      // speak() starts a second recording segment purely to watch for a
-      // barge-in — not a fresh one the student had to ask for by tapping.
-      expect(FakeMediaRecorder.instances).toHaveLength(2);
-
-      // The student starts talking over Nova.
-      setVolume(0.5);
-      advance(50);
-      tickVad();
-
-      expect(speechSynthesis.cancel).toHaveBeenCalled();
-      expect(await screen.findByText("Listening…")).toBeTruthy();
-      // Continues the very same recording — interrupting doesn't spin up a
-      // third instance.
-      expect(FakeMediaRecorder.instances).toHaveLength(2);
-
-      // The same recording captures the rest of what they actually meant to
-      // say, exactly like a normal turn would.
-      API.post.mockImplementation((url) => {
-        if (url === "/multimodal/transcribe") return Promise.resolve({ data: { text: "wait actually never mind" } });
-        if (url === "/classroom/materials/9/ai") return Promise.resolve({ data: { reply: "Second answer." } });
-        return Promise.reject(new Error(`Unexpected POST ${url}`));
-      });
-      advance(MIN_SPEECH_MS + 100);
-      tickVad();
-      setVolume(0);
-      advance(SILENCE_TIMEOUT_MS + 100);
-      tickVad();
+    it("sends the corrected text to Nova Teacher and releases the mic", async () => {
+      await openChat();
+      await recordAnd("what is a four loop");
+      const draft = await screen.findByLabelText("What I heard");
+      fireEvent.change(draft, { target: { value: "what is a for loop" } });
+      fireEvent.click(screen.getByText("Ask Nova"));
 
       await waitFor(() => expect(API.post).toHaveBeenCalledWith(
         "/classroom/materials/9/ai",
-        expect.objectContaining({ message: "wait actually never mind" }),
+        expect.objectContaining({ message: "what is a for loop", teachingIntent: "answer" }),
       ));
+      expect(await screen.findByText(/a for loop repeats a block/)).toBeTruthy();
+      expect(trackStop).toHaveBeenCalled();
+      expect(screen.queryByLabelText("What I heard")).toBeNull();
     });
 
-    it("automatically starts listening again once speech finishes, without needing another tap", async () => {
-      API.post.mockImplementation((url) => {
-        if (url === "/multimodal/transcribe") return Promise.resolve({ data: { text: "a question" } });
-        if (url === "/classroom/materials/9/ai") return Promise.resolve({ data: { reply: "Answer." } });
-        return Promise.reject(new Error(`Unexpected POST ${url}`));
-      });
-      await openChatAndVoiceMode();
-      await completeListeningTurn();
-      await waitFor(() => expect(speechSynthesis.speak).toHaveBeenCalledTimes(1));
-
-      const utterance = speechSynthesis.speak.mock.calls[0][0];
-      utterance.onend();
-
-      expect(await screen.findByText("Listening…")).toBeTruthy();
-      // [0] the initial listening segment, [1] speak()'s barge-in watcher —
-      // reused in place as the next listening turn rather than a fresh
-      // third recorder.
-      expect(FakeMediaRecorder.instances).toHaveLength(2);
+    it("tells the student when no speech was captured instead of sending nothing", async () => {
+      await openChat();
+      await recordAnd("");
+      expect(await screen.findByText(/couldn't hear any speech/i)).toBeTruthy();
+      expect(screen.queryByLabelText("What I heard")).toBeNull();
     });
 
-    it("keeps listening (rather than going silent) when a recording ends with no speech captured", async () => {
-      await openChatAndVoiceMode();
-      const recorder = FakeMediaRecorder.instances[0];
-
-      recorder.stop(); // e.g. the max-turn safety cap, or any stop with nothing said
-
-      expect(await screen.findByText("Listening…")).toBeTruthy();
-      expect(FakeMediaRecorder.instances).toHaveLength(2);
+    it("rejects a recording that is too short", async () => {
+      await openChat();
+      API.post.mockImplementation(async () => ({ data: { text: "x" } }));
+      fireEvent.click(screen.getByLabelText("Ask a question by voice"));
+      await screen.findByText(/Listening…/);
+      fireEvent.click(screen.getByLabelText("Stop recording"));
+      expect(await screen.findByText(/too short/i)).toBeTruthy();
+      expect(API.post).not.toHaveBeenCalledWith("/multimodal/transcribe", expect.anything());
     });
 
-    it("returns to the ready state once speech finishes if voice mode was closed in the meantime", async () => {
-      API.post.mockImplementation((url) => {
-        if (url === "/multimodal/transcribe") return Promise.resolve({ data: { text: "a question" } });
-        if (url === "/classroom/materials/9/ai") return Promise.resolve({ data: { reply: "Answer." } });
-        return Promise.reject(new Error(`Unexpected POST ${url}`));
-      });
-      await openChatAndVoiceMode();
-      await completeListeningTurn();
-      await waitFor(() => expect(speechSynthesis.speak).toHaveBeenCalledTimes(1));
-      const utterance = speechSynthesis.speak.mock.calls[0][0];
-
-      fireEvent.click(screen.getByLabelText("Close voice chat"));
-      utterance.onend();
-
-      expect(screen.queryByText("Listening…")).toBeNull();
-      // [0] the initial listening segment, [1] the barge-in watcher from
-      // speak() — closing already stopped it; onend firing afterward
-      // shouldn't start a third.
-      expect(FakeMediaRecorder.instances).toHaveLength(2);
+    it("discards a draft on request", async () => {
+      await openChat();
+      await recordAnd("what is a for loop");
+      await screen.findByLabelText("What I heard");
+      fireEvent.click(screen.getByText("Discard"));
+      expect(screen.queryByLabelText("What I heard")).toBeNull();
     });
 
-    it("stops recording and cancels speech when voice mode is closed", async () => {
-      await openChatAndVoiceMode();
-      const recorder = FakeMediaRecorder.instances[0];
-      const stopSpy = vi.spyOn(recorder, "stop");
-
-      fireEvent.click(screen.getByLabelText("Close voice chat"));
-
-      expect(stopSpy).toHaveBeenCalled();
-      expect(speechSynthesis.cancel).toHaveBeenCalled();
-      expect(screen.queryByText("Listening…")).toBeNull();
-    });
-
-    it("also closes voice mode from the prominent End Voice Chat button", async () => {
-      await openChatAndVoiceMode();
-      const recorder = FakeMediaRecorder.instances[0];
-      const stopSpy = vi.spyOn(recorder, "stop");
-
-      fireEvent.click(screen.getByText("End Voice Chat"));
-
-      expect(stopSpy).toHaveBeenCalled();
-      expect(screen.queryByText("Listening…")).toBeNull();
-    });
-
-    // AIChatPanel never unmounts when the sidebar is collapsed — it only
-    // slides out of view with CSS — so a voice session left open would
-    // otherwise keep listening and replying indefinitely in the background,
-    // invisible, once the student collapses the sidebar by its handle
-    // instead of using the voice panel's own End Voice Chat/X button.
-    it("also stops the mic when the chat sidebar itself is collapsed, not just via the voice panel's own close button", async () => {
-      await openChatAndVoiceMode();
+    it("stops the mic when the chat sidebar is collapsed mid-recording", async () => {
+      await openChat();
+      fireEvent.click(screen.getByLabelText("Ask a question by voice"));
+      await screen.findByText(/Listening…/);
       const recorder = FakeMediaRecorder.instances[0];
       const stopSpy = vi.spyOn(recorder, "stop");
 
       fireEvent.click(screen.getByLabelText("Close AI chat"));
 
       expect(stopSpy).toHaveBeenCalled();
+      expect(trackStop).toHaveBeenCalled();
     });
   });
 });

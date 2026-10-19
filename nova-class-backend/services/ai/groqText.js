@@ -1,46 +1,21 @@
 const Groq = require("groq-sdk");
-const OpenAI = require("openai");
 
 require("dotenv").config();
 
-// Text completion goes through OpenRouter. Gemini 2.5 Flash: measured ~1.4s
-// per reply against ~5s for the previous z-ai/glm-5.2 (a reasoning model that
-// was slow and needed reasoning explicitly disabled), with equal-or-better
-// Burmese/Korean quality. The whole voice loop's latency (STT → LLM → TTS) was
-// dominated by this call, so the model choice is the single biggest speed
-// lever. Whisper transcription stays on Groq directly; OpenRouter doesn't
-// offer it.
-const TEXT_MODEL = "google/gemini-2.5-flash";
-let textClient = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1" });
+// Text completion now goes to OpenAI (OPENAI_API_KEY) like the rest of the app
+// — see openaiText.js, which owns the client, the model (OPENAI_TEXT_MODEL,
+// default gpt-4o-mini) and streaming. This module keeps its old name and
+// exports so existing callers don't change, and still owns Whisper speech
+// recognition, which runs on Groq.
+const openai = require("./openaiText");
+
+const TEXT_MODEL = openai.TEXT_MODEL;
 let audioClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-async function completeText({ messages, maxTokens = 1024, responseFormat }) {
-  return textClient.chat.completions.create({
-    model: TEXT_MODEL,
-    messages,
-    max_tokens: maxTokens,
-    ...(responseFormat ? { response_format: responseFormat } : {}),
-  });
-}
+const completeText = args => openai.completeText(args);
+const streamCompletion = args => openai.streamCompletion(args);
 
-// Yields text deltas as they arrive instead of waiting for the full reply —
-// lets a caller (voice mode's sentence-by-sentence TTS, notably) start acting
-// on the first sentence while the model is still generating the rest, instead
-// of the whole "wait for full text, then speak" round-trip being fully serial.
-async function* streamCompletion({ messages, maxTokens = 1024 }) {
-  const stream = await textClient.chat.completions.create({
-    model: TEXT_MODEL,
-    messages,
-    max_tokens: maxTokens,
-    stream: true,
-  });
-  for await (const chunk of stream) {
-    const delta = chunk.choices?.[0]?.delta?.content;
-    if (delta) yield delta;
-  }
-}
-
-async function transcribeAudio({ file, responseFormat = "text", language }) {
+async function transcribeAudio({ file, responseFormat = "text", language, prompt }) {
   return audioClient.audio.transcriptions.create({
     file,
     model: "whisper-large-v3",
@@ -49,11 +24,15 @@ async function transcribeAudio({ file, responseFormat = "text", language }) {
     // languages (Burmese notably) it mis-detects a related script and returns
     // gibberish. Passing an ISO-639-1 code forces the right language.
     ...(language ? { language } : {}),
+    // A short example of the expected speech nudges spelling and vocabulary
+    // without forcing a language; temperature 0 keeps decoding deterministic.
+    ...(prompt ? { prompt } : {}),
+    temperature: 0,
   });
 }
 
 function setClientsForTests({ text, audio } = {}) {
-  if (text) textClient = text;
+  if (text) openai.setClientForTests(text);
   if (audio) audioClient = audio;
 }
 

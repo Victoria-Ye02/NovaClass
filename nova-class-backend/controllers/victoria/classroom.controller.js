@@ -1,9 +1,13 @@
 const pool = require("../../config/db");
-const { completeText, streamCompletion } = require("../../services/ai/groqText");
+const { completeText, streamCompletion, describeImage } = require("../../services/ai/openaiText");
 const { ocrPdfPageText } = require("../../services/ai/pdfVision");
-const { textToSpeech: elevenLabsTextToSpeech } = require("../../services/ai/elevenLabs");
+const { textToSpeech: elevenLabsTextToSpeech, BURMESE_LECTURE_VOICE_ID, BURMESE_LECTURE_MODEL_ID } = require("../../services/ai/elevenLabs");
 const { textToSpeech: burmeseTextToSpeech } = require("../../services/ai/burmeseTts");
+const { elevenLabsLectureText, cleanForSpeech, splitForSpeech } = require("../../services/ai/speechPrep");
+const { joinMp3 } = require("../../services/ai/mp3");
+const { LESSON_LANGUAGES, resolveLessonLanguage, replyIsInWrongLanguage, languageStyle } = require("../../services/lecture/languageRequest");
 const pdfParse = require("pdf-parse");
+const { PAGE_MARKER_RE, pdfPageMarker, splitPagesFromMarkedText, replacePageText } = require("../../services/materials/pdfPages");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -138,17 +142,6 @@ async function ragRetrieve(question, materialId, nResults = 6) {
   return null;
 }
 
-// pdf-parse concatenates every page's text into one blob with no page
-// boundaries, so the AI chat had no way to know what's actually on "page N" —
-// only the bare page number. This marker format is inserted per page at
-// extraction time so text_content stays a single string (no schema change)
-// while still being splittable back into per-page sections later.
-const PAGE_MARKER_RE = /\f<<PAGE (\d+)>>\f/g;
-
-function pdfPageMarker(pageNumber) {
-  return `\f<<PAGE ${pageNumber}>>\f`;
-}
-
 function renderPdfPageWithMarker(pageData) {
   const renderOptions = { normalizeWhitespace: false, disableCombineTextItems: false };
   return pageData.getTextContent(renderOptions).then((textContent) => {
@@ -170,19 +163,6 @@ async function extractPdfTextWithPageMarkers(buffer) {
 // uploaded before this marker format existed.
 exports.extractPdfTextWithPageMarkers = extractPdfTextWithPageMarkers;
 
-// Materials uploaded before this marker format existed have plain,
-// unmarked text_content — splitPagesFromMarkedText correctly returns []
-// for those, so callers fall back to whole-document-only behavior.
-function splitPagesFromMarkedText(markedText) {
-  if (!markedText) return [];
-  const matches = [...markedText.matchAll(PAGE_MARKER_RE)];
-  return matches.map((match, i) => {
-    const start = match.index + match[0].length;
-    const end = i + 1 < matches.length ? matches[i + 1].index : markedText.length;
-    return { page: Number(match[1]), text: markedText.slice(start, end).trim() };
-  });
-}
-
 // Trusting only the client-reported mimetype is fragile — some upload paths
 // (scripts, certain browsers/OSes for certain files) send a generic
 // mimetype like application/octet-stream for a real .pdf, which silently
@@ -195,29 +175,6 @@ function isPdfFile(file) {
 
 function stripPageMarkers(markedText) {
   return (markedText || "").replace(PAGE_MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trim();
-}
-
-// Rebuilds marked text with one page's section replaced — used to cache an
-// OCR result back into text_content so future questions about that page
-// skip the Vision round-trip entirely.
-function replacePageText(markedText, pageNumber, newText) {
-  const pages = splitPagesFromMarkedText(markedText);
-  if (pages.length === 0) return markedText;
-  const existingIndex = pages.findIndex(p => p.page === pageNumber);
-  if (existingIndex >= 0) {
-    pages[existingIndex] = { page: pageNumber, text: newText };
-  } else {
-    // A page with zero extractable text items (pure-image pages, common for
-    // scanned worksheets) never got a marker at extraction time at all —
-    // there's nothing to "replace" for it. Without inserting one here, an
-    // OCR result for that page silently fails to cache: the .map() below
-    // only ever touches pages that already have a marker, so every future
-    // question about this same page pays the full Vision OCR round-trip
-    // again instead of hitting the cache.
-    pages.push({ page: pageNumber, text: newText });
-    pages.sort((a, b) => a.page - b.page);
-  }
-  return pages.map(p => `${pdfPageMarker(p.page)}${p.text}`).join("\n\n");
 }
 
 const FILE_CONTENT_TYPES = {
@@ -602,19 +559,16 @@ async function readPdfPagesWithVision(pdfPath, maxPages = 10) {
 
     if (pngFiles.length === 0) return "";
 
-    const { GoogleGenerativeAI } = require("@google/generative-ai");
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
     const descriptions = [];
     for (const png of pngFiles) {
       try {
         const base64 = fs.readFileSync(png).toString("base64");
-        const result = await model.generateContent([
-          { inlineData: { data: base64, mimeType: "image/png" } },
-          "Extract key topics, terms, and concepts from this educational document page. List them briefly in English only. Ignore any garbled, unreadable, or corrupted characters — only include clearly readable text.",
-        ]);
-        const desc = sanitizeVisionText(result.response.text() || "");
+        const raw = await describeImage({
+          base64,
+          detail: "high",
+          prompt: "Extract key topics, terms, and concepts from this educational document page. List them briefly in English only. Ignore any garbled, unreadable, or corrupted characters — only include clearly readable text.",
+        });
+        const desc = sanitizeVisionText(raw);
         if (desc.trim()) descriptions.push(desc.trim());
       } catch (e) {
         console.warn("[Vision] page read failed:", e.message);
@@ -707,7 +661,7 @@ exports.suggestYoutubeForMaterial = async (req, res) => {
 
     const usableText = isOcrUsable(pdfText) ? pdfText : "";
 
-    // If pdf-parse returned little text (image/scanned PDF), read pages with Gemini Vision
+    // If pdf-parse returned little text (image/scanned PDF), read pages with OpenAI vision
     let visionDescription = "";
     if (req.file && pdfText.trim().length < 300) {
       visionDescription = await readPdfPagesWithVision(req.file.path, 30);
@@ -1129,29 +1083,11 @@ exports.materialAI = async (req, res) => {
 
 Exception: if the student explicitly asks you to switch languages ("can we talk in Burmese?", "explain that in Vietnamese", "answer in Korean from now on") — even though that request itself is written in whatever language they typed it in — comply immediately and reply in the language they asked for, not the language their request happened to be written in. Keep replying in that requested language for the rest of the conversation unless they ask to switch again or clearly go back to typing/speaking in a different one.`;
 
-      // Teacher mode used to just teach in the Settings display language for
-      // the whole lesson. Now: the lesson *opens* in Korean — like a
-      // professor beginning class in the language of instruction — and once
-      // the student actually says something of their own (not one of the
-      // fixed lesson-control prompts below, which are UI-triggered, not
-      // student speech), Nova detects that message's language and follows it
-      // from then on, the same dynamic detection assistant mode already does.
       // Which past messages are the student's own words vs. a UI-triggered
-      // lesson-control prompt ("Start this lesson...", "Continue the
-      // lesson...", etc. — see continueLesson/simplifyLesson/
-      // checkUnderstanding/continueLessonAloud on the frontend) is known for
-      // certain server-side (teachingIntent "answer" = genuine; the frontend
-      // always sets one of the other fixed intents for its own triggers) —
-      // far more reliable than asking the model to pattern-match message text
-      // against a list itself. Live-tested: when the model had to find and
-      // judge this on its own, it caught an obviously different script
-      // (Burmese) but kept answering in Korean after a student switched to
-      // English or Vietnamese. Isolating the *exact* most recent genuine
-      // student text and asking the model only to detect that one string's
-      // language fixed it — a single clean detection task instead of a
-      // search-and-judge one, and it naturally persists turn to turn since
-      // the same most-recent genuine message keeps winning until a newer one
-      // replaces it.
+      // lesson-control prompt ("Start this lesson...", "Continue the lesson...",
+      // etc. — see continueLesson/simplifyLesson/checkUnderstanding on the
+      // frontend) is known for certain server-side: those four fixed texts are
+      // not student speech, so they can never count as a language request.
       const FIXED_LESSON_CONTROL_PROMPTS = new Set([
         "Start this lesson as my professor.",
         "Resume this lesson from where we stopped.",
@@ -1159,33 +1095,17 @@ Exception: if the student explicitly asks you to switch languages ("can we talk 
         "Please explain the current concept more simply.",
         "Check my understanding with one question.",
       ]);
-      // A bare one- or two-word Latin-script answer ("java", "SQL", "OK") is
-      // far more likely to be a technical term or proper noun straight from
-      // the lesson than an intentional "switch to English" — live-tested:
-      // a student answering a quiz question with just "java" flipped the
-      // whole lesson into English afterward. Non-Latin scripts (Burmese/
-      // Korean/Vietnamese) don't get this exemption — even a single word in
-      // one of those is still an unambiguous, deliberate signal, unlike a
-      // short English technical word in an otherwise non-English lesson.
-      function isLikelyLanguageSignal(text) {
-        const trimmed = (text || "").trim();
-        if (!trimmed) return false;
-        if (BURMESE_SCRIPT_RE.test(trimmed)) return true;
-        if (/[가-힣]/.test(trimmed)) return true;
-        if (/[àáạảãăằắặẳẵâầấậẩẫèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(trimmed)) return true;
-        return trimmed.split(/\s+/).filter(Boolean).length >= 3;
-      }
-      const genuineStudentMessages = (history || [])
-        .filter(h => h.role === "user" && !FIXED_LESSON_CONTROL_PROMPTS.has((h.content || "").trim()) && isLikelyLanguageSignal(h.content))
-        .map(h => h.content);
-      if (teachingIntent === "answer" && message && !FIXED_LESSON_CONTROL_PROMPTS.has(message.trim()) && isLikelyLanguageSignal(message)) {
-        genuineStudentMessages.push(message);
-      }
-      const latestGenuineStudentMessage = genuineStudentMessages[genuineStudentMessages.length - 1] || null;
-
-      const teacherLanguageInstruction = latestGenuineStudentMessage
-        ? `The most recent thing the student said in their own words, verbatim, was: "${latestGenuineStudentMessage.replace(/"/g, '\\"')}" — detect what language that exact text is written in, and reply in that same language for this turn, regardless of what language anything else in this conversation (your own past replies, the document, earlier turns) is in. Keep technical/domain terms in their original language (English/Korean) when there's no natural equivalent, but the surrounding explanation must follow this rule.`
-        : `Teach in Korean (한국어), the way a professor opens a lecture in the language of instruction — the student hasn't written anything in their own words yet.`;
+      // The lesson language is the Settings language by default. Only an explicit
+      // request from the student ("explain in Burmese", typed or spoken) changes
+      // it, and the client sends it back as `lessonLang` so it sticks. What
+      // language the student happens to type in no longer decides anything.
+      const studentSpoke = teachingIntent === "answer" && Boolean(message) && !FIXED_LESSON_CONTROL_PROMPTS.has(message.trim());
+      const lessonLang = isTeacherMode
+        ? resolveLessonLanguage({ settingsLang: lang, stickyLang: req.body.lessonLang, message, studentSpoke }).lang
+        : null;
+      const teacherLanguageInstruction = isTeacherMode
+        ? `Write the ENTIRE reply in ${LESSON_LANGUAGES[lessonLang]}, no matter what language the student's message, the document, or your own earlier replies are in. ${languageStyle(lessonLang)} Keep technical/domain terms (Java, SQL, code, etc.) in their original form when there is no natural equivalent, but the explanation around them must be in ${LESSON_LANGUAGES[lessonLang]}. If the student asked you to switch language, that has already been applied — the language named here IS the one they asked for.`
+        : "";
       const langInstruction = isTeacherMode
         ? teacherLanguageInstruction
         : assistantLanguageInstruction;
@@ -1307,12 +1227,7 @@ ${langInstruction}`;
       // see the streaming branch and the post-hoc language-fix check further
       // down for how this is used.
       const HANGUL_RE = /[가-힣]/g;
-      const targetLang = latestGenuineStudentMessage
-        ? (BURMESE_SCRIPT_RE.test(latestGenuineStudentMessage) ? "my"
-          : HANGUL_RE.test(latestGenuineStudentMessage) ? "ko"
-          : /[àáạảãăằắặẳẵâầấậẩẫèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestGenuineStudentMessage) ? "vi"
-          : "en")
-        : null;
+      const targetLang = isTeacherMode ? lessonLang : null;
 
       // Voice mode streams the reply sentence-by-sentence over SSE instead of
       // returning one JSON blob once the model finishes the whole thing — the
@@ -1351,7 +1266,11 @@ ${langInstruction}`;
               if (!firstSentenceChecked && isTeacherMode && targetLang) {
                 firstSentenceChecked = true;
                 const hangulCount = (sentence.match(HANGUL_RE) || []).length;
-                if (targetLang !== "ko" && hangulCount > 5) { languageOk = false; break; }
+                const burmeseCount = (sentence.match(/[က-႟]/g) || []).length;
+                const wrong = targetLang === "ko" ? sentence.length > 12 && hangulCount < 3
+                  : targetLang === "my" ? sentence.length > 12 && burmeseCount < 3
+                  : hangulCount > 5 || burmeseCount > 5;
+                if (wrong) { languageOk = false; break; }
               }
               send("sentence", { text: sentence });
             }
@@ -1367,10 +1286,10 @@ ${langInstruction}`;
             // total latency as the old non-streaming path for this rare
             // case, never worse.
             try {
-              const fixLangName = { my: "Burmese (Myanmar language)", vi: "Vietnamese", en: "English" }[targetLang];
+              const fixLangName = LESSON_LANGUAGES[targetLang];
               const translation = await completeText({
                 messages: [
-                  { role: "system", content: `Translate the following teacher's reply into ${fixLangName}. Keep any technical/domain terms (Java, JDBC, SQL, code snippets, etc.) as-is where a natural equivalent doesn't exist. Return ONLY the translated text, nothing else — no preamble, no quotes around it.` },
+                  { role: "system", content: `Translate the following teacher's reply into ${fixLangName}. ${languageStyle(targetLang)} Keep any technical/domain terms (Java, JDBC, SQL, code snippets, etc.) as-is where a natural equivalent doesn't exist. Return ONLY the translated text, nothing else — no preamble, no quotes around it.` },
                   { role: "user", content: finalReply },
                 ],
                 maxTokens: 300,
@@ -1391,7 +1310,7 @@ ${langInstruction}`;
             [req.params.materialId, req.user.id, message, req.params.materialId, req.user.id, finalReply]
           ).catch(err => console.warn("[Chat history] write failed:", err.message));
 
-          send("done", {});
+          send("done", { replyLang: targetLang });
         } catch (streamErr) {
           send("error", { message: streamErr.message });
         }
@@ -1406,41 +1325,23 @@ ${langInstruction}`;
       const completion = await completeText({ messages: msgs, maxTokens: voice ? 300 : 600 });
       let reply = completion.choices[0].message.content;
 
-      // Live-tested: even given the exact same forceful, isolated language
-      // instruction above, this model (google/gemini-2.5-flash) sometimes
-      // stays in Korean after a genuine student switch anyway — same prompt,
-      // same input, inconsistent result from one call to the next. Not fixable
-      // by rewording the instruction (tried several variants; all showed the
-      // same intermittent failure). So: verify deterministically instead of
-      // trusting the model followed the rule. Target language is decided from
-      // the student's own message script — not asked of the model — and if
-      // the reply still came back full of Hangul when it shouldn't have, one
-      // fast dedicated translation call (a much simpler task than "notice and
-      // switch mid-lecture") corrects it before the student ever sees/hears it.
-      // Not gated to teachingIntent "answer" specifically — once the student
-      // has genuinely spoken in some language, every later turn (including a
-      // proactive "continue"/"simplify"/"check" the student didn't ask for)
-      // must keep following it, or the lesson reverts to Korean the instant
-      // the student goes quiet for a moment, which would feel broken.
-      if (isTeacherMode && latestGenuineStudentMessage) {
-        // targetLang/HANGUL_RE computed once, shared with the streaming
-        // branch above (which returns before reaching here for voice turns —
-        // this block now only ever runs for non-voice, text-mode chat).
-        const replyHangulCount = (reply.match(HANGUL_RE) || []).length;
-        if (targetLang !== "ko" && replyHangulCount > 10) {
-          try {
-            const fixLangName = { my: "Burmese (Myanmar language)", vi: "Vietnamese", en: "English" }[targetLang];
-            const translation = await completeText({
-              messages: [
-                { role: "system", content: `Translate the following teacher's reply into ${fixLangName}. Keep any technical/domain terms (Java, JDBC, SQL, code snippets, etc.) as-is where a natural equivalent doesn't exist. Return ONLY the translated text, nothing else — no preamble, no quotes around it.` },
-                { role: "user", content: reply },
-              ],
-              maxTokens: 600,
-            });
-            reply = translation.choices[0].message.content;
-          } catch (translateErr) {
-            console.warn("[Teacher mode language fix] translation fallback failed:", translateErr.message);
-          }
+      // The model sometimes answers in the wrong language even when told
+      // exactly which one to use (live-tested, intermittent, and rewording the
+      // instruction did not cure it) — so the reply is checked in code, and if
+      // it is clearly in the wrong language one dedicated translation call
+      // fixes it before the student reads or hears it.
+      if (isTeacherMode && replyIsInWrongLanguage(reply, targetLang)) {
+        try {
+          const translation = await completeText({
+            messages: [
+              { role: "system", content: `Translate the following teacher's reply into ${LESSON_LANGUAGES[targetLang]}. ${languageStyle(targetLang)} Keep any technical/domain terms (Java, JDBC, SQL, code snippets, etc.) as-is where a natural equivalent doesn't exist. Return ONLY the translated text, nothing else — no preamble, no quotes around it.` },
+              { role: "user", content: reply },
+            ],
+            maxTokens: 600,
+          });
+          reply = translation.choices[0].message.content;
+        } catch (translateErr) {
+          console.warn("[Teacher mode language fix] translation fallback failed:", translateErr.message);
         }
       }
 
@@ -1457,7 +1358,7 @@ ${langInstruction}`;
         [req.params.materialId, req.user.id, message, req.params.materialId, req.user.id, reply]
       ).catch(err => console.warn("[Chat history] write failed:", err.message));
 
-      return res.json({ reply });
+      return res.json({ reply, ...(isTeacherMode ? { replyLang: lessonLang } : {}) });
     }
 
     if (action === "chat") {
@@ -2080,21 +1981,80 @@ exports.deleteMaterialComment = async (req, res) => {
 // Burmese voice and returns mispronounced audio rather than an error).
 const BURMESE_SCRIPT_RE = /[က-႟]/;
 
-// POST /api/classroom/tts  { text }
+// Lecture narration is replayed a lot (pause, replay, seeking back), so the
+// finished audio is kept for a while: replays are instant and cost nothing.
+const LECTURE_AUDIO_CACHE_LIMIT = 40;
+const lectureAudioCache = new Map();
+
+// Burmese lecture narration: ElevenLabs v4 (the first ElevenLabs model with
+// Burmese). It is slower to generate than Azure, which doesn't matter for
+// pre-generated, cached lectures. If ElevenLabs is unconfigured or fails, the
+// Azure voice takes over so the student still hears the lesson.
+async function burmeseLectureSpeech(text) {
+  const voiceId = process.env.ELEVENLABS_BURMESE_VOICE_ID || BURMESE_LECTURE_VOICE_ID;
+  const options = {
+    lecture: true,
+    modelId: process.env.ELEVENLABS_BURMESE_MODEL_ID || BURMESE_LECTURE_MODEL_ID,
+    languageCode: "my",
+  };
+  const speak = async piece => {
+    try {
+      return await elevenLabsTextToSpeech(piece, voiceId, options);
+    } catch {
+      return elevenLabsTextToSpeech(piece, voiceId, options); // one retry for a transient failure
+    }
+  };
+  try {
+    // A minute of narration takes ElevenLabs ~20 s in one piece; sentence-sized
+    // pieces generated 3 at a time and joined in order are much quicker.
+    const pieces = splitForSpeech(cleanForSpeech(text));
+    const audio = new Array(pieces.length);
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(3, pieces.length) }, async () => {
+      while (next < pieces.length) {
+        const index = next++;
+        audio[index] = await speak(pieces[index]);
+      }
+    }));
+    return joinMp3(audio);
+  } catch (err) {
+    console.warn("[tts] ElevenLabs Burmese failed, falling back to Azure:", err.message);
+    return burmeseTextToSpeech(text, undefined, { lecture: true });
+  }
+}
+
+// POST /api/classroom/tts  { text, style? }
 // Speaks AI Chat replies aloud in voice mode with a natural voice instead of
 // the browser's built-in (robotic) speech synthesis. Burmese goes to the
 // Burmese TTS service (Azure's my-MM-NilarNeural, via Microsoft Edge's free
 // Read Aloud endpoint — ElevenLabs has no Burmese voice); every other language
-// goes to ElevenLabs.
+// goes to ElevenLabs. style "lecture" switches both to their slower, more
+// expressive, pause-aware settings for the slide narration.
 exports.textToSpeech = async (req, res) => {
   const text = (req.body.text || "").trim();
   if (!text) return res.status(400).json({ error: "text is required" });
+  const lecture = req.body.style === "lecture";
 
   const isBurmese = BURMESE_SCRIPT_RE.test(text);
+  const cacheKey = lecture ? require("crypto").createHash("sha1").update(`${isBurmese ? "my-el4" : "el2"}|${text}`).digest("hex") : null;
   try {
-    const audio = isBurmese
-      ? await burmeseTextToSpeech(text.slice(0, 5000))
-      : await elevenLabsTextToSpeech(text.slice(0, 5000));
+    let audio = cacheKey ? lectureAudioCache.get(cacheKey) : null;
+    if (!audio) {
+      if (isBurmese && lecture) {
+        audio = await burmeseLectureSpeech(text.slice(0, 5000));
+      } else if (isBurmese) {
+        audio = await burmeseTextToSpeech(text.slice(0, 5000));
+      } else {
+        // The default voice is a Korean narrator: right for Korean, but it would speak
+        // English or Vietnamese with a Korean accent. Those use the same voice as Burmese.
+        const voiceId = lecture && !/[가-힣]/.test(text) ? (process.env.ELEVENLABS_LECTURE_VOICE_ID || BURMESE_LECTURE_VOICE_ID) : undefined;
+        audio = await elevenLabsTextToSpeech(lecture ? elevenLabsLectureText(text.slice(0, 5000)) : text.slice(0, 5000), voiceId, { lecture });
+      }
+      if (cacheKey) {
+        if (lectureAudioCache.size >= LECTURE_AUDIO_CACHE_LIMIT) lectureAudioCache.delete(lectureAudioCache.keys().next().value);
+        lectureAudioCache.set(cacheKey, audio);
+      }
+    }
     res.set("Content-Type", "audio/mpeg");
     res.send(audio);
   } catch (err) {

@@ -231,6 +231,14 @@ function confidentText(transcription) {
 // ElevenLabs Scribe for Burmese — Whisper can't transcribe Burmese at all (it
 // returns script gibberish, verified live against the real API), while Scribe
 // does it accurately.
+// Whisper is more accurate when it is told what kind of speech to expect; the
+// hint is written in the UI language so it also biases the script it picks.
+const TRANSCRIBE_PROMPTS = {
+  en: "A student asks a question about a lecture slide.",
+  ko: "학생이 강의 슬라이드에 대해 질문합니다.",
+  vi: "Học sinh đặt câu hỏi về bài giảng.",
+};
+
 exports.transcribe = async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: "No audio uploaded" });
@@ -250,6 +258,7 @@ exports.transcribe = async (req, res) => {
     const transcription = await transcribeAudio({
       file: fs.createReadStream(file.path),
       responseFormat: "verbose_json",
+      prompt: TRANSCRIBE_PROMPTS[req.body?.lang] || TRANSCRIBE_PROMPTS.en,
     });
     const text = confidentText(transcription);
 

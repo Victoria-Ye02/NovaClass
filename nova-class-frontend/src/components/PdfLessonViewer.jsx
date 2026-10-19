@@ -5,6 +5,8 @@ import PdfThumbnailSidebar from "./PdfThumbnailSidebar";
 import Icon from "./Icon";
 import { useLang } from "../LanguageContext";
 import API from "../services/api";
+import PdfLecturePointer from "./PdfLecturePointer";
+import { findPhraseRects } from "../utils/pdfTextLocate";
 import "react-pdf/dist/Page/TextLayer.css";
 import "./PdfLessonViewer.css";
 
@@ -67,6 +69,9 @@ const PdfLessonViewer = forwardRef(function PdfLessonViewer({
   const viewerRootRef = useRef(null);
   const pageSurfaceRef = useRef(null);
   const wheelCooldownRef = useRef(false);
+  const [pointer, setPointer] = useState(null); // null | { page, rects, key }
+  const pointSeqRef = useRef(0);
+  const textContentCacheRef = useRef(new Map());
 
   const savedPages = useMemo(
     () => [...new Set(bookmarks)].sort((a, b) => a - b),
@@ -137,7 +142,37 @@ const PdfLessonViewer = forwardRef(function PdfLessonViewer({
   // do internally. goToPage already clamps to [1, numPages] and no-ops
   // before the document has loaded, so callers don't need their own bounds
   // checking.
-  useImperativeHandle(ref, () => ({ goToPage }), [goToPage]);
+  // The lecture's pointer: find where `phrase` sits on `page` and highlight it.
+  // Pages without a text layer (scans) simply get no pointer.
+  const pointAt = useCallback(async (page, phrase) => {
+    const seq = ++pointSeqRef.current;
+    if (!pdfDocument || !page || !phrase) { setPointer(null); return; }
+    try {
+      const pdfPage = await pdfDocument.getPage(page);
+      const viewport = pdfPage.getViewport({ scale: 1 });
+      let content = textContentCacheRef.current.get(page);
+      if (!content) {
+        content = await pdfPage.getTextContent();
+        textContentCacheRef.current.set(page, content);
+      }
+      if (seq !== pointSeqRef.current) return;
+      const rects = findPhraseRects(
+        content.items,
+        {
+          toViewportRect: (x0, y0, x1, y1) => viewport.convertToViewportRectangle([x0, y0, x1, y1]),
+          size: { width: viewport.width, height: viewport.height },
+        },
+        phrase,
+      );
+      setPointer(rects.length ? { page, rects, key: `${page}:${phrase}` } : null);
+    } catch {
+      if (seq === pointSeqRef.current) setPointer(null);
+    }
+  }, [pdfDocument]);
+
+  useEffect(() => { textContentCacheRef.current = new Map(); }, [pdfDocument]);
+
+  useImperativeHandle(ref, () => ({ goToPage, pointAt }), [goToPage, pointAt]);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -437,6 +472,7 @@ const PdfLessonViewer = forwardRef(function PdfLessonViewer({
               visible={highlightsVisible}
               activateId={activateHighlightId}
             />
+            <PdfLecturePointer pointer={pointer && pointer.page === currentPage ? pointer : null} />
           </div>
         )}
         </div>

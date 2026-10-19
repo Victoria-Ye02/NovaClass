@@ -7,20 +7,21 @@ const originalQuery = pool.query;
 const originalFetch = global.fetch;
 
 const controllerPath = require.resolve("../controllers/victoria/classroom.controller");
-const groqTextPath = require.resolve("../services/ai/groqText");
+const openaiTextPath = require.resolve("../services/ai/openaiText");
 const pdfVisionPath = require.resolve("../services/ai/pdfVision");
 const elevenLabsPath = require.resolve("../services/ai/elevenLabs");
 const burmeseTtsPath = require.resolve("../services/ai/burmeseTts");
 
 function loadController(t, { completeText, ocrPdfPageText, elevenLabsTextToSpeech, burmeseTextToSpeech } = {}) {
-  const originalGroqText = require.cache[groqTextPath];
-  require.cache[groqTextPath] = {
-    id: groqTextPath,
-    filename: groqTextPath,
+  const originalOpenaiText = require.cache[openaiTextPath];
+  require.cache[openaiTextPath] = {
+    id: openaiTextPath,
+    filename: openaiTextPath,
     loaded: true,
     exports: {
       completeText,
-      askGroq: async () => { throw new Error("Unexpected askGroq call"); },
+      streamCompletion: async function* () { throw new Error("Unexpected streamCompletion call"); },
+      describeImage: async () => { throw new Error("Unexpected describeImage call"); },
     },
   };
 
@@ -40,6 +41,8 @@ function loadController(t, { completeText, ocrPdfPageText, elevenLabsTextToSpeec
     filename: elevenLabsPath,
     loaded: true,
     exports: {
+      BURMESE_LECTURE_VOICE_ID: "sarah-voice",
+      BURMESE_LECTURE_MODEL_ID: "eleven_v4",
       textToSpeech: elevenLabsTextToSpeech || (async () => { throw new Error("Unexpected textToSpeech call"); }),
     },
   };
@@ -59,8 +62,8 @@ function loadController(t, { completeText, ocrPdfPageText, elevenLabsTextToSpeec
   const controller = require(controllerPath);
   t.after(() => {
     delete require.cache[controllerPath];
-    if (originalGroqText) require.cache[groqTextPath] = originalGroqText;
-    else delete require.cache[groqTextPath];
+    if (originalOpenaiText) require.cache[openaiTextPath] = originalOpenaiText;
+    else delete require.cache[openaiTextPath];
     if (originalPdfVision) require.cache[pdfVisionPath] = originalPdfVision;
     else delete require.cache[pdfVisionPath];
     if (originalElevenLabs) require.cache[elevenLabsPath] = originalElevenLabs;
@@ -1265,4 +1268,183 @@ test("deleteMaterialComment lets the author delete their own comment", async (t)
 
   assert.equal(res.statusCode, 200);
   assert.equal(deletedId, "5");
+});
+
+
+test("Burmese lecture narration uses ElevenLabs v4 with the chosen voice and Burmese language code", async (t) => {
+  let call;
+  const controller = loadController(t, {
+    elevenLabsTextToSpeech: async (text, voice, options) => {
+      call = { text, voice, options };
+      return Buffer.from("el-v4-bytes");
+    },
+    // Azure is left as the throwing stub: it is only the fallback.
+  });
+  const { req, res } = httpDouble({ body: { text: "မင်္ဂလာပါ။ ဒီနေ့ သင်ခန်းစာကို စကြမယ်။", style: "lecture" } });
+  await controller.textToSpeech(req, res);
+
+  assert.equal(res.body.toString(), "el-v4-bytes");
+  assert.equal(call.voice, "sarah-voice");
+  assert.equal(call.options.modelId, "eleven_v4");
+  assert.equal(call.options.languageCode, "my");
+  assert.equal(call.options.lecture, true);
+});
+
+test("Burmese lecture narration falls back to the Azure voice when ElevenLabs fails", async (t) => {
+  let azureOptions;
+  const controller = loadController(t, {
+    elevenLabsTextToSpeech: async () => { throw new Error("ElevenLabs down"); },
+    burmeseTextToSpeech: async (text, voice, options) => { azureOptions = options; return Buffer.from("azure-bytes"); },
+  });
+  const { req, res } = httpDouble({ body: { text: "မင်္ဂလာပါ။ ဒီနေ့ သင်ခန်းစာကို စကြမယ်။ ဆက်သွားမယ်။", style: "lecture" } });
+  await controller.textToSpeech(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.toString(), "azure-bytes");
+  assert.deepEqual(azureOptions, { lecture: true });
+});
+
+test("quick Burmese chat replies stay on Azure (fast first audio) even though lectures moved to ElevenLabs", async (t) => {
+  let usedAzure = false;
+  const controller = loadController(t, {
+    burmeseTextToSpeech: async () => { usedAzure = true; return Buffer.from("azure-bytes"); },
+    // ElevenLabs is the throwing stub: a chat reply must not reach it.
+  });
+  const { req, res } = httpDouble({ body: { text: "ဟုတ်ကဲ့ပါ။" } });
+  await controller.textToSpeech(req, res);
+  assert.equal(usedAzure, true);
+});
+
+test("a long Burmese lecture is spoken in sentence-sized pieces and joined back in the original order", async (t) => {
+  const sentences = Array.from({ length: 30 }, (_, i) => `ဒီဟာ ဝါကျ နံပါတ် ${i + 1} ဖြစ်ပါတယ်၊ ပြီးတော့ ဆက်ပြောပါမယ်။`);
+  const calls = [];
+  const controller = loadController(t, {
+    elevenLabsTextToSpeech: async (text) => {
+      calls.push(text);
+      // Later pieces answer first: ordering must come from position, not timing.
+      await new Promise(resolve => setTimeout(resolve, calls.length === 1 ? 20 : 1));
+      return Buffer.from(`[${text.slice(0, 12)}]`);
+    },
+  });
+  const { req, res } = httpDouble({ body: { text: sentences.join(" "), style: "lecture" } });
+  await controller.textToSpeech(req, res);
+
+  assert.ok(calls.length > 2, "split into several pieces");
+  assert.ok(calls.every(piece => piece.length <= 400), "each piece is short enough to generate quickly");
+  assert.equal(calls.join(" "), sentences.join(" "), "every sentence is spoken exactly once");
+  assert.equal(res.body.toString(), calls.map(piece => `[${piece.slice(0, 12)}]`).join(""), "audio joined in text order");
+});
+
+test("a transient ElevenLabs failure on one piece is retried instead of dropping to Azure", async (t) => {
+  let attempts = 0;
+  const controller = loadController(t, {
+    elevenLabsTextToSpeech: async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error("blip");
+      return Buffer.from("ok");
+    },
+    // Azure is the throwing stub: a single blip must not reach it.
+  });
+  const { req, res } = httpDouble({ body: { text: "မင်္ဂလာပါ။ ဒီနေ့ သင်ခန်းစာကို စကြမယ်။", style: "lecture" } });
+  await controller.textToSpeech(req, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.toString(), "ok");
+  assert.equal(attempts, 2);
+});
+
+
+// ---- lesson language: Settings first, switch only on an explicit request --------------
+
+function teacherRequest(body) {
+  return httpDouble({
+    params: { materialId: "9" },
+    body: { action: "chat", mode: "teacher", currentPage: 1, totalPages: 3, history: [], ...body },
+  });
+}
+
+async function runTeacher(t, body, { reply = "Good thinking. Let's continue with the idea of a key in this lesson." } = {}) {
+  global.fetch = async () => { throw new Error("RAG unavailable in test"); };
+  pool.query = async (sql) => (sql.includes("FROM materials")
+    ? [[{ title: "Database Lesson", instructions: null, text_content: "A primary key is unique.", summary_paragraph: null, summary_detailed: null }]]
+    : [[]]);
+  const calls = [];
+  const controller = loadController(t, {
+    completeText: async (request) => { calls.push(request); return { choices: [{ message: { content: reply } }] }; },
+  });
+  const { req, res } = teacherRequest(body);
+  await controller.materialAI(req, res);
+  return { res, calls, system: calls[0].messages.find((m) => m.role === "system").content };
+}
+
+test("teacher mode teaches in the Settings language from the very first message, not in Korean", async (t) => {
+  const { res, system } = await runTeacher(t, { teachingIntent: "start", message: "Start this lesson as my professor.", lang: "my" });
+  assert.equal(res.statusCode, 200);
+  assert.match(system, /Write the ENTIRE reply in Burmese/);
+  assert.doesNotMatch(system, /Teach in Korean/);
+  assert.equal(res.body.replyLang, "my");
+});
+
+test("a student typing in Korean does NOT switch a Burmese lesson to Korean", async (t) => {
+  const { system, res } = await runTeacher(t, { teachingIntent: "answer", message: "기본 키가 뭐예요? 자세히 설명해 주세요.", lang: "my" });
+  assert.match(system, /Write the ENTIRE reply in Burmese/);
+  assert.equal(res.body.replyLang, "my");
+});
+
+test("an explicit request ('explain in English') switches the reply language for that turn", async (t) => {
+  const { system, res } = await runTeacher(t, { teachingIntent: "answer", message: "Can you explain me in English?", lang: "my" });
+  assert.match(system, /Write the ENTIRE reply in English/);
+  assert.equal(res.body.replyLang, "en");
+});
+
+test("a spoken request in Burmese to switch to Korean is honoured", async (t) => {
+  const { system, res } = await runTeacher(t, { teachingIntent: "answer", message: "ကိုရီးယားလို ရှင်းပြပါ", lang: "en" }, { reply: "좋아요. 기본 키는 각 행을 구분하는 값이에요. 그럼 다음 질문을 해 볼까요?" });
+  assert.match(system, /Write the ENTIRE reply in Korean/);
+  assert.match(system, /해요체/);
+  assert.equal(res.body.replyLang, "ko");
+});
+
+test("the language chosen earlier sticks: later turns and lesson buttons keep using it", async (t) => {
+  const afterSwitch = await runTeacher(t, { teachingIntent: "continue", message: "Continue the lesson with the next important concept.", lang: "my", lessonLang: "en" });
+  assert.match(afterSwitch.system, /Write the ENTIRE reply in English/);
+  assert.equal(afterSwitch.res.body.replyLang, "en");
+});
+
+test("the UI's own prompts are never mistaken for a language request", async (t) => {
+  const { system } = await runTeacher(t, { teachingIntent: "start", message: "Start this lesson as my professor.", lang: "ko" });
+  assert.match(system, /Write the ENTIRE reply in Korean/);
+});
+
+test("a reply that comes back in the wrong language is translated into the lesson language before the student sees it", async (t) => {
+  global.fetch = async () => { throw new Error("RAG unavailable in test"); };
+  pool.query = async (sql) => (sql.includes("FROM materials")
+    ? [[{ title: "DB", instructions: null, text_content: "A primary key is unique.", summary_paragraph: null, summary_detailed: null }]]
+    : [[]]);
+  const koreanReply = "안녕하세요. 오늘은 데이터베이스의 기본 키에 대해 이야기해 볼 거예요. 기본 키는 각 행을 구분해 줘요.";
+  const calls = [];
+  const controller = loadController(t, {
+    completeText: async (request) => {
+      calls.push(request);
+      return { choices: [{ message: { content: calls.length === 1 ? koreanReply : "Hello. Today we talk about primary keys. A primary key tells each row apart." } }] };
+    },
+  });
+  const { req, res } = teacherRequest({ teachingIntent: "start", message: "Start this lesson as my professor.", lang: "en" });
+  await controller.materialAI(req, res);
+
+  assert.equal(calls.length, 2, "one translation call");
+  assert.match(calls[1].messages[0].content, /into English/);
+  assert.match(res.body.reply, /primary keys/);
+});
+
+test("lecture speech: Korean text keeps the Korean narrator; English/Vietnamese use the warm lesson voice", async (t) => {
+  const voices = [];
+  const controller = loadController(t, {
+    elevenLabsTextToSpeech: async (text, voice) => { voices.push(voice); return Buffer.from("x"); },
+  });
+  for (const text of ["안녕하세요. 오늘은 기본 키를 배워요.", "Hello. Today we learn about keys.", "Xin chào các bạn. Hôm nay chúng ta học về khóa chính."]) {
+    const { req, res } = httpDouble({ body: { text, style: "lecture" } });
+    await controller.textToSpeech(req, res);
+  }
+  assert.equal(voices[0], undefined, "Korean: default (Korean narrator)");
+  assert.equal(voices[1], "sarah-voice");
+  assert.equal(voices[2], "sarah-voice");
 });

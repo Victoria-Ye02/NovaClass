@@ -84,11 +84,14 @@ export function TraceView({ trace, t, onClose }) {
 
 // Chat-style answer box: a transparent textarea laid over a coloured <pre>, so
 // the student's own code is syntax-coloured while they type.
-export function ColoredCodeBox({ value, onChange, onKeyDown, placeholder, rows = 6, disabled, bare }) {
+export function ColoredCodeBox({ value, onChange, onKeyDown, placeholder, rows = 6, disabled, bare, autoFocus, lineNumbers }) {
   const preRef = useRef();
+  const gutterRef = useRef();
   const shared = { margin: 0, padding: bare ? "8px 6px" : "14px", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "14px", lineHeight: 1.7, whiteSpace: "pre", boxSizing: "border-box", border: "none" };
-  return (
-    <div style={{ position: "relative", height: `${rows * 1.7 * 14 + 28}px`, ...(bare ? {} : { background: "#0D0E10", border: "1px solid #343942", borderRadius: "10px" }) }}>
+  const height = `${rows * 1.7 * 14 + (bare ? 16 : 28)}px`;
+  const lineCount = Math.max(1, String(value || "").split("\n").length);
+  const box = (
+    <div style={{ position: "relative", flex: 1, minWidth: 0, height, ...(bare ? {} : { background: "#0D0E10", border: "1px solid #343942", borderRadius: "10px" }) }}>
       <pre ref={preRef} aria-hidden="true" style={{ ...shared, position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", color: CODE_COLORS.plain }}>
         {value ? <HighlightedCode text={value} /> : <span style={{ color: "#5C6068" }}>{placeholder}</span>}
         {"\n"}
@@ -98,13 +101,28 @@ export function ColoredCodeBox({ value, onChange, onKeyDown, placeholder, rows =
         value={value}
         onChange={e => onChange(e.target.value)}
         onKeyDown={onKeyDown}
-        onScroll={e => { if (preRef.current) { preRef.current.scrollTop = e.target.scrollTop; preRef.current.scrollLeft = e.target.scrollLeft; } }}
+        onScroll={e => {
+          if (preRef.current) { preRef.current.scrollTop = e.target.scrollTop; preRef.current.scrollLeft = e.target.scrollLeft; }
+          if (gutterRef.current) gutterRef.current.scrollTop = e.target.scrollTop;
+        }}
         spellCheck={false}
         autoComplete="off"
         autoCapitalize="off"
+        autoFocus={autoFocus}
         disabled={disabled}
         style={{ ...shared, position: "absolute", inset: 0, width: "100%", height: "100%", resize: "none", overflow: "auto", background: "transparent", color: "transparent", WebkitTextFillColor: "transparent", caretColor: "#F8FAFC", outline: "none" }}
       />
+    </div>
+  );
+  if (!lineNumbers) return box;
+  // Line numbers beside the code, so "line 3" in a hint or an error can be found.
+  return (
+    <div style={{ display: "flex", height }}>
+      <pre ref={gutterRef} aria-hidden="true" data-line-numbers style={{ ...shared, width: "34px", flexShrink: 0, overflow: "hidden", textAlign: "right", color: "#5C6068", userSelect: "none", paddingRight: "10px" }}>
+        {Array.from({ length: lineCount }, (_, i) => i + 1).join("\n")}
+        {"\n"}
+      </pre>
+      {box}
     </div>
   );
 }

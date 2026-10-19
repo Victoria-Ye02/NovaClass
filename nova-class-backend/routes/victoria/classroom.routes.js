@@ -35,6 +35,10 @@ router.post("/classes/:id/materials",       auth, upload.materialUpload, ctrl.up
 router.get("/materials/:materialId/summary", auth, ctrl.getSummary);
 router.get("/materials/:materialId/chat-history", auth, ctrl.getChatHistory);
 router.post("/materials/:materialId/ai",    auth, ctrl.materialAI);
+router.get("/materials/:materialId/lecture/:page", auth, require("../../controllers/victoria/lecture.controller").getSlideScript);
+router.post("/materials/:materialId/lecture/:page/cues", auth, require("../../controllers/victoria/lecture.controller").getSlideCues);
+router.get("/materials/:materialId/lecture/:page/quiz", auth, require("../../controllers/victoria/lecture.controller").getSlideQuiz);
+router.post("/materials/:materialId/lecture/quiz/:quizId/answer", auth, require("../../controllers/victoria/lecture.controller").gradeSlideQuiz);
 router.post("/tts",                         auth, ctrl.textToSpeech);
 router.get("/materials/:materialId/highlights", auth, highlights.getHighlights);
 router.post("/materials/:materialId/highlights/start", auth, highlights.startHighlights);

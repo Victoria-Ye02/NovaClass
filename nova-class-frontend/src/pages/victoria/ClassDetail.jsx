@@ -619,7 +619,7 @@ export default function ClassDetail() {
             const { data } = await API.post(`/classroom/materials/${materials[0].id}/ai`, { action, lang });
             setAiResult(data.data);
           } catch {
-            setAiResult({ error: "AI unavailable. Check GEMINI_API_KEY in backend .env" });
+            setAiResult({ error: "AI unavailable. Check OPENAI_API_KEY in backend .env" });
           } finally {
             setAiLoading(false);
           }
@@ -639,7 +639,7 @@ export default function ClassDetail() {
       const { data } = await API.post(`/classroom/materials/${selectedMat.id}/ai`, { action, lang });
       setAiResult(data.data);
     } catch (err) {
-      setAiResult({ error: "AI unavailable. Check GEMINI_API_KEY in backend .env" });
+      setAiResult({ error: "AI unavailable. Check OPENAI_API_KEY in backend .env" });
     } finally {
       setAiLoading(false);
     }

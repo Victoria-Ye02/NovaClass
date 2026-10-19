@@ -1,0 +1,77 @@
+// Styles for the lecture stage. Colours come from the app's CSS variables so
+// the panel follows the light/dark theme like the rest of the app.
+export const L = {
+  root: { position: "relative", flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--surface)", borderLeft: "1px solid var(--border)" },
+  header: { flexShrink: 0, display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--surface-alt)" },
+  headerName: { fontSize: "14px", fontWeight: 800, color: "var(--text)", lineHeight: 1.1 },
+  headerStatus: { display: "flex", alignItems: "center", gap: "6px", marginTop: "2px", fontSize: "10.5px", fontWeight: 800, letterSpacing: ".6px" },
+  dot: { width: "7px", height: "7px", borderRadius: "50%" },
+  stage: { flexShrink: 0, display: "flex", justifyContent: "center", padding: "18px 0 10px" },
+  avatarWrap: { position: "relative", display: "flex", alignItems: "center", justifyContent: "center" },
+  ring: { position: "absolute", inset: "-9px", borderRadius: "50%", pointerEvents: "none", transition: "box-shadow .18s ease-out, transform .18s ease-out, border-color .25s" },
+  script: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", margin: "4px 16px 10px", border: "1px solid var(--border)", borderRadius: "14px", background: "var(--surface-alt)", overflow: "hidden" },
+  scriptHead: { flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "10px 14px 8px" },
+  chip: { padding: "3px 9px", borderRadius: "999px", background: "var(--primary-tint)", color: "var(--primary)", fontSize: "10.5px", fontWeight: 800, letterSpacing: ".5px", whiteSpace: "nowrap" },
+  scriptLabel: { fontSize: "10.5px", fontWeight: 800, letterSpacing: ".8px", color: "var(--text-faint)", textTransform: "uppercase" },
+  question: { flexShrink: 0, margin: "0 14px 6px", padding: "6px 10px", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)", fontSize: "12px", color: "var(--text-muted)" },
+  scriptBody: { flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 16px 14px", fontSize: "15.5px", lineHeight: 1.85, color: "var(--text)", whiteSpace: "pre-wrap" },
+  sentence: { transition: "opacity .25s, background .25s", borderRadius: "4px", padding: "1px 0" },
+  sentenceActive: { background: "var(--primary-tint)", boxShadow: "-4px 0 0 var(--primary-tint), 4px 0 0 var(--primary-tint)" },
+  sentencePast: { opacity: 0.55 },
+  skeleton: { height: "12px", borderRadius: "6px", background: "var(--border)", marginBottom: "12px", opacity: 0.7 },
+  keyPoints: { flexShrink: 0, display: "flex", flexWrap: "wrap", gap: "6px", padding: "8px 14px 12px", borderTop: "1px solid var(--border)" },
+  keyPoint: { padding: "4px 9px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--surface)", fontSize: "11.5px", color: "var(--text-muted)", fontWeight: 600 },
+  controls: { flexShrink: 0, padding: "4px 16px 12px", display: "flex", flexDirection: "column", gap: "10px" },
+  wave: { height: "46px", display: "flex", alignItems: "center", gap: "2px", cursor: "pointer", borderRadius: "8px", padding: "0 2px", outlineOffset: "2px" },
+  bar: { flex: 1, minWidth: "2px", borderRadius: "2px", transition: "height .08s linear, background .2s" },
+  clockRow: { display: "flex", justifyContent: "space-between", marginTop: "-4px", fontSize: "11px", color: "var(--text-faint)", fontVariantNumeric: "tabular-nums" },
+  buttonRow: { display: "flex", alignItems: "center", gap: "8px" },
+  playBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "11px 14px", border: "none", borderRadius: "12px", background: "var(--primary)", color: "#fff", fontSize: "13.5px", fontWeight: 800, cursor: "pointer" },
+  iconBtn: { width: "44px", height: "44px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface-alt)", color: "var(--text-muted)", cursor: "pointer" },
+  micOn: { background: "#FEE2E2", borderColor: "#FCA5A5", color: "#B91C1C" },
+  actions: { display: "flex", flexWrap: "wrap", gap: "7px" },
+  action: { background: "var(--primary-tint)", color: "var(--primary)", border: "1px solid var(--border)", borderRadius: "999px", padding: "7px 11px", fontSize: "11.5px", fontWeight: 700, cursor: "pointer" },
+  textRow: { display: "flex", gap: "8px" },
+  textInput: { flex: 1, minWidth: 0, padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: "13px", outline: "none" },
+  voiceDock: { display: "flex", flexDirection: "column", gap: "8px", padding: "10px 12px", borderRadius: "12px", border: "1px solid var(--primary)", background: "var(--primary-tint)" },
+  voiceMeterRow: { display: "flex", alignItems: "center", gap: "8px" },
+  recDot: { width: "9px", height: "9px", borderRadius: "50%", background: "#EF4444", animation: "lectureRecPulse 1.1s ease-in-out infinite", flexShrink: 0 },
+  voiceText: { fontSize: "12.5px", fontWeight: 700, color: "var(--text)", whiteSpace: "nowrap" },
+  voiceHint: { fontSize: "11.5px", color: "var(--text-muted)" },
+  meterTrack: { flex: 1, height: "6px", borderRadius: "3px", background: "var(--border)", overflow: "hidden" },
+  meterFill: { height: "100%", borderRadius: "3px", background: "var(--primary)", transition: "width .08s linear" },
+  voiceButtons: { display: "flex", alignItems: "center", gap: "8px" },
+  draftBox: { width: "100%", boxSizing: "border-box", resize: "none", padding: "8px 10px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", font: "inherit", fontSize: "13px", lineHeight: 1.45, outline: "none" },
+  playBtnSmall: { padding: "8px 16px", borderRadius: "10px", border: "none", background: "var(--primary)", color: "#fff", fontSize: "12.5px", fontWeight: 700, cursor: "pointer" },
+  ghost: { padding: "7px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", fontSize: "12px", fontWeight: 600, cursor: "pointer" },
+  quiz: { flexShrink: 0, display: "flex", flexDirection: "column", gap: "8px", margin: "0 14px 8px", padding: "12px 14px", borderRadius: "14px", border: "1px solid var(--primary)", background: "var(--surface)", boxShadow: "0 6px 20px rgba(79,70,229,.14)", animation: "lectureQuizIn .28s ease-out", maxHeight: "46%", overflowY: "auto" },
+  quizHead: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+  quizEyebrow: { fontSize: "10.5px", fontWeight: 800, letterSpacing: ".8px", color: "var(--primary)" },
+  quizSkip: { border: "none", background: "transparent", color: "var(--text-muted)", fontSize: "11.5px", fontWeight: 600, cursor: "pointer" },
+  quizMuted: { fontSize: "12.5px", color: "var(--text-muted)" },
+  quizQuestion: { fontSize: "14px", fontWeight: 700, color: "var(--text)", lineHeight: 1.45 },
+  quizOptions: { display: "flex", flexDirection: "column", gap: "6px" },
+  quizRowOptions: { display: "flex", gap: "8px" },
+  quizOption: { display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface-alt)", color: "var(--text)", fontSize: "13px", fontWeight: 600, textAlign: "left", cursor: "pointer" },
+  quizLetter: { width: "22px", height: "22px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--primary-tint)", color: "var(--primary)", fontSize: "11px", fontWeight: 800 },
+  quizPicked: { borderColor: "var(--primary)", background: "var(--primary-tint)" },
+  quizCorrect: { borderColor: "#16A34A", background: "#DCFCE7", color: "#14532D" },
+  quizWrong: { borderColor: "#DC2626", background: "#FEE2E2", color: "#7F1D1D" },
+  quizFeedback: { padding: "9px 12px", borderRadius: "10px", fontSize: "12.5px", lineHeight: 1.5 },
+  quizFeedbackOk: { background: "#DCFCE7", color: "#14532D" },
+  quizFeedbackBad: { background: "#FEF3C7", color: "#78350F" },
+  quizButtons: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" },
+  langChip: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px", padding: "4px 10px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-muted)", fontSize: "11.5px", fontWeight: 700 },
+  langReset: { border: "none", background: "transparent", color: "var(--text-muted)", fontSize: "14px", lineHeight: 1, cursor: "pointer", padding: "0 0 0 2px" },
+  notice: { fontSize: "11.5px", color: "var(--text-muted)", textAlign: "center" },
+};
+
+// Injected once by LectureStage. Transform/opacity only; reduced-motion users
+// get a static ring.
+export const LECTURE_KEYFRAMES = `
+@keyframes lectureBreath { 0%,100% { transform: scale(1); opacity: .55; } 50% { transform: scale(1.05); opacity: .95; } }
+@keyframes lectureRecPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes lectureQuizIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes lectureThink { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .lecture-ring { animation: none !important; } }
+`;
