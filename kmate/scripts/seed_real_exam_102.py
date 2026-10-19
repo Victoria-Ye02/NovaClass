@@ -3,7 +3,7 @@ Seed the REAL 102nd TOPIK II exam paper (Listening + Reading + Writing)
 into topik_questions / topik_writing_questions.
 
 Content extracted directly from official KIIE papers + answer keys
-(no Gemini calls — no quota risk). Image-based questions
+(no AI calls — no quota risk). Image-based questions
 (Reading 5-8, Listening 1-3) and copyright-redacted passages
 (Reading 23-24, 42-43) are skipped — see plan notes.
 

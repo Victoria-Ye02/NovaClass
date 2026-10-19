@@ -1,6 +1,6 @@
 """
 Seed Full TOPIK II Exam Mode question pool into `topik_questions`.
-Generates Listening (50), Reading (50), Writing (4, MCQ substitute) via Gemini,
+Generates Listening (50), Reading (50), Writing (4, MCQ substitute) via OpenAI,
 batch-verifies answers in one call per batch (rate-limit friendly), and inserts.
 
 Run once: python scripts/seed_full_exam.py
@@ -10,26 +10,25 @@ import os, json, re, sys, time
 sys.path.insert(0, os.path.dirname(__file__))
 
 from dotenv import load_dotenv
-from google import genai
 from db import get_mysql
+from llm import complete
 
 load_dotenv()
-client_ai = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 EXAM_NO = 1  # bookkeeping only — not used in selection queries
 
 
-def call_gemini(prompt, retries=4, base_delay=8):
-    """Gemini call with retry/backoff — the API intermittently returns 503 under high demand."""
+def call_llm(prompt, retries=4, base_delay=8):
+    """OpenAI call (text back) with retry/backoff on rate limits and transient 5xx errors."""
     last_err = None
     for attempt in range(retries):
         try:
-            return client_ai.models.generate_content(model="gemini-3.5-flash-lite", contents=prompt)
+            return complete(prompt)
         except Exception as e:
             last_err = e
-            if "503" in str(e) or "UNAVAILABLE" in str(e):
+            if any(code in str(e) for code in ("429", "500", "502", "503", "UNAVAILABLE")):
                 wait = base_delay * (attempt + 1)
-                print(f"    ⏳ Gemini busy (503), retrying in {wait}s...")
+                print(f"    ⏳ OpenAI busy, retrying in {wait}s...")
                 time.sleep(wait)
             else:
                 raise
@@ -69,8 +68,8 @@ Reply ONLY with comma-separated correct answer numbers (1-based).
 Example for 4 questions: 2,1,4,3
 Your answer:"""
 
-    res = call_gemini(prompt)
-    digits = [d.strip() for d in res.text.strip().split(",")]
+    text = call_llm(prompt)
+    digits = [d.strip() for d in text.split(",")]
     for i, q in enumerate(questions):
         if i < len(digits) and digits[i] in ["1", "2", "3", "4"]:
             q["ans"] = int(digits[i])
@@ -108,8 +107,7 @@ STRICT RULES:
 - Authentic TOPIK II difficulty
 - Make all 4 options plausible but only ONE correct"""
 
-    res = call_gemini(prompt)
-    return parse_questions(res.text.strip())
+    return parse_questions(call_llm(prompt))
 
 
 def save_batch(section, questions, start_no):

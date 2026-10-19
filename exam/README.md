@@ -24,13 +24,13 @@ Create a `.env` file in the project root (never committed — already in `.gitig
 
 ```
 OPENROUTER_API_KEY=sk-or-v1-...
-GEMINI_API_KEY=...
+OPENAI_API_KEY=sk-...
 ```
 
 `OPENROUTER_API_KEY` is required for: the Writing auto-grader, the study-plan
 generator, and the PDF ingestion scripts below (they use vision-LLM calls, not
-OCR). `GEMINI_API_KEY` is required for Reading/Listening explanation
-generation (`app/services/analytics.py::_generate_mc_explanations`).
+OCR). `OPENAI_API_KEY` is required for Reading/Listening explanation
+generation (model: `OPENAI_EXPLANATION_MODEL`, default `gpt-4o-mini`) (`app/services/analytics.py::_generate_mc_explanations`).
 
 ## Running the API
 

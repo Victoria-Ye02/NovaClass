@@ -6,13 +6,14 @@ convention established in writing_grader.py), not a direct Anthropic client.
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import LLMConfigurationError, OPENROUTER_BASE_URL, get_gemini_api_key, get_openrouter_api_key
+from app.config import LLMConfigurationError, OPENROUTER_BASE_URL, get_openai_api_key, get_openrouter_api_key
 from app.database.models import ExamSession, QuestionLog, WeaknessProfile
 from app.database.models import SkillArea as SkillAreaEnum
 from app.database.vector_db import SkillArea, get_questions_by_ids
@@ -55,8 +56,8 @@ QUESTION_TYPE_LABELS: dict[str, str] = {
 }
 
 STUDY_PLAN_MODEL = "anthropic/claude-sonnet-5"
-EXPLANATION_MODEL = "gemini-3.6-flash"
-# Sized against a live measurement: a 24-item Gemini batch took ~84s (~3.5s/item),
+EXPLANATION_MODEL = os.environ.get("OPENAI_EXPLANATION_MODEL", "gpt-4o-mini")
+# Sized against an earlier live measurement with the previous (Gemini) model: a 24-item batch took ~84s (~3.5s/item),
 # vs. the previous Claude/OpenRouter explanation model where a 5-question batch took
 # ~70s and a 20-item batch ran past 7 minutes without completing. 15 items keeps one
 # section's worst case (~55s) comfortably under EXPLANATION_TIMEOUT_SECONDS below and
@@ -251,19 +252,19 @@ def _submit_mc_section(
 def _get_explanation_llm():
     global _explanation_llm
     if _explanation_llm is None:
-        from langchain_google_genai import ChatGoogleGenerativeAI
+        from langchain_openai import ChatOpenAI
 
-        # Gemini directly (not routed through OpenRouter, unlike the rest of this
-        # project) -- picked specifically for this call because it's fast/cheap,
-        # which matters here: a batched explanation call has no client-side bound by
-        # default and can hang well past any reasonable request timeout (observed:
-        # still running after 7+ minutes for a 20-question batch via Claude/OpenRouter).
+        # OpenAI directly (OPENAI_API_KEY, not routed through OpenRouter, unlike
+        # the study-plan model) -- fast and cheap, which matters here: a batched
+        # explanation call has no client-side bound by default and can hang well
+        # past any reasonable request timeout (observed: still running after 7+
+        # minutes for a 20-question batch via Claude/OpenRouter).
         # timeout+max_retries=1 caps a stalled call so it fails into the try/except in
         # _generate_mc_explanations (-> a warning, not a stuck request) instead of
         # hanging indefinitely.
-        llm = ChatGoogleGenerativeAI(
+        llm = ChatOpenAI(
             model=EXPLANATION_MODEL,
-            google_api_key=get_gemini_api_key(),
+            api_key=get_openai_api_key(),
             temperature=0,
             timeout=EXPLANATION_TIMEOUT_SECONDS,
             max_retries=1,
@@ -275,7 +276,7 @@ def _get_explanation_llm():
 # Scripts a clean explanation should ever contain: Korean (the question content being
 # quoted/discussed), Myanmar (the explanation itself), and common Latin/punctuation/symbol
 # ranges (incl. ①②③④ and ㉠㉡㉢㉣, which show up when explanations quote question text).
-# Gemini has been observed to occasionally substitute a stray character from an unrelated
+# Models have been observed (Gemini did, and it can happen with any model) to occasionally substitute a stray character from an unrelated
 # script into an otherwise-correct Korean word (e.g. "모래" -> "મોરે", Gujarati) -- a
 # whole-word substitution, not just noise, so it can't be cleaned by stripping the bad
 # character; the only safe move is to drop that explanation rather than show corrupted text.

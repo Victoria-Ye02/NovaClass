@@ -74,7 +74,7 @@ tables = {
             blank_count   TINYINT      COMMENT '빈칸 개수 (51,52번 전용)',
             min_chars     INT          COMMENT '최소 글자 수 (53,54번 전용)',
             max_chars     INT          COMMENT '최대 글자 수 (53,54번 전용)',
-            model_answer  TEXT         NOT NULL COMMENT '모범 답안 (Gemini 채점 기준)',
+            model_answer  TEXT         NOT NULL COMMENT '모범 답안 (AI 채점 기준)',
             points        INT          NOT NULL COMMENT '배점',
             created_at    DATETIME     DEFAULT CURRENT_TIMESTAMP
         )

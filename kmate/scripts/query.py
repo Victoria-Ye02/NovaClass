@@ -1,13 +1,12 @@
 import os
 import subprocess
 import html as html_lib
-from google import genai
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 from db import get_chroma
+from llm import complete
 
 load_dotenv()
-client_ai = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 HTML_FILE = "./kmate_output.html"
 
 # ---- HTML browser output ----
@@ -81,11 +80,7 @@ Instructions:
 6. If the question has a blank ( ), analyze the sentence structure and grammar to find the best fit.
 7. If you cannot determine the answer, say so honestly in the detected language."""
 
-    response = client_ai.models.generate_content(
-        model="gemini-3.5-flash-lite",
-        contents=prompt
-    )
-    return response.text
+    return complete(prompt)
 
 # ---- Chat loop ----
 print("=" * 50)
@@ -112,7 +107,7 @@ while True:
         if "429" in err:
             print("⛔ Rate limit exceeded. Please wait and try again.")
         elif "503" in err or "UNAVAILABLE" in err:
-            print("⚠️ Gemini server busy. Please try again in 10 seconds.")
+            print("⚠️ The AI server is busy. Please try again in 10 seconds.")
         else:
             print(f"❌ Error: {e}")
     print()

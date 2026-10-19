@@ -522,3 +522,42 @@ def test_live_writing_grader_produces_myanmar_feedback():
     assert 0 <= result.total_score <= result.max_score
     assert is_myanmar_text(result.feedback_myanmar, min_chars=20)
     assert result.improvement_tips
+
+
+# ---------------------------------------------------------------------------
+# The Reading/Listening explanation model is OpenAI (not Gemini / Google).
+# ---------------------------------------------------------------------------
+
+
+def test_explanation_llm_uses_openai_and_requires_its_key(monkeypatch):
+    import langchain_openai
+
+    from app.config import LLMConfigurationError
+    from app.services import analytics
+
+    built = {}
+
+    class FakeChatOpenAI:
+        def __init__(self, **kwargs):
+            built.update(kwargs)
+
+        def with_structured_output(self, schema, **kwargs):
+            built["schema"] = schema
+            return self
+
+    monkeypatch.setattr(langchain_openai, "ChatOpenAI", FakeChatOpenAI)
+    monkeypatch.setattr(analytics, "_explanation_llm", None)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    with pytest.raises(LLMConfigurationError, match="OPENAI_API_KEY"):
+        analytics._get_explanation_llm()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-not-real")
+    monkeypatch.setattr(analytics, "_explanation_llm", None)
+    analytics._get_explanation_llm()
+
+    assert "gemini" not in built["model"].lower()
+    assert built["api_key"] == "sk-test-not-real"
+    assert "base_url" not in built, "talks to OpenAI directly, not through OpenRouter"
+    assert built["temperature"] == 0
+    assert built["timeout"] == analytics.EXPLANATION_TIMEOUT_SECONDS
+    monkeypatch.setattr(analytics, "_explanation_llm", None)

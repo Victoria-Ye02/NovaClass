@@ -6,11 +6,10 @@ import os, json, re, sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from dotenv import load_dotenv
-from google import genai
 from db import get_mysql
+from llm import complete
 
 load_dotenv()
-client_ai = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 BATCHES = [
     {"topic": "grammar",    "count": 20},
@@ -43,8 +42,7 @@ Reply ONLY with comma-separated correct answer numbers (1-based).
 Example for 5 questions: 2,1,4,3,1
 Your answer:"""
 
-    res = client_ai.models.generate_content(model="gemini-3.5-flash-lite", contents=prompt)
-    digits = [d.strip() for d in res.text.strip().split(",")]
+    digits = [d.strip() for d in complete(prompt).split(",")]
     for i, q in enumerate(questions):
         if i < len(digits) and digits[i] in ["1","2","3","4"]:
             q["ans"] = int(digits[i])
@@ -97,8 +95,7 @@ STRICT RULES:
 - Use patterns: -아/어야 하다, -ㄹ수록, -는 바람에, 만큼, -(으)므로, -도록, -는 한, etc.
 - Make all 4 options plausible but only ONE correct"""
 
-    res = client_ai.models.generate_content(model="gemini-3.5-flash-lite", contents=prompt)
-    return parse_questions(res.text.strip())
+    return parse_questions(complete(prompt))
 
 
 if __name__ == "__main__":

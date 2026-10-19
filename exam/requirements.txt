@@ -7,7 +7,6 @@ sentence-transformers
 pymupdf
 langchain
 langchain-openai
-langchain-google-genai
 python-dotenv
 pytest
 httpx

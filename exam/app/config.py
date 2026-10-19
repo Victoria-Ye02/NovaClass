@@ -25,11 +25,11 @@ def get_openrouter_api_key() -> str:
     return api_key
 
 
-def get_gemini_api_key() -> str:
-    api_key = os.environ.get("GEMINI_API_KEY")
+def get_openai_api_key() -> str:
+    api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise LLMConfigurationError(
-            "GEMINI_API_KEY is not set. Configure it in the environment to enable "
+            "OPENAI_API_KEY is not set. Configure it in the environment to enable "
             "Reading/Listening explanation generation."
         )
     return api_key
