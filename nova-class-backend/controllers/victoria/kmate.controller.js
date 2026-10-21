@@ -843,14 +843,35 @@ exports.history = async (req, res) => {
 // ---- K-Mate TOPIK practice quiz --------------------------------------------------------------
 const quizStore = require("../../services/topik/quizStore");
 const { typeByKey, difficultyByKey, publicOptions } = require("../../services/topik/questionTypes");
-const guides = require("../../services/topik/guides");
+const { domainByKey, rangeByKey, rangesForQuestionSpan, rangeForQuestionNumber } = require("../../services/topik/questionRanges");
+const { patternFor } = require("../../services/topik/rangePatterns");
+const questionBank = require("../../services/topik/questionBank");const guides = require("../../services/topik/guides");
 
-const EXPLAIN_LANGUAGE = { my: "Burmese (Myanmar)", ko: "Korean" };
+const EXPLAIN_LANGUAGE = { my: "Burmese (Myanmar)", ko: "Korean", vi: "Vietnamese" };
 
 // Asks the model for multiple-choice questions. `focus` is a list of weak points (e.g. "-(으)ㄴ 지 + time");
 // when given, every question must test one of them, in a new sentence (not a copy of an earlier question).
-async function makeQuizQuestions({ topic, count, language, focus = [], type, difficulty }) {
+// One request to the model for a few questions. (makeQuizQuestions below cuts a big set into several of these.)
+async function makeQuizBatch({ topic, count, language, focus = [], type, difficulty, domain, range, startQuestion, endQuestion }) {
+  const questionCount = Math.min(Math.max(parseInt(count, 10) || 5, 1), 50);
   const questionType = typeByKey(type);
+  const examDomain = domainByKey(domain);
+  const examRange = examDomain && rangeByKey(domain, range);
+  const spanRanges = examDomain && rangesForQuestionSpan(domain, startQuestion, endQuestion);
+  // One question for every number of the span (e.g. 읽기 1~6 -> 6 questions): each number is written in the pattern of ITS part of the
+  // real exam, in order, and comes back with its number. Any other count is spread over the patterns of the span.
+  const oneEach = spanRanges && Number(endQuestion) - Number(startQuestion) + 1 === questionCount;
+  const numberPatterns = oneEach
+    ? Array.from({ length: questionCount }, (_, i) => { const n = Number(startQuestion) + i; const r = rangeForQuestionNumber(domain, n); return `- ${examDomain.ko} ${n}번 → ${r ? `${r.range}번 pattern: ${r.ko}. How it is written: ${patternFor(r.key)}` : "the pattern of that part of the exam"}`; })
+    : [];
+  const spanRule = spanRanges
+    ? oneEach
+      ? `\nStudent-selected question numbers: ${examDomain.ko} ${Number(startQuestion) === Number(endQuestion) ? startQuestion : `${startQuestion}~${endQuestion}`}번. Write exactly ONE question for each number, in this order, and write each one the way that number is asked in the real TOPIK II exam (its instruction, its text type, its difficulty):\n${numberPatterns.join("\n")}\nPut the number in "number". Do not copy a past exam question.`
+      : `\nStudent-selected question span: ${examDomain.ko} ${startQuestion}~${endQuestion}번. It contains these official TOPIK question patterns:\n${spanRanges.map(r => `- ${r.range}번 — ${r.ko}. How it is written: ${patternFor(r.key)}`).join("\n")}\nDistribute the ${questionCount} new questions across these matching patterns. Every question must follow one of them; do not copy a past exam question.`
+    : "";
+  const domainRule = examDomain
+    ? `\nExam domain: ${examDomain.ko} (${examDomain.label}). ${examDomain.rule}${spanRule || (examRange ? `\nTarget question range: ${examDomain.ko} ${examRange.range}번 — ${examRange.ko}.${patternFor(examRange.key) ? ` How it is written: ${patternFor(examRange.key)}` : ""} ${examRange.focus ? `Focus of this part: ${examRange.focus}. Match the style, length and difficulty of that part of the real TOPIK II exam.` : "Write the questions exactly in the pattern of that part of the real TOPIK II exam."}` : "")}`
+    : "";
   const level = difficultyByKey(difficulty);
   const typeRule = questionType
     ? `\nEvery question is a TOPIK II "${questionType.label}" (${questionType.ko}) question, written like the real exam: ${questionType.format}${questionType.styleRules ? `\n${questionType.styleRules}` : ""}${questionType.levelNotes?.[level?.key] ? `\n${questionType.levelNotes[level.key]}` : ""}`
@@ -859,32 +880,145 @@ async function makeQuizQuestions({ topic, count, language, focus = [], type, dif
   const focusRule = focus.length
     ? `\nThe student keeps getting these points wrong, so EVERY question must test one of them (spread them out), in a NEW sentence and with different wrong options than before:\n${focus.map(f => `- ${f}`).join("\n")}\nKeep the difficulty the same or slightly easier, and make the explanation say exactly what to look for. In "weakness" copy the listed point EXACTLY as written above (same words, same language) so progress on it can be tracked.`
     : "";
-  const prompt = `Generate ${count} multiple-choice Korean language quiz questions about: ${topic}.${typeRule}${levelRule}${focusRule}
-Language for explanations: ${EXPLAIN_LANGUAGE[language] || "English"}.
+  const prompt = `You are the "Smart Drill" engine of a TOPIK preparation platform. Generate ${questionCount} brand-new, customized multiple-choice practice questions about: ${topic}, following the official TOPIK exam patterns.${typeRule}${domainRule}${levelRule}${focusRule}
+
+Rules:
+1. Do NOT copy past exam questions. Write NEW, original questions that test the same grammar rule, vocabulary or reading pattern.
+2. Make the difficulty match the real TOPIK exam.
+3. Give 4 options: 1 correct answer and 3 natural distractors (wrong options that a real student could be tempted by).
+4. Write a clear, easy explanation for foreign students: why the correct answer is right AND why each wrong option is wrong.
+5. Add one short practical test-taking tip (실전 꿀팁) for this kind of question.
+6. Return exactly ${questionCount} questions.
+Language for explanations and tips: ${EXPLAIN_LANGUAGE[language] || "English"}. Keep the Korean sentences, grammar patterns and options in Korean.
 Write the questions as plain text: no HTML tags or entities (no <u>, no &nbsp;), and show a blank as ( ).
+For an exam domain, "question" holds ONLY the official instruction line of that part of the exam (for example 다음을 순서에 맞게 배열한 것을 고르십시오.): no ※, no question numbers and no extra notes in brackets; everything the student must read or hear goes in "passage".
 
 Return ONLY valid JSON array:
 [
   {
+    "domain": "${examDomain ? examDomain.ko : ""}",${oneEach ? '\n    "number": the question number from the list above (an integer),' : ""}
+    "passage": "${examDomain ? "the Korean reading text or listening script the question is about" : "leave empty unless the question needs a short text"}",
     "question": "question text in Korean or about Korean",
     "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
     "answer": "A",
     "weakness": "the ONE grammar pattern or vocabulary point this question tests, in a few words (e.g. -(으)ㄴ 지 + time, 피동 표현)",
-    "explanation": "why the answer is right and why a student might pick a wrong option"
+    "explanation": "why the answer is right, and why each of the other options is wrong",
+    "tip": "one short practical tip for answering this kind of question in the exam"
   }
 ]`;
-  const completion = await completeText({ maxTokens: 2048, messages: [{ role: "user", content: prompt }] });
-  const out = completion.choices[0].message.content.trim().replace(/```json\s*/g, "").replace(/```\s*/g, "");
-  const questions = JSON.parse(out.slice(out.indexOf("["), out.lastIndexOf("]") + 1));
-  return questions.map(q => ({ ...q, weakness: quizStore.cleanWeakness(q.weakness) }));
+  const ask = async () => {
+    const completion = await completeText({ maxTokens: Math.min(Math.max(questionCount * 700, 2800), 16000), messages: [{ role: "user", content: prompt }] });
+    const out = completion.choices[0].message.content.trim().replace(/```json\s*/g, "").replace(/```\s*/g, "");
+    return JSON.parse(out.slice(out.indexOf("["), out.lastIndexOf("]") + 1));
+  };
+  let questions;
+  try { questions = await ask(); } catch (err) {
+    if (!(err instanceof SyntaxError)) throw err;
+    console.error("[Quiz] the model's answer was not valid JSON, asking once more:", err.message);
+    questions = await ask();                                   // an answer cut off or with a stray quote: one more try
+  }
+  return questions.map((q, i) => ({ ...q, ...(oneEach ? { number: Number.isInteger(Number(q.number)) && Number(q.number) > 0 ? Number(q.number) : Number(startQuestion) + i } : {}), domain: examDomain?.key || "", passage: String(q.passage || "").trim(), weakness: quizStore.cleanWeakness(q.weakness), tip: String(q.tip || "").trim() }));
 }
 
 // POST /api/kmate/quiz/generate  { topic, count, language }
+// How many questions one request to the model asks for: with a passage or script each question is long, and a request for
+// 50 of them came back cut off and unreadable (JSON error after ~2 minutes), so a big set is cut into smaller requests.
+const BATCH_SIZE = { withPassage: 5, listening: 3, plain: 10 };     // a listening script is long: fewer questions per request keep each answer short and valid
+const batchSizeFor = domain => (domain === "listening" ? BATCH_SIZE.listening : domainByKey(domain) ? BATCH_SIZE.withPassage : BATCH_SIZE.plain);
+const PARALLEL_BATCHES = 3;
+
+async function generateQuestions(args) {
+  const total = Math.min(Math.max(parseInt(args.count, 10) || 5, 1), 50);
+  const size = batchSizeFor(args.domain);
+  if (total <= size) return makeQuizBatch({ ...args, count: total });
+
+  // If the student asked for exactly one question per number of the chosen span (e.g. 읽기 1~30 -> 30), each batch gets its own
+  // slice of the span, so the questions follow the real order of the exam.
+  const start = Number(args.startQuestion), end = Number(args.endQuestion);
+  const bySpan = Number.isInteger(start) && Number.isInteger(end) && end - start + 1 === total;
+  const batches = [];
+  for (let done = 0; done < total; done += size) {
+    const n = Math.min(size, total - done);
+    batches.push({ ...args, count: n, ...(bySpan ? { startQuestion: start + done, endQuestion: start + done + n - 1 } : {}) });
+  }
+  const results = new Array(batches.length);
+  let next = 0;
+  const worker = async () => { while (next < batches.length) { const i = next++; results[i] = await makeQuizBatch(batches[i]); } };
+  await Promise.all(Array.from({ length: Math.min(PARALLEL_BATCHES, batches.length) }, worker));
+  return results.flat();
+}
+
+// One question for every number of an exam section is served from the bank when it has them (no waiting for the model); only
+// the numbers it does not have yet are written by the model and stored. Numbers that are thin in the bank are topped up in the
+// background so the next student gets a different question. Anything else (topic quiz, weak-point practice, a chosen question type)
+// is not banked.
+const topUpRunning = new Set();
+const runs = numbers => numbers.reduce((out, n) => { const last = out[out.length - 1]; if (last && last[last.length - 1] === n - 1) last.push(n); else out.push([n]); return out; }, []);
+const generateRuns = (args, numbers) => Promise.all(runs(numbers).map(run => generateQuestions({ ...args, count: run.length, startQuestion: run[0], endQuestion: run[run.length - 1] }))).then(r => r.flat());
+
+async function makeQuizQuestions(args) {
+  const total = Math.min(Math.max(parseInt(args.count, 10) || 5, 1), 50);
+  const start = Number(args.startQuestion), end = Number(args.endQuestion);
+  const banked = domainByKey(args.domain) && !args.type && !(args.focus && args.focus.length)
+    && Number.isInteger(start) && Number.isInteger(end) && end - start + 1 === total;
+  if (!banked) return generateQuestions(args);
+
+  const numbers = Array.from({ length: total }, (_, i) => start + i);
+  const key = { domain: args.domain, difficulty: args.difficulty || "", language: args.language || "en" };
+  let picked = new Map(), counts = new Map();
+  try { ({ picked, counts } = await questionBank.pick(pool, { ...key, numbers })); }
+  catch (err) { console.error("[Quiz] question bank unavailable:", err.message); return generateQuestions(args); }
+
+  const missing = numbers.filter(n => !picked.has(n));
+  const made = missing.length ? await generateRuns(args, missing) : [];
+  const store = made.length ? questionBank.save(pool, { ...key, questions: made }).catch(err => console.error("[Quiz] could not store the questions:", err.message)) : Promise.resolve();
+  const byNumber = new Map([...picked, ...made.map(q => [q.number, q])]);
+
+  // a thin number gets one more question in the background (a few at a time, never twice at once)
+  const thin = numbers.filter(n => (counts.get(n) || 0) + (missing.includes(n) ? 1 : 0) < questionBank.TARGET_PER_NUMBER)
+    .filter(n => !topUpRunning.has(`${key.domain}|${n}|${key.difficulty}|${key.language}`)).slice(0, 5);
+  if (thin.length && process.env.QUESTION_BANK_TOPUP !== "off") {
+    const tags = thin.map(n => `${key.domain}|${n}|${key.difficulty}|${key.language}`);
+    tags.forEach(t => topUpRunning.add(t));
+    exports._topUp = store.then(() => generateRuns(args, thin)).then(more => questionBank.save(pool, { ...key, questions: more }))
+      .catch(err => console.error("[Quiz] background top-up failed:", err.message))
+      .finally(() => tags.forEach(t => topUpRunning.delete(t)));
+  }
+  await store;
+  return numbers.map(n => byNumber.get(n)).filter(Boolean);
+}
+
+// Writes and stores questions for these numbers ahead of time (scripts/warm_question_bank.js); returns how many were stored.
+exports.fillQuestionBank = async ({ domain, difficulty = "", language = "en", numbers }) => {
+  // each batch is stored on its own, so one broken answer from the model does not throw away the others
+  const base = { topic: "TOPIK II", language, difficulty, domain };
+  const batches = [];
+  for (const run of runs(numbers)) for (let i = 0; i < run.length; i += batchSizeFor(domain)) {
+    const part = run.slice(i, i + batchSizeFor(domain));
+    batches.push({ ...base, count: part.length, startQuestion: part[0], endQuestion: part[part.length - 1] });
+  }
+  let stored = 0, failure = null;
+  const worker = async () => {
+    while (batches.length) {
+      const batch = batches.shift();
+      try {
+        const made = await makeQuizBatch(batch);
+        await questionBank.save(pool, { domain, difficulty, language, questions: made });
+        stored += made.filter(questionBank.isStorable).length;
+      } catch (err) { failure = err; }
+    }
+  };
+  await Promise.all(Array.from({ length: PARALLEL_BATCHES }, worker));
+  if (!stored && failure) throw failure;
+  return stored;
+};
+
 exports.generateQuiz = async (req, res) => {
-  const { topic = "TOPIK vocabulary", count = 5, language = "en", type, difficulty } = req.body;
+  const { topic = "TOPIK vocabulary", count = 5, language = "en", type, difficulty, domain, range, startQuestion, endQuestion } = req.body;
   try {
-    res.json({ questions: await makeQuizQuestions({ topic, count, language, type, difficulty }) });
+    res.json({ questions: await makeQuizQuestions({ topic, count, language, type, difficulty, domain, range, startQuestion, endQuestion }) });
   } catch (err) {
+    console.error("[Quiz] could not make the questions:", err.message);
     res.status(500).json({ error: err.message });
   }
 };
@@ -940,7 +1074,7 @@ exports.followupQuiz = async (req, res) => {
   if (weaknesses.length === 0) return res.status(400).json({ error: "weaknesses are required" });
   const count = Math.min(Math.max(parseInt(req.body.count, 10) || weaknesses.length + 1, 2), 8);
   try {
-    const questions = await makeQuizQuestions({ topic: "TOPIK II (targeted practice)", count, language: req.body.language || "en", focus: weaknesses, type: req.body.type, difficulty: req.body.difficulty });
+    const questions = await makeQuizQuestions({ topic: "TOPIK II (targeted practice)", count, language: req.body.language || "en", focus: weaknesses, type: req.body.type, difficulty: req.body.difficulty, domain: req.body.domain, range: req.body.range });
     res.json({ questions, weaknesses });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -960,11 +1094,14 @@ exports.checkQuiz = async (req, res) => {
       if (isCorrect) correct++;
       return {
         question: q.question,
+        passage: q.passage || "",
         options: q.options,
         yourAnswer: answers[i],
         correctAnswer: q.answer,
         isCorrect,
         weakness: q.weakness || "",
+        domain: q.domain || "",
+        number: Number.isInteger(Number(q.number)) && Number(q.number) > 0 ? Number(q.number) : null,
         explanation: q.explanation,
       };
     });

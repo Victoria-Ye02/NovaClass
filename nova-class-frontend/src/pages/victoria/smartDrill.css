@@ -1,0 +1,18 @@
+/* Tailwind for the Smart Drill page only: theme tokens + utilities, no global preflight (the rest of the app keeps its own styles). */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* the app switches themes with <html data-theme="dark"> */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* the parts of Tailwind's preflight the markup relies on, limited to the page */
+@layer base {
+  .sd-root, .sd-root *, .sd-root ::before, .sd-root ::after { box-sizing: border-box; border: 0 solid; margin: 0; padding: 0; }
+  .sd-root button, .sd-root input { font: inherit; color: inherit; background: transparent; letter-spacing: inherit; }
+  .sd-root h1, .sd-root h2, .sd-root h3 { font-size: inherit; font-weight: inherit; }
+  .sd-root ul { list-style: none; }
+  .sd-root button { cursor: pointer; }
+  .sd-root button:disabled { cursor: not-allowed; }
+  .sd-root input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+}

@@ -6,7 +6,7 @@ import { practiceFocus } from "./useTopikPractice";
 // What the K_MATE sidebar holds for TOPIK practice: the practice settings (question type, difficulty, explanation
 // language), the Strategy Guide of the chosen type, and the student's weak points. The quiz itself opens in the
 // main area; `onPractice(weaknesses)` asks it to make practice questions for those points.
-const LANGUAGES = [["English", "EN"], ["Korean", "KO"], ["Burmese", "မြန်မာ"]];
+const LANGUAGES = [["English", "EN"], ["Korean", "KO"], ["Burmese", "မြန်မာ"], ["Vietnamese", "VI"]];
 
 function Section({ title, open, onToggle, testId, children }) {
   return (
@@ -20,7 +20,7 @@ function Section({ title, open, onToggle, testId, children }) {
 }
 
 export default function TopikPracticePanel({ practice, onPractice }) {
-  const { options, weak, typeKey, setTypeKey, level, setLevel, lang, setLang, typeInfo, guide, openWeak, toggleWeak, explain } = practice;
+  const { options, loadOptions, weak, typeKey, setTypeKey, level, setLevel, lang, setLang, typeInfo, guide, openWeak, toggleWeak, explain } = practice;
   const [open, setOpen] = useState({ settings: true, guide: true, weak: true });
   const flip = key => () => setOpen(o => ({ ...o, [key]: !o[key] }));
   const chip = on => ({ ...p.chip, ...(on ? p.chipOn : {}) });
@@ -45,7 +45,7 @@ export default function TopikPracticePanel({ practice, onPractice }) {
               {options.difficulties.map(d => <button key={d.key} style={chip(level === d.key)} onClick={() => setLevel(d.key)}>{d.label}</button>)}
             </div>
           </>
-        ) : <p style={t.muted}>The practice options could not be loaded.</p>}
+        ) : <p style={t.muted}>The practice options could not be loaded. <button type="button" style={p.retry} onClick={loadOptions}>Try again</button></p>}
         <div style={p.label}>Explanation language</div>
         <div style={p.chips} data-testid="language-picker">
           {LANGUAGES.map(([name, short]) => <button key={name} aria-label={name} title={name} style={chip(lang === name)} onClick={() => setLang(name)}>{short}</button>)}
@@ -98,6 +98,8 @@ const p = {
   sectionHead: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", width: "100%", padding: "10px 12px", border: "none", background: "transparent", color: "var(--text)", fontWeight: 700, fontSize: "13px", cursor: "pointer", textAlign: "left" },
   sectionBody: { padding: "0 12px 12px" },
   label: { margin: "8px 0 5px", color: "var(--text-muted, #8A8F98)", fontSize: "11px", fontWeight: 800, letterSpacing: ".5px", textTransform: "uppercase" },
+  retry: { marginLeft: "6px", border: "none", background: "transparent", color: "var(--primary)", fontWeight: 700, cursor: "pointer", padding: 0 },
+  select: { width: "100%", marginTop: "8px", padding: "7px 8px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: "12.5px" },
   chips: { display: "flex", flexWrap: "wrap", gap: "5px" },
   chip: { padding: "5px 9px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: "12px", cursor: "pointer", textAlign: "left" },
   chipOn: { background: "var(--primary)", borderColor: "var(--primary)", color: "#fff", fontWeight: 700 },

@@ -5,6 +5,8 @@ import Icon from "../../components/Icon";
 import API from "../../services/api";
 import { useLang } from "../../LanguageContext";
 import CodeHomeworkCoach from "./CodeHomeworkCoach";
+import QuizPassage from "./QuizPassage";
+import { toAsciiDigits, clampQuestion, selectAll, keepSelection } from "./questionNumber";
 
 const topikQuickBtns = [
   { icon: "note", label: "Grammar Q1", q: "책을 많이 ( ) 지식을 쌓을 수 있다 — what is the answer?" },
@@ -576,10 +578,14 @@ export default function KMate() {
 }
 
 // ── Quiz Mode ──────────────────────────────────────────────
+// What the student is told when a request fails: the reason the server gave, or that the server could not be reached.
+const quizError = (err, what) => (err?.response ? `${what}: ${err.response.data?.error || `server error ${err.response.status}`}` : `${what}. Is the server running?`);
+
 // `practice` is the shared TOPIK practice state (question type, difficulty, language) that the sidebar edits;
 // `followup` ({ weaknesses }) makes the quiz open straight on practice questions for those points.
-export function QuizMode({ practice, followup }) {
-  const { typeKey, level, langCode, refreshWeak } = practice;
+export function QuizMode({ practice, followup, simple = false, renderSettings }) {
+  const { typeKey, level, domain, setDomain, range, setRange, startQuestion, setQuestionStart, endQuestion, setQuestionEnd, domains, domainInfo, langCode, refreshWeak } = practice;
+  const examBody = { domain: domain || undefined, range: range || undefined, startQuestion: startQuestion ? Number(startQuestion) : undefined, endQuestion: endQuestion ? Number(endQuestion) : undefined };
   const [step, setStep]       = useState(followup ? "loading" : "settings"); // settings | loading | questions | results
   const [topic, setTopic]     = useState("grammar");
   const [count, setCount]     = useState(null);
@@ -601,25 +607,35 @@ export function QuizMode({ practice, followup }) {
   async function startQuiz() {
     setStep("loading");
     try {
-      const res = await API.post("/kmate/quiz/generate", { topic, count, language: langCode, type: typeKey || undefined, difficulty: level || undefined });
+      const spanSize = Number(endQuestion) - Number(startQuestion) + 1;
+      const selectedCount = simple ? (spanSize >= 1 ? spanSize : 5) : count;      // an unfinished box never turns into NaN
+      const res = await API.post("/kmate/quiz/generate", { topic: domainInfo ? `TOPIK II ${domainInfo.label}` : topic, count: selectedCount, language: langCode, type: typeKey || undefined, difficulty: level || undefined, ...examBody });
       begin(res.data.questions, "practice");
-    } catch { setStep("settings"); alert("Quiz generation failed. Is the server running?"); }
+    } catch (err) { setStep("settings"); alert(quizError(err, "Quiz generation failed")); }
   }
 
   // new questions about the points the student got wrong (or the ones in their weakness list)
-  function requestFollowup(weaknesses) {
-    return API.post("/kmate/quiz/followup", { weaknesses, count: Math.min(Math.max(weaknesses.length + 2, 3), 6), language: langCode, type: typeKey || undefined, difficulty: level || undefined })
+  function requestFollowup(weaknesses, howMany) {
+    return API.post("/kmate/quiz/followup", { weaknesses, count: howMany || Math.min(Math.max(weaknesses.length + 2, 3), 6), language: langCode, type: typeKey || undefined, difficulty: level || undefined, ...examBody })
       .then(res => begin(res.data.questions, "followup"))
-      .catch(() => { setStep(result ? "results" : "settings"); alert("Could not make the practice questions."); });
+      .catch(err => { setStep(result ? "results" : "settings"); alert(quizError(err, "Could not make the practice questions")); });
   }
   function startFollowup(weaknesses) {
     setStep("loading");
     requestFollowup(weaknesses);
   }
 
+  // more questions of ONE exam number the student missed (same pattern as that number), shown as that number
+  function requestNumberPractice({ domain: section, number, count: howMany }) {
+    return API.post("/kmate/quiz/generate", { topic: "TOPIK II practice", count: howMany || 5, language: langCode, difficulty: level || undefined, domain: section, startQuestion: number, endQuestion: number })
+      .then(res => begin(res.data.questions.map(item => ({ ...item, number, domain: section })), "practice"))
+      .catch(err => { setStep("settings"); alert(quizError(err, "Could not make the practice questions")); });
+  }
+
   // opened from the sidebar's "Practice" button: the first thing the quiz does is make those questions
   useEffect(() => {
-    if (followup) requestFollowup(followup.weaknesses);
+    if (followup?.number) requestNumberPractice({ ...followup.number, count: followup.count });
+    else if (followup) requestFollowup(followup.weaknesses, followup.count);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -647,29 +663,105 @@ export function QuizMode({ practice, followup }) {
     <div style={s.quizCenter}><Icon name="hourglass" size={40} style={s.spinner} /><p>Processing...</p></div>
   );
 
+  // the Smart Drill page draws its own settings card and only needs the quiz to start
+  if (step === "settings" && renderSettings) return renderSettings({ startQuiz });
+
   if (step === "settings") return (
     <div style={s.quizCard}>
-      <h3 style={s.quizTitle}><Icon name="clipboard" size={20} style={{ marginRight: "6px" }} />TOPIK II Practice Quiz</h3>
-      <label style={s.qLabel}>Choose Topic</label>
-      <div style={s.optRow}>
-        {["grammar","vocabulary","mixed"].map(t => (
-          <button key={t} style={{ ...s.optBtn, ...(topic===t ? s.optActive : {}) }} onClick={() => setTopic(t)}>
-            <Icon name={TOPIC_ICON[t]} size={14} style={{ marginRight: "4px" }} />{TOPIC_LABEL[t]}
+      <h3 style={s.quizTitle}><Icon name="clipboard" size={20} style={{ marginRight: "6px" }} />{simple ? "Choose your TOPIK practice" : "TOPIK II Practice Quiz"}</h3>
+      <label style={s.qLabel}>{simple ? "1. Choose skill" : "Exam section"}</label>
+      <div style={s.optRow} data-testid="domain-picker">
+        {domains.map(d => (
+          <button key={d.key} style={{ ...s.optBtn, ...(domain === d.key ? s.optActive : {}) }} onClick={() => setDomain(domain === d.key ? "" : d.key)}>
+            {d.label}<span style={s.typeKo}>{d.ko}</span>
           </button>
         ))}
       </div>
-      <p style={s.settingsNote} data-testid="practice-summary">
-        {typeKey || level ? "Practising" : "Any question type and difficulty"} — change the question type, difficulty and language in the panel on the left.
-      </p>
-      <label style={s.qLabel}>Number of Questions</label>
-      <div style={s.optRow}>
-        {[3,5,10].map(n => (
-          <button key={n} style={{ ...s.optBtn, ...(count===n ? s.optActive : {}) }} onClick={() => setCount(n)}>
-            {n} Questions
-          </button>
+      {domainInfo && (() => {
+        const first = domainInfo.minQuestion ?? (domain === "writing" ? 51 : 1);
+        const last = domainInfo.maxQuestion ?? (domain === "writing" ? 54 : 50);
+        return (
+          <div style={s.numberRange} data-testid="question-span-picker">
+            <label style={s.qLabel}>{simple ? "2. Choose question numbers" : "Choose question numbers"}</label>
+            <div style={s.numberRangeRow}>
+              <input style={s.numberSelect} type="text" inputMode="numeric" autoComplete="off" aria-label="Start question" data-testid="range-start" value={startQuestion} onFocus={selectAll} onMouseUp={keepSelection} onChange={e => setQuestionStart(toAsciiDigits(e.target.value))} onBlur={() => setQuestionStart(clampQuestion(startQuestion, first, last, first))} />
+              <span style={s.rangeTo}>to</span>
+              <input style={s.numberSelect} type="text" inputMode="numeric" autoComplete="off" aria-label="End question" data-testid="range-end" value={endQuestion} onFocus={selectAll} onMouseUp={keepSelection} onChange={e => setQuestionEnd(toAsciiDigits(e.target.value))} onBlur={() => setQuestionEnd(clampQuestion(endQuestion, first, last, last))} />
+            </div>
+            <span style={s.rangeHint}>Nova will mix the TOPIK patterns found in this part.</span>
+          </div>
+        );
+      })()}
+      {!simple && domainInfo && (domainInfo.ranges.length > 0 || domainInfo.bands?.length > 0) && (
+        <select style={s.rangeSelect} value={range} onChange={e => setRange(e.target.value)} aria-label="Question range" data-testid="range-select">
+          <option value="">Any question range</option>
+          {domainInfo.bands?.length > 0 && (
+            <optgroup label="By level">
+              {domainInfo.bands.map(b => <option key={b.key} value={b.key}>Q{b.range} · {b.ko}</option>)}
+            </optgroup>
+          )}
+          {domainInfo.ranges.length > 0 && (
+            <optgroup label="By question type">
+              {domainInfo.ranges.map(r => <option key={r.key} value={r.key}>Q{r.range} · {r.ko}</option>)}
+            </optgroup>
+          )}
+        </select>
+      )}
+      {!simple && !domainInfo && (
+        <>
+          <label style={s.qLabel}>or choose a topic</label>
+          <div style={s.optRow}>
+            {["grammar","vocabulary","mixed"].map(t => (
+              <button key={t} style={{ ...s.optBtn, ...(topic===t ? s.optActive : {}) }} onClick={() => setTopic(t)}>
+                <Icon name={TOPIC_ICON[t]} size={14} style={{ marginRight: "4px" }} />{TOPIC_LABEL[t]}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {!simple && <>
+        <p style={s.settingsNote} data-testid="practice-summary">
+          {domainInfo ? `${domainInfo.ko} (${domainInfo.label})${startQuestion && endQuestion ? ` Q${startQuestion}–${endQuestion}` : range ? ` ${domainInfo.ranges.find(r => r.key === range)?.range || ""}` : ""}` : typeKey || level ? "Practising" : "Any question type and difficulty"} — change the question type, difficulty and language in the panel on the left.
+        </p>
+        <label style={s.qLabel}>Number of Questions</label>
+        <div style={s.optRow}>
+          {[3,5,10].map(n => (
+            <button key={n} style={{ ...s.optBtn, ...(count===n ? s.optActive : {}) }} onClick={() => setCount(n)}>
+              {n} Questions
+            </button>
+          ))}
+        </div>
+      </>}
+      <button style={s.startBtn} disabled={simple ? !domain : !count} onClick={startQuiz}><Icon name="rocket" size={16} style={{ marginRight: "6px" }} />{simple ? "Start practice" : "Start Quiz"}</button>
+    </div>
+  );
+
+  if (step === "questions" && q && simple) return (
+    <div style={s.quizCard}>
+      <div style={s.bulkHeader}>
+        <strong>{questions.length} questions</strong>
+        <span>{answers.filter(Boolean).length} / {questions.length} answered</span>
+      </div>
+      <div style={s.qProgressBar}><div style={{ ...s.qProgressFill, width: `${(answers.filter(Boolean).length / questions.length) * 100}%` }} /></div>
+      <div style={s.bulkQuestions}>
+        {questions.map((question, index) => (
+          <section key={index} style={s.bulkQuestion} data-testid="drill-question">
+            <div style={s.bulkQuestionNumber} data-testid="drill-number">Question {question.number || index + 1}</div>
+            <div style={s.instruction} data-testid="drill-instruction">※ {String(question.question).replace(/^[\s※]+/, "")}</div>
+            <QuizPassage key={index} question={question} answered={false} />
+            <div style={s.optionsCol}>
+              {(question.options || []).map((option, optionIndex) => (
+                <button
+                  key={optionIndex}
+                  style={{ ...s.choiceBtn, ...(answers[index] === optionIndex + 1 ? s.choiceActive : {}) }}
+                  onClick={() => setAnswers(currentAnswers => currentAnswers.map((answer, answerIndex) => answerIndex === index ? optionIndex + 1 : answer))}
+                >{symbols[optionIndex]} {option.replace(/^[A-D]\)\s*/, "")}</button>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
-      <button style={s.startBtn} disabled={!count} onClick={startQuiz}><Icon name="rocket" size={16} style={{ marginRight: "6px" }} />Start Quiz</button>
+      <button style={{ ...s.startBtn, marginTop: "18px" }} disabled={answers.some(answer => !answer)} onClick={submitQuiz}>Check my answers</button>
     </div>
   );
 
@@ -677,6 +769,7 @@ export function QuizMode({ practice, followup }) {
     <div style={s.quizCard}>
       <div style={s.qProgress}>{kind === "followup" ? "Weak-point practice · " : ""}Question {current+1} / {questions.length}</div>
       <div style={s.qProgressBar}><div style={{ ...s.qProgressFill, width: `${((current+1)/questions.length)*100}%` }} /></div>
+      <QuizPassage key={current} question={q} answered={Boolean(picked)} />
       <div style={s.qText}>{q.question}</div>
       <div style={s.optionsCol}>
         {(q.options || []).map((opt, i) => {
@@ -696,6 +789,7 @@ export function QuizMode({ practice, followup }) {
           <strong>{picked === correctIndex ? "✓ Correct" : `✗ Not quite — the answer is ${symbols[correctIndex - 1] || q.answer}`}</strong>
           {q.weakness && <span style={s.weakChip}>{q.weakness}</span>}
           {q.explanation && <div style={{ marginTop: "6px" }}>{q.explanation}</div>}
+          {q.tip && <div style={{ marginTop: "6px" }} data-testid="quiz-tip">💡 {q.tip}</div>}
         </div>
       )}
       <div style={s.qNav}>
@@ -858,6 +952,18 @@ const s = {
     width: "40px", height: "40px", borderRadius: "10px", fontSize: "18px",
   },
   // Quiz styles
+  typeKo: { marginLeft: "6px", fontSize: "11px", opacity: 0.7 },
+  rangeSelect: { width: "100%", marginTop: "10px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: "14px" },
+  numberRange: { marginTop: "14px", padding: "12px", border: "1px solid var(--border)", borderRadius: "10px", background: "var(--surface-alt, transparent)" },
+  numberRangeRow: { display: "flex", alignItems: "center", gap: "8px" },
+  numberSelect: { flex: 1, minWidth: 0, padding: "9px 10px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontWeight: 700, fontSize: "14px" },
+  rangeTo: { color: "var(--text-muted, #8A8F98)", fontSize: "12px", fontWeight: 700 },
+  rangeHint: { display: "block", marginTop: "8px", color: "var(--text-muted, #8A8F98)", fontSize: "11px", lineHeight: 1.45 },
+  bulkHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px", color: "var(--text-muted, #8A8F98)", fontSize: "13px" },
+  bulkQuestions: { display: "flex", flexDirection: "column", gap: "22px", marginTop: "22px" },
+  bulkQuestion: { paddingBottom: "22px", borderBottom: "1px solid var(--border)" },
+  bulkQuestionNumber: { marginBottom: "10px", color: "var(--primary)", fontSize: "13px", fontWeight: 800 },
+  instruction: { margin: "0 0 10px", color: "var(--text)", fontSize: "14.5px", fontWeight: 600, lineHeight: 1.7, whiteSpace: "pre-line" },
   settingsNote: { margin: "14px 0 0", color: "var(--text-muted, #8A8F98)", fontSize: "13px" },
   choiceRight: { borderColor: "#22C55E", background: "rgba(34,197,94,.12)" },
   choiceWrong: { borderColor: "#EF4444", background: "rgba(239,68,68,.10)" },

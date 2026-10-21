@@ -29,6 +29,8 @@ const TABLES = [
     weakness VARCHAR(120),
     question_type VARCHAR(40) NULL,
     difficulty VARCHAR(10) NULL,
+    domain VARCHAR(12) NULL,
+    question_number INT NULL,
     explanation TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_weakness (user_id, weakness),
@@ -90,6 +92,8 @@ const ADDED_COLUMNS = [
   "ALTER TABLE topik_quiz_attempts ADD COLUMN difficulty VARCHAR(10) NULL",
   "ALTER TABLE topik_quiz_answers ADD COLUMN question_type VARCHAR(40) NULL",
   "ALTER TABLE topik_quiz_answers ADD COLUMN difficulty VARCHAR(10) NULL",
+  "ALTER TABLE topik_quiz_answers ADD COLUMN domain VARCHAR(12) NULL",
+  "ALTER TABLE topik_quiz_answers ADD COLUMN question_number INT NULL",
 ];
 
 let ready = null;
@@ -116,8 +120,8 @@ async function saveAttempt(pool, { userId, topic, language, kind = "practice", q
   const attemptId = attempt.insertId;
   for (const r of results) {
     await pool.query(
-      "INSERT INTO topik_quiz_answers (attempt_id, user_id, question, options, your_answer, correct_answer, is_correct, weakness, question_type, difficulty, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [attemptId, userId, String(r.question || ""), JSON.stringify(r.options || []), r.yourAnswer || "", r.correctAnswer || "", r.isCorrect ? 1 : 0, cleanWeakness(r.weakness) || null, questionType || null, difficulty || null, String(r.explanation || "")]
+      "INSERT INTO topik_quiz_answers (attempt_id, user_id, question, options, your_answer, correct_answer, is_correct, weakness, question_type, difficulty, domain, question_number, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [attemptId, userId, String(r.question || ""), JSON.stringify(r.options || []), r.yourAnswer || "", r.correctAnswer || "", r.isCorrect ? 1 : 0, cleanWeakness(r.weakness) || null, questionType || null, difficulty || null, r.domain || null, Number.isInteger(r.number) && r.number > 0 ? r.number : null, String(r.explanation || "")]
     );
   }
   await refreshWeaknessProfiles(pool, userId);
@@ -167,11 +171,30 @@ async function weaknessSummary(pool, userId, limit = 8) {
     "SELECT COUNT(*) AS sessions, COALESCE(ROUND(AVG(total_score / NULLIF(max_score, 0) * 100)), 0) AS averageScore FROM topik_exam_sessions WHERE user_id = ?",
     [userId]
   );
+  // the exam numbers the student got wrong most (only answers saved with a number): "Reading Q13"
+  const [numbers] = await pool.query(
+    `SELECT domain, question_number, COUNT(*) AS asked, SUM(1 - is_correct) AS wrong, MAX(created_at) AS last_seen
+       FROM topik_quiz_answers
+      WHERE user_id = ? AND question_number IS NOT NULL AND domain IS NOT NULL
+      GROUP BY domain, question_number
+     HAVING wrong > 0
+      ORDER BY wrong DESC, last_seen DESC
+      LIMIT ?`,
+    [userId, limit]
+  );
   return {
     attempts: Number(quiz[0]?.attempts || 0),
     averageScore: Number(quiz[0]?.averageScore || 0),
     examSessions: Number(exam[0]?.sessions || 0),
     examAverage: Number(exam[0]?.averageScore || 0),
+    missedNumbers: numbers.map(r => ({
+      domain: r.domain,
+      number: Number(r.question_number),
+      asked: Number(r.asked),
+      wrong: Number(r.wrong),
+      accuracy: Math.round(((Number(r.asked) - Number(r.wrong)) / Number(r.asked)) * 100),
+      lastSeen: r.last_seen,
+    })),
     weaknesses: rows.map(r => ({
       weakness: r.weakness,
       source: r.source,

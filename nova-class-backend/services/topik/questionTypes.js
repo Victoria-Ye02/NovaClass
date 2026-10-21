@@ -46,7 +46,9 @@ const difficultyByKey = key => DIFFICULTIES.find(d => d.key === key) || null;
 
 // What the screen needs: no prompt text, just names.
 // `format` / `styleRules` / `levelNotes` are for the model; the screen only gets names and descriptions.
+const { publicDomains } = require("./questionRanges");
 const publicOptions = () => ({
+  domains: publicDomains(),
   types: QUESTION_TYPES.map(({ key, label, ko, skill, description }) => ({ key, label, ko, skill, description })),
   difficulties: DIFFICULTIES.map(({ key, label }) => ({ key, label })),
 });

@@ -42,6 +42,7 @@ async function completeText({ messages, maxTokens = 1024, model, responseFormat 
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": VERSION, "content-type": "application/json" },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(Number(process.env.CLAUDE_TIMEOUT_MS) || 180000),     // a request that hangs must fail, not block the caller forever
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error?.message || `Claude request failed (${res.status})`);
