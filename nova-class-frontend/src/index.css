@@ -114,3 +114,24 @@ body {
   .material-overlay-backdrop, .material-overlay-card { animation: none; }
   * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* ── K-Mate TOPIK Tutor: states inline styles can't express ── */
+.kmate-chip { transition: border-color .15s ease, color .15s ease, background-color .15s ease; }
+.kmate-chip:hover { color: var(--primary); background: var(--primary-tint); }
+.kmate-ghost { transition: border-color .15s ease, background-color .15s ease; }
+.kmate-ghost:hover { border-color: var(--text-faint); background: var(--surface); }
+.kmate-ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.kmate-chip:focus-visible,
+.kmate-composer button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.kmate-composer { transition: border-color .15s ease, box-shadow .15s ease; }
+.kmate-composer:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-tint); }
+.kmate-composer button:disabled { cursor: not-allowed; }
+
+.kmate-typing { display: inline-flex; gap: 4px; align-items: center; height: 18px; }
+.kmate-typing i {
+  width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .35;
+  animation: kmateTyping 1.2s ease-in-out infinite;
+}
+.kmate-typing i:nth-child(2) { animation-delay: .15s; }
+.kmate-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes kmateTyping { 0%, 80%, 100% { opacity: .35; } 40% { opacity: 1; } }

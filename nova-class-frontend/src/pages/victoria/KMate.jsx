@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Conversation } from "@elevenlabs/client";
 import Sidebar from "../../components/Sidebar";
 import Icon from "../../components/Icon";
-import API from "../../services/api";
+import API, { handleExpiredSession } from "../../services/api";
 import { useLang } from "../../LanguageContext";
 import CodeHomeworkCoach from "./CodeHomeworkCoach";
 import QuizPassage from "./QuizPassage";
@@ -119,6 +119,9 @@ export default function KMate() {
   }
   const [input, setInput]   = useState("");
   const [loading, setLoading] = useState(false);
+  // True once the first piece of a streamed answer is on screen: the typing
+  // dots give way to the growing answer, while send stays disabled until it ends.
+  const [streaming, setStreaming] = useState(false);
   // Own client integration (@elevenlabs/client) instead of the drop-in
   // <elevenlabs-convai> widget — the widget doesn't reliably stop its
   // already-buffered audio the instant its own "End call" is pressed, and
@@ -274,7 +277,9 @@ export default function KMate() {
     }
   }
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // While an answer streams in, every new piece re-scrolls; restarting a smooth
+  // scroll on each one makes the view stutter, so jump instead.
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: streaming ? "auto" : "smooth" }); }, [messages, streaming]);
 
   function pickAttachType(key) {
     setAttachOpen(false);
@@ -333,12 +338,54 @@ export default function KMate() {
       const question = mode === "code" && debugMode
         ? `[Debug mode: ask me what I've already tried and what the exact error/behavior is before giving a hint]\n${text}`
         : text;
-      const res = await API.post(MODES[mode].endpoint, { question, language: uiLang });
-      setMessages(m => [...m, { role: "bot", text: res.data.answer || "No answer" }]);
+      if (mode === "topik") {
+        await streamAnswer(question);
+      } else {
+        const res = await API.post(MODES[mode].endpoint, { question, language: uiLang });
+        setMessages(m => [...m, { role: "bot", text: res.data.answer || "No answer" }]);
+      }
     } catch (err) {
       setMessages(m => [...m, { role: "bot", text: errorMessage(err) }]);
     }
+    setStreaming(false);
     setLoading(false);
+  }
+
+  // Shows the TOPIK answer as the model writes it. axios can't read a response
+  // body while it is still arriving in the browser, so this one uses fetch.
+  // Errors are shaped like axios errors so errorMessage() and the expired-
+  // session redirect treat them the same way.
+  async function streamAnswer(question) {
+    const token = localStorage.getItem("nova_token");
+    const res = await fetch(`${API.defaults.baseURL}${MODES.topik.endpoint}/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ question, language: uiLang }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const err = { response: { status: res.status, data }, config: { url: `${MODES.topik.endpoint}/stream` } };
+      await handleExpiredSession(err).catch(() => {});
+      throw err;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let text = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const piece = decoder.decode(value, { stream: true });
+      if (!piece) continue;
+      const first = !text;
+      text += piece;
+      const current = text;
+      setMessages(m => first
+        ? [...m, { role: "bot", text: current }]
+        : [...m.slice(0, -1), { ...m[m.length - 1], text: current }]);
+      if (first) setStreaming(true);
+    }
+    if (!text) setMessages(m => [...m, { role: "bot", text: "No answer" }]);
   }
 
   const isCode = mode === "code";
@@ -350,7 +397,7 @@ export default function KMate() {
   const headerEl = (
 <div style={s.header}>
           <div>
-            <h2 style={{ ...s.title, ...(isCode ? { color: codeColors.textColor } : {}) }}><Icon name={MODES[mode].icon} size={22} style={{ marginRight: "6px" }} />K_MATE</h2>
+            <h2 style={{ ...s.title, ...(isCode ? { color: codeColors.textColor } : {}) }}><Icon name={MODES[mode].icon} size={18} style={{ marginRight: "8px" }} />K_MATE</h2>
             <p style={{ ...s.sub, ...(isCode ? { color: codeColors.mutedTextColor } : {}) }}>{MODES[mode].subtitle}</p>
           </div>
 
@@ -361,11 +408,13 @@ export default function KMate() {
                 style={{
                   ...s.modeToggleBtn,
                   ...(isCode && mode !== key ? { color: codeColors.mutedTextColor } : {}),
-                  ...(mode === key ? {
+                  // TOPIK's active tab is a quiet raised segment rather than a
+                  // solid fill, so the send button stays the page's one accent.
+                  ...(mode === key ? (key === "code" ? {
                     ...s.modeToggleBtnActive,
                     background: modeBackground(key),
-                    ...(key === "code" ? { color: codeColors.panelBg, fontWeight: 700 } : {}),
-                  } : {}),
+                    color: codeColors.panelBg, fontWeight: 700,
+                  } : s.modeToggleBtnQuiet) : {}),
                 }}
                 onClick={() => setMode(key)}
               >
@@ -378,8 +427,8 @@ export default function KMate() {
             {mode === "topik" ? (
               <>
                 {!voiceOpen && (
-                  <button style={{ ...s.quizToggleBtn, background: modeBackground(mode) }} onClick={startVoiceCall}>
-                    <Icon name="microphone" size={14} style={{ marginRight: "4px" }} />
+                  <button className="kmate-ghost" style={s.ghostBtn} onClick={startVoiceCall}>
+                    <Icon name="microphone" size={14} style={{ marginRight: "6px" }} />
                     Talk to Nova
                   </button>
                 )}
@@ -444,11 +493,10 @@ export default function KMate() {
             }}>
               {messages.map((m, i) => (
                 <div key={i} style={{ ...s.msgRow, justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                  {m.role === "bot" && <Icon name={MODES[mode].icon} size={24} style={s.botAvatar} />}
+                  {m.role === "bot" && <span style={s.botAvatar}><Icon name={MODES[mode].icon} size={18} /></span>}
                   <div style={{
                     ...s.bubble,
                     ...(m.role === "user" ? s.userBubble : s.botBubble),
-                    ...(m.role === "user" ? { background: modeBackground(mode) } : {}),
                     ...(m.role === "user" && isCode ? { background: codeColors.surfaceAltBg, color: codeColors.textColor } : {}),
                     ...(m.role === "bot" && isCode ? {
                       background: "transparent", border: "none", padding: "0",
@@ -456,18 +504,18 @@ export default function KMate() {
                     } : {}),
                   }}
                     dangerouslySetInnerHTML={{ __html: formatText(m.text) }} />
-                  {m.role === "user" && <Icon name="user" size={24} style={s.userAvatar} />}
                 </div>
               ))}
-              {loading && (
+              {loading && !streaming && (
                 <div style={{ ...s.msgRow, justifyContent: "flex-start" }}>
-                  <Icon name={MODES[mode].icon} size={24} style={s.botAvatar} />
-                  <div style={{
+                  <span style={s.botAvatar}><Icon name={MODES[mode].icon} size={18} /></span>
+                  <div role="status" style={{
                     ...s.bubble, ...s.botBubble,
                     ...(isCode ? { background: "transparent", border: "none", padding: "0" } : {}),
-                    color: isCode ? codeColors.mutedTextColor : "var(--text-faint)", fontStyle: "italic",
+                    color: isCode ? codeColors.mutedTextColor : "var(--text-muted)",
                   }}>
-                    K.Mate is thinking...
+                    <span className="kmate-typing" aria-hidden="true"><i /><i /><i /></span>
+                    <span style={s.srOnly}>K.Mate is thinking…</span>
                   </div>
                 </div>
               )}
@@ -481,13 +529,13 @@ export default function KMate() {
                 return (
                   <button
                     key={i}
+                    className="kmate-chip"
                     style={{
                       ...s.quickBtn,
                       ...(isCode ? { color: chipColor, border: `1.5px solid ${chipColor}`, background: `${chipColor}14` } : {}),
                     }}
                     onClick={() => send(b.q)}
                   >
-                    {b.icon ? <Icon name={b.icon} size={12} style={{ marginRight: "4px" }} /> : b.flag + " "}
                     {b.label}
                   </button>
                 );
@@ -495,7 +543,7 @@ export default function KMate() {
             </div>
 
             {/* Input */}
-            <div style={{
+            <div className="kmate-composer" style={{
               ...s.inputBox,
               ...(isCode ? { background: codeColors.surfaceBg, border: `1px solid ${codeColors.borderColor}` } : {}),
             }}>
@@ -505,7 +553,7 @@ export default function KMate() {
                     <Icon name={ATTACH_TYPES.find(t => t.key === attachFile.type)?.icon} size={14} />
                     {" " + attachFile.file.name}
                   </span>
-                  <button style={s.chipRemove} onClick={() => setAttachFile(null)}>✕</button>
+                  <button style={s.chipRemove} aria-label="Remove attachment" onClick={() => setAttachFile(null)}>✕</button>
                 </div>
               )}
               <div style={s.inputRow}>
@@ -540,6 +588,8 @@ export default function KMate() {
                     }}
                     onClick={() => setAttachOpen(o => !o)}
                     title="Attach image, audio, or file"
+                    aria-label="Attach image, audio, or file"
+                    aria-expanded={attachOpen}
                   >
                     +
                   </button>
@@ -553,6 +603,7 @@ export default function KMate() {
                 <textarea
                   style={{ ...s.textarea, ...(isCode ? { color: codeColors.textColor } : {}) }}
                   placeholder={MODES[mode].placeholder}
+                  aria-label={MODES[mode].placeholder}
                   value={input}
                   rows={1}
                   onChange={e => setInput(e.target.value)}
@@ -567,7 +618,12 @@ export default function KMate() {
                   }}
                   onClick={() => send()}
                   disabled={loading}
-                >➤</button>
+                  aria-label="Send"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 19V5M5 12l7-7 7 7" />
+                  </svg>
+                </button>
               </div>
             </div>
           </>
@@ -842,15 +898,20 @@ export function QuizMode({ practice, followup, simple = false, renderSettings })
 
 const s = {
   layout: { display: "flex", minHeight: "100vh", background: "var(--bg)" },
-  main: { marginLeft: "240px", flex: 1, display: "flex", flexDirection: "column", height: "100vh", padding: "24px 32px" },
+  main: { marginLeft: "240px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", height: "100vh", padding: "28px 80px 24px" },
   // flexWrap here means a narrow window drops the whole button group onto
   // its own row below the title instead of squeezing every button — the bug
   // this fixes was individual button *labels* line-wrapping mid-word
   // ("Code" / "Assistant" split across two lines) because nothing stopped
   // text from wrapping once its button ran out of horizontal room.
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", rowGap: "10px" },
-  title: { fontSize: "22px", fontWeight: 700, color: "var(--text)" },
-  sub: { fontSize: "13px", color: "var(--text-muted)" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", rowGap: "10px" },
+  title: { display: "flex", alignItems: "center", fontSize: "18px", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--text)" },
+  sub: { fontSize: "12.5px", color: "var(--text-faint)", marginTop: "2px" },
+  ghostBtn: {
+    display: "flex", alignItems: "center", background: "transparent", color: "var(--text)",
+    border: "1px solid var(--border)", padding: "8px 16px", borderRadius: "999px",
+    fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer",
+  },
   quizToggleBtn: {
     background: "var(--primary)", color: "#fff", padding: "10px 20px",
     borderRadius: "10px", fontSize: "14px", fontWeight: 600, border: "none",
@@ -867,6 +928,7 @@ const s = {
     whiteSpace: "nowrap",
   },
   modeToggleBtnActive: { color: "#fff" },
+  modeToggleBtnQuiet: { background: "var(--surface)", color: "var(--text)", boxShadow: "0 1px 2px rgba(0,0,0,0.08)" },
   voicePanel: {
     display: "flex", flexDirection: "column", alignItems: "center", gap: "10px",
     background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "16px",
@@ -894,35 +956,53 @@ const s = {
   voiceOrbSpeaking: {
     animation: "voiceOrbWobble 1.1s ease-in-out infinite, voiceGradientShift 1.4s ease infinite",
   },
+  // No card around the conversation: messages sit straight on the page so the
+  // composer below is the only framed surface — one focal point, not two boxes.
+  // The scroll area spans the full width (scrollbar at the page edge) while
+  // its padding centres a single reading column — same width as the composer.
   chatBox: {
-    flex: 1, overflowY: "auto", background: "var(--surface)", borderRadius: "16px",
-    padding: "20px", marginBottom: "12px", border: "1px solid var(--border)",
-    display: "flex", flexDirection: "column", gap: "16px",
+    flex: 1, overflowY: "auto",
+    padding: "24px max(4px, calc((100% - 760px) / 2)) 24px",
+    display: "flex", flexDirection: "column", gap: "22px",
   },
-  msgRow: { display: "flex", gap: "10px", alignItems: "flex-end" },
-  botAvatar: { fontSize: "24px", flexShrink: 0 },
-  userAvatar: { fontSize: "24px", flexShrink: 0 },
-  bubble: { maxWidth: "75%", padding: "12px 16px", borderRadius: "16px", fontSize: "14px", lineHeight: 1.7 },
-  userBubble: { background: "var(--primary)", color: "#fff", borderBottomRightRadius: "4px" },
-  botBubble: { background: "var(--surface-alt)", color: "var(--text)", border: "1px solid var(--border)", borderBottomLeftRadius: "4px" },
+  msgRow: { display: "flex", gap: "12px", alignItems: "flex-start" },
+  botAvatar: {
+    width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "var(--surface)",
+  },
+  bubble: { maxWidth: "min(80%, 640px)", padding: "10px 16px", borderRadius: "18px", fontSize: "15px", lineHeight: 1.75, overflowWrap: "anywhere" },
+  // Bot replies are plain text beside the avatar — no bubble — so long
+  // multilingual answers read like a page, not a stack of boxes.
+  userBubble: { background: "var(--primary-tint)", color: "var(--text)", borderTopRightRadius: "6px" },
+  botBubble: { background: "transparent", color: "var(--text)", padding: "2px 0" },
+  column: { width: "100%", maxWidth: "760px", margin: "0 auto" },
+  srOnly: { position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap" },
   // Code Assistant's own replies get a distinct dark bubble (matches the
   // mode's dark accent) so a glance at the chat log alone tells you which
   // persona is talking, not just the header above it.
   botBubbleCode: { background: "#161b2e", color: "#fff", border: "1px solid rgba(99,102,241,0.35)" },
-  quickRow: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" },
+  quickRow: { display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px", width: "100%", maxWidth: "760px", margin: "0 auto 10px" },
   quickBtn: {
-    background: "var(--surface)", border: "1.5px solid var(--border)", color: "var(--primary)",
-    padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 500,
+    display: "inline-flex", alignItems: "center",
+    background: "var(--surface)", border: "1px solid transparent", color: "var(--text-muted)",
+    padding: "6px 12px", borderRadius: "999px", fontSize: "12.5px", fontWeight: 500,
+    whiteSpace: "nowrap", cursor: "pointer",
   },
-  inputBox: { background: "var(--surface)", borderRadius: "14px", border: "1px solid var(--border)", padding: "12px" },
+  inputBox: {
+    width: "100%", maxWidth: "760px", margin: "0 auto",
+    background: "var(--surface)", borderRadius: "22px", border: "1px solid var(--border)",
+    padding: "8px 8px 8px 10px", boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+  },
   inputRow: { display: "flex", gap: "10px", alignItems: "center" },
   textarea: {
-    flex: 1, border: "none", resize: "none", fontSize: "14px",
-    color: "var(--text)", background: "transparent", outline: "none",
+    flex: 1, border: "none", resize: "none", fontSize: "14.5px", lineHeight: 1.5,
+    color: "var(--text)", background: "transparent", outline: "none", padding: "8px 0",
+    fontFamily: "inherit",
   },
   attachBtn: {
-    width: "36px", height: "36px", borderRadius: "50%", border: "1.5px solid var(--border)",
-    background: "var(--surface-alt)", color: "var(--primary)", fontSize: "20px", lineHeight: 1,
+    width: "36px", height: "36px", borderRadius: "50%", border: "none",
+    background: "var(--surface-alt)", color: "var(--text-muted)", fontSize: "20px", lineHeight: 1,
     display: "flex", alignItems: "center", justifyContent: "center",
     transition: "transform 0.15s", flexShrink: 0,
   },
@@ -948,8 +1028,9 @@ const s = {
     cursor: "pointer", fontSize: "12px", fontWeight: 700,
   },
   sendBtn: {
-    background: "var(--primary)", color: "#fff", border: "none",
-    width: "40px", height: "40px", borderRadius: "10px", fontSize: "18px",
+    background: "var(--primary)", color: "#fff", border: "none", flexShrink: 0,
+    width: "36px", height: "36px", borderRadius: "50%",
+    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
   },
   // Quiz styles
   typeKo: { marginLeft: "6px", fontSize: "11px", opacity: 0.7 },

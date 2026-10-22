@@ -92,6 +92,84 @@ test("ask reports 502 when the K.MATE AI service is unreachable or errors", asyn
   assert.match(res.body.error, /K.MATE AI service request failed: 500/);
 });
 
+// A response double that also records what a streaming handler writes.
+function streamDouble(body) {
+  const { req, res } = httpDouble({ body });
+  Object.assign(res, {
+    headers: {}, written: [], headersSent: false, writableFinished: false, ended: false,
+    setHeader(name, value) { this.headers[name] = value; },
+    flushHeaders() { this.headersSent = true; },
+    write(text) { this.headersSent = true; this.written.push(text); },
+    end() { this.ended = true; this.writableFinished = true; },
+    on() {},
+  });
+  return { req, res };
+}
+
+async function* chunksOf(...parts) {
+  for (const part of parts) yield part;
+}
+
+test("askStream relays the answer piece by piece and saves the whole answer to history", async () => {
+  process.env.KMATE_AI_URL = "http://localhost:8082";
+  let requestedUrl;
+  // "한" is three bytes; splitting it across two chunks must not garble it
+  const bytes = new TextEncoder().encode("한국어 answer");
+  global.fetch = async (url) => {
+    requestedUrl = url;
+    return { ok: true, body: chunksOf(bytes.slice(0, 2), bytes.slice(2, 9), bytes.slice(9)) };
+  };
+  let savedParams;
+  pool.query = async (sql, params) => { savedParams = params; return [{}]; };
+
+  const { req, res } = streamDouble({ question: "What is TOPIK?" });
+  await controller.askStream(req, res);
+
+  assert.equal(requestedUrl, "http://localhost:8082/ask/stream");
+  assert.equal(res.headers["Content-Type"], "text/plain; charset=utf-8");
+  assert.ok(res.written.length > 1, "the answer is written in more than one piece");
+  assert.equal(res.written.join(""), "한국어 answer");
+  assert.deepEqual(savedParams, [5, "What is TOPIK?", "한국어 answer"]);
+  assert.ok(res.ended);
+});
+
+test("askStream rejects a request with no question, without calling the AI service", async () => {
+  global.fetch = async () => { throw new Error("fetch should not be called"); };
+
+  const { req, res } = streamDouble({});
+  await controller.askStream(req, res);
+
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(res.body, { error: "question is required" });
+});
+
+test("askStream reports 502 as JSON when the AI service fails before any text is sent", async () => {
+  global.fetch = async () => ({ ok: false, status: 500, text: async () => "internal error" });
+
+  const { req, res } = streamDouble({ question: "What is TOPIK?" });
+  await controller.askStream(req, res);
+
+  assert.equal(res.statusCode, 502);
+  assert.match(res.body.error, /K.MATE AI service request failed: 500/);
+});
+
+test("askStream ends the response, without saving, when the stream breaks mid-answer", async () => {
+  async function* breaksAfterOnePiece() {
+    yield new TextEncoder().encode("Partial ");
+    throw new Error("connection reset");
+  }
+  global.fetch = async () => ({ ok: true, body: breaksAfterOnePiece() });
+  let saved = false;
+  pool.query = async () => { saved = true; return [{}]; };
+
+  const { req, res } = streamDouble({ question: "What is TOPIK?" });
+  await controller.askStream(req, res);
+
+  assert.equal(res.written.join(""), "Partial ");
+  assert.equal(saved, false);
+  assert.ok(res.ended);
+});
+
 test("codeCoach returns separate professor explanation and hint-only workspace guidance", async (t) => {
   let capturedRequest;
   const codeCoach = loadCodeCoachController(t, async (request) => {

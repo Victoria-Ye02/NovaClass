@@ -489,3 +489,18 @@ describe("Core Concepts teach the problem first", () => {
     expect(screen.getByText("Index starts at 0.")).toBeTruthy();
   });
 });
+
+describe("The sample homework", () => {
+  it("offers 'print Nova 3 times with a for loop' before any homework is set, and sends it when picked", async () => {
+    const onAsk = vi.fn(async () => true);
+    renderPanel({ onAsk });
+    expect(screen.getByText("coachSampleTitle")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "coachSampleQuestion" }));
+    await waitFor(() => expect(onAsk).toHaveBeenCalledWith("coachSampleQuestion"));
+  });
+
+  it("is not offered once a homework is already open", () => {
+    renderPanel({ homeworkSet: true });
+    expect(screen.queryByTestId("coach-sample")).toBeNull();
+  });
+});

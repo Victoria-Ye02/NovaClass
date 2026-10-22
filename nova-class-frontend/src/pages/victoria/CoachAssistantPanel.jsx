@@ -400,6 +400,12 @@ export default function CoachAssistantPanel({
               <div style={p.empty}>
                 <Icon name="source-code" size={34} alt="" />
                 <span>{homeworkSet ? t("coachChatEmpty") : t("coachChatEmptyFirst")}</span>
+                {!homeworkSet && (
+                  <div style={p.recent} data-testid="coach-sample">
+                    <span style={s.coachEyebrow}>{t("coachSampleTitle")}</span>
+                    <button type="button" style={p.recentBtn} onClick={() => submit(t("coachSampleQuestion"))} title={t("coachSampleQuestion")}>{t("coachSampleQuestion")}</button>
+                  </div>
+                )}
                 {recent.length > 0 && (
                   <div style={p.recent}>
                     <span style={s.coachEyebrow}>{t("coachRecentChats")}</span>

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import os, socket, chromadb, json, re, random
 from dotenv import load_dotenv
@@ -8,7 +9,7 @@ from typing import List, Optional
 import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from db import get_mysql
-from llm import complete
+from llm import complete, stream
 
 load_dotenv()
 
@@ -49,32 +50,29 @@ class AskRequest(BaseModel):
 def health():
     return {"status": "K.Mate AI Service running"}
 
-@app.post("/ask")
-def ask(req: AskRequest):
-    try:
-        # ChromaDB ထဲ ရှာ (if the vector store is down, answer without the reference papers)
-        global collection
-        if collection is None:
-            collection = connect_chroma()
-        context = "(the TOPIK reference papers are not available right now; use your own expert knowledge)"
-        if collection is not None:
-            try:
-                vector = embedding_model.encode([req.question]).tolist()
-                results = collection.query(query_embeddings=vector, n_results=5)
-                context = "\n\n".join(results["documents"][0])
-            except Exception as e:
-                print(f"⚠️ ChromaDB query failed ({e})")
-                collection = None
+def build_ask_prompt(question):
+    # ChromaDB ထဲ ရှာ (if the vector store is down, answer without the reference papers)
+    global collection
+    if collection is None:
+        collection = connect_chroma()
+    context = "(the TOPIK reference papers are not available right now; use your own expert knowledge)"
+    if collection is not None:
+        try:
+            vector = embedding_model.encode([question]).tolist()
+            results = collection.query(query_embeddings=vector, n_results=5)
+            context = "\n\n".join(results["documents"][0])
+        except Exception as e:
+            print(f"⚠️ ChromaDB query failed ({e})")
+            collection = None
 
-        # OpenAI နဲ့ ဖြေ
-        prompt = f"""You are K.Mate, an expert Korean language tutor specializing in TOPIK II exam preparation.
+    return f"""You are K.Mate, an expert Korean language tutor specializing in TOPIK II exam preparation.
 You have deep knowledge of Korean grammar, vocabulary, TOPIK exam structure, scoring, and study strategies.
 Auto-detect the language of the question and reply in the SAME language (English / 한국어 / မြန်မာဘာသာ).
 
 Reference material from official TOPIK II exam papers (use this for specific exam questions):
 {context}
 
-Student question: {req.question}
+Student question: {question}
 
 Instructions:
 1. AUTO-DETECT language → reply in that language ONLY.
@@ -86,10 +84,35 @@ Instructions:
 7. Always give a helpful, complete answer.
 8. IMPORTANT: Do NOT use HTML tags like <strong>, <br>, <b> etc. Use plain text only. For bold use **text**. For new lines use actual line breaks."""
 
-        return {"answer": complete(prompt)}
 
+@app.post("/ask")
+def ask(req: AskRequest):
+    try:
+        return {"answer": complete(build_ask_prompt(req.question))}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ask/stream")
+def ask_stream(req: AskRequest):
+    """Same answer as /ask, sent as plain text while the model is still writing it."""
+    try:
+        pieces = stream(build_ask_prompt(req.question))
+        # Wait for the first piece here, so a bad key or a provider outage is still a clean 500
+        # instead of a 200 that ends with no text.
+        first = next(pieces, "")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    def body():
+        yield first
+        try:
+            yield from pieces
+        except Exception as e:
+            print(f"⚠️ /ask/stream stopped mid-answer ({e})")
+            yield "\n\n⚠️ The answer was cut off. Please ask again."
+
+    return StreamingResponse(body(), media_type="text/plain; charset=utf-8")
 
 
 # ---- Quiz Generate ----

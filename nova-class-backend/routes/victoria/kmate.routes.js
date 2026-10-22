@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../../middleware/auth.middleware");
-const { ask, codeAsk, codeCoach, runJavaCode, runNativeCode, runSqlCode, history, generateQuiz, followupQuiz, checkQuiz, quizWeaknesses, quizOptions, quizStrategy, explainWeakPoint, explainGrammar, sentenceAudio } = require("../../controllers/victoria/kmate.controller");
+const { ask, askStream, codeAsk, codeCoach, runJavaCode, runNativeCode, runSqlCode, history, generateQuiz, followupQuiz, checkQuiz, quizWeaknesses, quizOptions, quizStrategy, explainWeakPoint, explainGrammar, sentenceAudio } = require("../../controllers/victoria/kmate.controller");
 
 router.post("/ask",           auth, ask);
+router.post("/ask/stream",    auth, askStream);
 router.post("/code-ask",      auth, codeAsk);
 router.post("/code-coach",    auth, codeCoach);
 router.post("/run-java",      auth, runJavaCode);

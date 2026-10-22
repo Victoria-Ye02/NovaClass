@@ -6,6 +6,13 @@ const { textToSpeech: burmeseTextToSpeech } = require("../../services/ai/burmese
 const { elevenLabsLectureText, cleanForSpeech, splitForSpeech } = require("../../services/ai/speechPrep");
 const { joinMp3 } = require("../../services/ai/mp3");
 const { LESSON_LANGUAGES, resolveLessonLanguage, replyIsInWrongLanguage, languageStyle } = require("../../services/lecture/languageRequest");
+// What the professor says first when a lesson starts (fixed text, so the greeting and her name are always the same).
+const OPENING_GREETING = {
+  ko: "안녕, 얘들아! 나는 이 수업을 맡은 권숙연 교수예요.",
+  en: "Hi everyone! I'm Professor Kwon Sook-yeon, and I'll be teaching this lesson.",
+  my: "ကျောင်းသားတို့ မင်္ဂလာပါ။ ကျွန်မက ဒီသင်ခန်းစာကို သင်ပေးမယ့် ပါမောက္ခ 권숙연 (Kwon Sook-yeon) ပါ။",
+  vi: "Chào các em! Cô là giáo sư Kwon Sook-yeon, người sẽ dạy bài học này.",
+};
 const pdfParse = require("pdf-parse");
 const { PAGE_MARKER_RE, pdfPageMarker, splitPagesFromMarkedText, replacePageText } = require("../../services/materials/pdfPages");
 const fs = require("fs");
@@ -1192,7 +1199,7 @@ Exception: if the student explicitly asks you to switch languages ("can we talk 
         : `You are Nova, a warm and patient study tutor for this lesson's material. Be encouraging and never condescending — normalize confusion ("that part trips a lot of people up", not "that's easy"). Don't just repeat the material back: explain it, and reach for a short, concrete example or analogy when the student seems stuck on something. After explaining anything non-trivial, check in with a brief question ("does that make sense so far?") instead of lecturing on and on. If the student seems to want practice, offer one quick question drawn from this lesson and give warm, specific feedback on their answer — encouraging if they're wrong, brief praise if right, and always explain the correct answer either way. ${naturalToneInstruction}`;
 
       const teachingInstruction = !isTeacherMode ? "" : {
-        start: `Teaching intent: START. This is a brand-new lesson session — the student just opened this material and has heard nothing yet, so open like a professor actually opening class, in two clear beats: (1) a brief warm greeting plus one sentence naming today's topic in plain terms (what this lesson/page is actually about), ending with a short "let's get started" — style transition; then (2), in the same reply, begin teaching from the very beginning of the current page — explain one key concept, give one concrete example or analogy grounded in what's on the page, then ask exactly one brief check-understanding question. Do not ask what the student wants to do, and do not skip straight into content without that opening beat first.`,
+        start: `Teaching intent: START. This is a brand-new lesson session — the student just opened this material and has heard nothing yet, so open like a professor actually opening class, in two clear beats: (1) one sentence naming today's topic in plain terms (what this lesson/page is actually about), ending with a short "let's get started" — style transition. Do NOT greet or introduce yourself: a fixed greeting that introduces you is added automatically in front of your reply, so begin straight with the topic sentence; then (2), in the same reply, begin teaching from the very beginning of the current page — explain one key concept, give one concrete example or analogy grounded in what's on the page, then ask exactly one brief check-understanding question. Do not ask what the student wants to do, and do not skip straight into content without that opening beat first.`,
         continue: `Teaching intent: CONTINUE. The viewer has just turned to this new page — explain THIS page's content specifically (see "Current page" content below), don't skip ahead to a different topic. Cover the main point of this page, explain why it matters, give a concrete example grounded in what's actually on the page, then ask exactly one brief check-understanding question.`,
         simplify: `Teaching intent: SIMPLIFY. Re-explain the current concept with simpler words and one different everyday analogy. Do not introduce a new topic. End with one brief check-understanding question.`,
         check: `Teaching intent: CHECK. Ask exactly one short question that tests the concept currently being taught. Do not answer the question yet and do not introduce a new concept.`,
@@ -1344,6 +1351,9 @@ ${langInstruction}`;
           console.warn("[Teacher mode language fix] translation fallback failed:", translateErr.message);
         }
       }
+
+      // The lesson opens with the professor greeting the class and saying who she is, in the language of the reply.
+      if (isTeacherMode && teachingIntent === "start") reply = `${OPENING_GREETING[lessonLang] || OPENING_GREETING.en}\n\n${reply}`;
 
       if (chatCacheKey) {
         pool.query(
@@ -1991,7 +2001,8 @@ const lectureAudioCache = new Map();
 // pre-generated, cached lectures. If ElevenLabs is unconfigured or fails, the
 // Azure voice takes over so the student still hears the lesson.
 async function burmeseLectureSpeech(text) {
-  const voiceId = process.env.ELEVENLABS_BURMESE_VOICE_ID || BURMESE_LECTURE_VOICE_ID;
+  // the professor's own voice (cloned with her permission) when it is set; ELEVENLABS_BURMESE_VOICE_ID still wins if someone sets it
+  const voiceId = process.env.ELEVENLABS_BURMESE_VOICE_ID || process.env.ELEVENLABS_PROFESSOR_VOICE_ID || BURMESE_LECTURE_VOICE_ID;
   const options = {
     lecture: true,
     modelId: process.env.ELEVENLABS_BURMESE_MODEL_ID || BURMESE_LECTURE_MODEL_ID,
@@ -2047,7 +2058,8 @@ exports.textToSpeech = async (req, res) => {
       } else {
         // The default voice is a Korean narrator: right for Korean, but it would speak
         // English or Vietnamese with a Korean accent. Those use the same voice as Burmese.
-        const voiceId = lecture && !/[가-힣]/.test(text) ? (process.env.ELEVENLABS_LECTURE_VOICE_ID || BURMESE_LECTURE_VOICE_ID) : undefined;
+        // Korean lectures use the professor's own (cloned, with her permission) voice when ELEVENLABS_PROFESSOR_VOICE_ID is set.
+        const voiceId = lecture && !/[가-힣]/.test(text) ? (process.env.ELEVENLABS_LECTURE_VOICE_ID || BURMESE_LECTURE_VOICE_ID) : (lecture ? process.env.ELEVENLABS_PROFESSOR_VOICE_ID || undefined : undefined);
         audio = await elevenLabsTextToSpeech(lecture ? elevenLabsLectureText(text.slice(0, 5000)) : text.slice(0, 5000), voiceId, { lecture });
       }
       if (cacheKey) {

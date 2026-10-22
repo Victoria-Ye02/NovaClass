@@ -50,6 +50,59 @@ exports.ask = async (req, res) => {
   }
 };
 
+// POST /api/kmate/ask/stream  { question }
+// Same as ask, but relays the answer as plain text while the model is still
+// writing it, so the student sees it appear instead of waiting for all of it.
+// The full answer is saved to history once the stream ends.
+exports.askStream = async (req, res) => {
+  const { question } = req.body;
+  if (!question) return res.status(400).json({ error: "question is required" });
+
+  // A student who leaves the page should stop the model, not keep it writing.
+  const cancel = new AbortController();
+  res.on("close", () => { if (!res.writableFinished) cancel.abort(); });
+
+  let answer = "";
+  try {
+    const upstream = await fetch(`${KMATE_AI_URL}/ask/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+      signal: AbortSignal.any([cancel.signal, AbortSignal.timeout(180000)]),
+    });
+    if (!upstream.ok) {
+      const detail = await upstream.text().catch(() => "");
+      throw new Error(`K.MATE AI service request failed: ${upstream.status} ${detail}`.slice(0, 300));
+    }
+
+    res.status(200);
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    const decoder = new TextDecoder();
+    for await (const chunk of upstream.body) {
+      const text = decoder.decode(chunk, { stream: true });
+      answer += text;
+      res.write(text);
+    }
+    answer += decoder.decode();
+
+    await pool.query(
+      "INSERT INTO kmate_history (user_id, question, answer) VALUES (?, ?, ?)",
+      [req.user.id, question, answer]
+    );
+    res.end();
+  } catch (err) {
+    if (cancel.signal.aborted) return;
+    if (!res.headersSent) return res.status(502).json({ error: err.message });
+    // Part of the answer is already on screen; say it stopped rather than end silently.
+    if (!answer) res.write("⚠️ The answer could not be loaded. Please ask again.");
+    res.end();
+  }
+};
+
 // The Code Assistant persona for kmate's second mode — deliberately never
 // calls the TOPIK RAG service above (its ChromaDB collection only has TOPIK
 // exam content, nothing about programming) and never hands back a working

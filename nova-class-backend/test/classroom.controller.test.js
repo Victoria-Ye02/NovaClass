@@ -141,8 +141,10 @@ test("teacher-mode chat grounds Nova in the current PDF page and starts a profes
   await controller.materialAI(req, res);
 
   assert.equal(res.statusCode, 200);
-  assert.equal(res.body.reply, "Let's begin.");
+  assert.match(res.body.reply, /^Hi everyone! I'm Professor Kwon Sook-yeon/);          // the lesson opens with her greeting and name
+  assert.match(res.body.reply, /\n\nLet's begin\.$/);
   const systemMessage = capturedMessages.find((m) => m.role === "system").content;
+  assert.match(systemMessage, /Do NOT greet or introduce yourself/);                    // the model does not greet a second time
   assert.match(systemMessage, /A primary key uniquely identifies every row/i);
   assert.match(systemMessage, /learning goal/i);
   assert.match(systemMessage, /example/i);
@@ -1273,6 +1275,9 @@ test("deleteMaterialComment lets the author delete their own comment", async (t)
 
 test("Burmese lecture narration uses ElevenLabs v4 with the chosen voice and Burmese language code", async (t) => {
   let call;
+  const professorVoice = process.env.ELEVENLABS_PROFESSOR_VOICE_ID;
+  delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID;                      // this test is about the default lesson voice
+  t.after(() => { if (professorVoice === undefined) delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID; else process.env.ELEVENLABS_PROFESSOR_VOICE_ID = professorVoice; });
   const controller = loadController(t, {
     elevenLabsTextToSpeech: async (text, voice, options) => {
       call = { text, voice, options };
@@ -1437,6 +1442,9 @@ test("a reply that comes back in the wrong language is translated into the lesso
 
 test("lecture speech: Korean text keeps the Korean narrator; English/Vietnamese use the warm lesson voice", async (t) => {
   const voices = [];
+  const professorVoice = process.env.ELEVENLABS_PROFESSOR_VOICE_ID;
+  delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID;                      // this test is about the default narrator
+  t.after(() => { if (professorVoice === undefined) delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID; else process.env.ELEVENLABS_PROFESSOR_VOICE_ID = professorVoice; });
   const controller = loadController(t, {
     elevenLabsTextToSpeech: async (text, voice) => { voices.push(voice); return Buffer.from("x"); },
   });
@@ -1447,4 +1455,42 @@ test("lecture speech: Korean text keeps the Korean narrator; English/Vietnamese 
   assert.equal(voices[0], undefined, "Korean: default (Korean narrator)");
   assert.equal(voices[1], "sarah-voice");
   assert.equal(voices[2], "sarah-voice");
+});
+
+test("lecture speech: Korean lectures use the professor's own voice when ELEVENLABS_PROFESSOR_VOICE_ID is set; other languages and non-lecture speech do not", async (t) => {
+  const voices = [];
+  const before = process.env.ELEVENLABS_PROFESSOR_VOICE_ID;
+  process.env.ELEVENLABS_PROFESSOR_VOICE_ID = "professor-voice";
+  t.after(() => { if (before === undefined) delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID; else process.env.ELEVENLABS_PROFESSOR_VOICE_ID = before; });
+  const controller = loadController(t, {
+    elevenLabsTextToSpeech: async (text, voice) => { voices.push(voice); return Buffer.from("x"); },
+  });
+  for (const body of [
+    { text: "안녕하세요. 오늘은 기본 키를 배워요.", style: "lecture" },
+    { text: "Hello. Today we learn about keys.", style: "lecture" },
+    { text: "안녕하세요. 짧은 대답이에요." },
+  ]) {
+    const { req, res } = httpDouble({ body });
+    await controller.textToSpeech(req, res);
+  }
+  assert.equal(voices[0], "professor-voice", "Korean lecture: the professor's voice");
+  assert.equal(voices[1], "sarah-voice", "English lecture is unchanged");
+  assert.equal(voices[2], undefined, "a chat reply keeps the default voice");
+});
+
+test("lecture speech: Burmese lectures use the professor's voice when it is set, and the lesson voice otherwise", async (t) => {
+  const voices = [];
+  const before = { professor: process.env.ELEVENLABS_PROFESSOR_VOICE_ID, burmese: process.env.ELEVENLABS_BURMESE_VOICE_ID };
+  delete process.env.ELEVENLABS_BURMESE_VOICE_ID;
+  t.after(() => { for (const [k, v] of [["ELEVENLABS_PROFESSOR_VOICE_ID", before.professor], ["ELEVENLABS_BURMESE_VOICE_ID", before.burmese]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; } });
+  const controller = loadController(t, {
+    elevenLabsTextToSpeech: async (text, voice) => { voices.push(voice); return Buffer.from("x"); },
+  });
+  const burmese = { text: "မင်္ဂလာပါ ကျောင်းသားတို့။ ဒီနေ့ သင်ခန်းစာမှာ ပထမသော့ကို လေ့လာမယ်။", style: "lecture" };
+  process.env.ELEVENLABS_PROFESSOR_VOICE_ID = "professor-voice";
+  await controller.textToSpeech(...Object.values(httpDouble({ body: burmese })));
+  delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID;
+  await controller.textToSpeech(...Object.values(httpDouble({ body: { ...burmese, text: "ကဲ၊ ဒုတိယအပိုင်းကို ဆက်သွားကြရအောင်။" } })));
+  assert.equal(voices[0], "professor-voice");
+  assert.equal(voices[1], "sarah-voice");
 });
