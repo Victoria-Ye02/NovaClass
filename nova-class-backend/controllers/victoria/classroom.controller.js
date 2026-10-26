@@ -1,17 +1,23 @@
 const pool = require("../../config/db");
 const { completeText, streamCompletion, describeImage } = require("../../services/ai/openaiText");
 const { ocrPdfPageText } = require("../../services/ai/pdfVision");
-const { textToSpeech: elevenLabsTextToSpeech, BURMESE_LECTURE_VOICE_ID, BURMESE_LECTURE_MODEL_ID } = require("../../services/ai/elevenLabs");
+const { textToSpeech: elevenLabsTextToSpeech, createVoice: createElevenLabsVoice, deleteVoice: deleteElevenLabsVoice, BURMESE_LECTURE_VOICE_ID, BURMESE_LECTURE_MODEL_ID } = require("../../services/ai/elevenLabs");
+const teacherVoices = require("../../services/ai/teacherVoices");
 const { textToSpeech: burmeseTextToSpeech } = require("../../services/ai/burmeseTts");
 const { elevenLabsLectureText, cleanForSpeech, splitForSpeech } = require("../../services/ai/speechPrep");
 const { joinMp3 } = require("../../services/ai/mp3");
 const { LESSON_LANGUAGES, resolveLessonLanguage, replyIsInWrongLanguage, languageStyle } = require("../../services/lecture/languageRequest");
-// What the professor says first when a lesson starts (fixed text, so the greeting and her name are always the same).
-const OPENING_GREETING = {
-  ko: "안녕, 얘들아! 나는 이 수업을 맡은 권숙연 교수예요.",
-  en: "Hi everyone! I'm Professor Kwon Sook-yeon, and I'll be teaching this lesson.",
-  my: "ကျောင်းသားတို့ မင်္ဂလာပါ။ ကျွန်မက ဒီသင်ခန်းစာကို သင်ပေးမယ့် ပါမောက္ခ 권숙연 (Kwon Sook-yeon) ပါ။",
-  vi: "Chào các em! Cô là giáo sư Kwon Sook-yeon, người sẽ dạy bài học này.",
+// What the teacher says first when a lesson starts: a greeting and who they are (fixed text, so it is always the same).
+// Without a name on the account it is just the greeting.
+const openingGreeting = (lang, name) => {
+  const n = String(name || "").trim();
+  const text = {
+    ko: n ? `안녕, 얘들아! 나는 이 수업을 맡은 ${n} 교수예요.` : "안녕, 얘들아! 오늘 수업을 시작해 볼게요.",
+    en: n ? `Hi everyone! I'm Professor ${n}, and I'll be teaching this lesson.` : "Hi everyone! Let's start today's lesson.",
+    my: n ? `ကျောင်းသားတို့ မင်္ဂလာပါ။ ဒီသင်ခန်းစာကို သင်ပေးမယ့် ပါမောက္ခ ${n} ပါ။` : "ကျောင်းသားတို့ မင်္ဂလာပါ။ ဒီနေ့ သင်ခန်းစာကို စကြရအောင်။",
+    vi: n ? `Chào các em! Mình là giáo sư ${n}, người sẽ dạy bài học này.` : "Chào các em! Chúng ta bắt đầu bài học hôm nay nhé.",
+  };
+  return text[lang] || text.en;
 };
 const pdfParse = require("pdf-parse");
 const { PAGE_MARKER_RE, pdfPageMarker, splitPagesFromMarkedText, replacePageText } = require("../../services/materials/pdfPages");
@@ -1353,7 +1359,11 @@ ${langInstruction}`;
       }
 
       // The lesson opens with the professor greeting the class and saying who she is, in the language of the reply.
-      if (isTeacherMode && teachingIntent === "start") reply = `${OPENING_GREETING[lessonLang] || OPENING_GREETING.en}\n\n${reply}`;
+      if (isTeacherMode && teachingIntent === "start") {
+        let teacherName = "";
+        try { teacherName = (await teacherVoices.teacherOfMaterial(pool, req.params.materialId, req.user?.id))?.name || ""; } catch { /* the greeting then has no name */ }
+        reply = `${openingGreeting(lessonLang, teacherName)}\n\n${reply}`;
+      }
 
       if (chatCacheKey) {
         pool.query(
@@ -2000,9 +2010,9 @@ const lectureAudioCache = new Map();
 // Burmese). It is slower to generate than Azure, which doesn't matter for
 // pre-generated, cached lectures. If ElevenLabs is unconfigured or fails, the
 // Azure voice takes over so the student still hears the lesson.
-async function burmeseLectureSpeech(text) {
-  // the professor's own voice (cloned with her permission) when it is set; ELEVENLABS_BURMESE_VOICE_ID still wins if someone sets it
-  const voiceId = process.env.ELEVENLABS_BURMESE_VOICE_ID || process.env.ELEVENLABS_PROFESSOR_VOICE_ID || BURMESE_LECTURE_VOICE_ID;
+async function burmeseLectureSpeech(text, teacherVoiceId) {
+  // the teacher's own voice when they gave one; otherwise the lesson voice (ELEVENLABS_BURMESE_VOICE_ID can change that)
+  const voiceId = teacherVoiceId || process.env.ELEVENLABS_BURMESE_VOICE_ID || BURMESE_LECTURE_VOICE_ID;
   const options = {
     lecture: true,
     modelId: process.env.ELEVENLABS_BURMESE_MODEL_ID || BURMESE_LECTURE_MODEL_ID,
@@ -2047,19 +2057,24 @@ exports.textToSpeech = async (req, res) => {
   const lecture = req.body.style === "lecture";
 
   const isBurmese = BURMESE_SCRIPT_RE.test(text);
-  const cacheKey = lecture ? require("crypto").createHash("sha1").update(`${isBurmese ? "my-el4" : "el2"}|${text}`).digest("hex") : null;
+  // A lecture of a class whose teacher gave a voice is read in that teacher's voice (only for the teacher and the class members).
+  let teacherVoiceId = null;
+  if (lecture && req.body.materialId) {
+    try { teacherVoiceId = (await teacherVoices.teacherOfMaterial(pool, req.body.materialId, req.user?.id))?.voiceId || null; }
+    catch (err) { console.warn("[TTS] teacher voice lookup failed:", err.message); }
+  }
+  const cacheKey = lecture ? require("crypto").createHash("sha1").update(`${isBurmese ? "my-el4" : "el2"}|${teacherVoiceId || ""}|${text}`).digest("hex") : null;
   try {
     let audio = cacheKey ? lectureAudioCache.get(cacheKey) : null;
     if (!audio) {
       if (isBurmese && lecture) {
-        audio = await burmeseLectureSpeech(text.slice(0, 5000));
+        audio = await burmeseLectureSpeech(text.slice(0, 5000), teacherVoiceId);
       } else if (isBurmese) {
         audio = await burmeseTextToSpeech(text.slice(0, 5000));
       } else {
         // The default voice is a Korean narrator: right for Korean, but it would speak
         // English or Vietnamese with a Korean accent. Those use the same voice as Burmese.
-        // Korean lectures use the professor's own (cloned, with her permission) voice when ELEVENLABS_PROFESSOR_VOICE_ID is set.
-        const voiceId = lecture && !/[가-힣]/.test(text) ? (process.env.ELEVENLABS_LECTURE_VOICE_ID || BURMESE_LECTURE_VOICE_ID) : (lecture ? process.env.ELEVENLABS_PROFESSOR_VOICE_ID || undefined : undefined);
+        const voiceId = lecture ? (teacherVoiceId || (!/[가-힣]/.test(text) ? (process.env.ELEVENLABS_LECTURE_VOICE_ID || BURMESE_LECTURE_VOICE_ID) : undefined)) : undefined;
         audio = await elevenLabsTextToSpeech(lecture ? elevenLabsLectureText(text.slice(0, 5000)) : text.slice(0, 5000), voiceId, { lecture });
       }
       if (cacheKey) {
@@ -2292,4 +2307,59 @@ Remember: you are a HINT-ONLY tutor. If a student asks for the answer directly, 
     const reply = completion.choices[0].message.content;
     res.json({ reply });
   } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+// ── The teacher's own voice for the lessons ─────────────────────────────────────────────────
+// GET    /api/classroom/voice/me   -> { hasVoice, label, createdAt }
+// POST   /api/classroom/voice/me   multipart: sample (an audio recording) + consent ("true"): makes the voice from the recording
+// DELETE /api/classroom/voice/me   removes it (at ElevenLabs too)
+exports.getMyVoice = async (req, res) => {
+  try {
+    const voice = await teacherVoices.getForUser(pool, req.user.id);
+    res.json({ hasVoice: Boolean(voice), label: voice?.label || "", createdAt: voice?.createdAt || null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.saveMyVoice = async (req, res) => {
+  if (!(req.body.consent === true || req.body.consent === "true")) {
+    return res.status(400).json({ error: "You must confirm that this is your own voice, or that its owner allowed it." });
+  }
+  if (!req.file || !req.file.buffer?.length) return res.status(400).json({ error: "A voice recording is required." });
+  try {
+    const [[user] = []] = await pool.query("SELECT name FROM users WHERE id = ?", [req.user.id]);
+    const label = `${user?.name || "Teacher"} (NovaClass)`;
+    const previous = await teacherVoices.getForUser(pool, req.user.id);
+    const voiceId = await createElevenLabsVoice({
+      name: label,
+      audio: req.file.buffer,
+      filename: req.file.originalname || "sample.wav",
+      mimeType: req.file.mimetype || "audio/wav",
+      description: "A teacher's voice for NovaClass lessons, made from a recording the teacher gave with their permission.",
+    });
+    await teacherVoices.setForUser(pool, req.user.id, { voiceId, label });
+    if (previous?.voiceId && previous.voiceId !== voiceId) {
+      deleteElevenLabsVoice(previous.voiceId).catch(err => console.warn("[Voice] old voice not removed:", err.message));
+    }
+    res.json({ hasVoice: true, label });
+  } catch (err) {
+    if (err.code === "ELEVENLABS_NOT_CONFIGURED") return res.status(503).json({ error: err.message, code: err.code });
+    console.error("[Voice] could not make the voice:", err.message);
+    res.status(502).json({ error: "The voice could not be made from this recording. Try a clearer recording of one speaker." });
+  }
+};
+
+exports.deleteMyVoice = async (req, res) => {
+  try {
+    const voice = await teacherVoices.getForUser(pool, req.user.id);
+    if (voice) {
+      await deleteElevenLabsVoice(voice.voiceId);           // if this fails the voice stays listed, so it is never left behind unseen
+      await teacherVoices.removeForUser(pool, req.user.id);
+    }
+    res.json({ hasVoice: false });
+  } catch (err) {
+    console.error("[Voice] could not delete the voice:", err.message);
+    res.status(502).json({ error: "The voice could not be deleted right now. Please try again." });
+  }
 };

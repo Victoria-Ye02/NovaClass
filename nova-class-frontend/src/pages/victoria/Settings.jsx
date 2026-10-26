@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import { useLang } from "../../LanguageContext";
 import { useTheme } from "../../ThemeContext";
 import API from "../../services/api";
+import TeacherVoiceCard from "./TeacherVoiceCard";
 
 // The API reports failures as { error: "..." }; anything without a response
 // never reached the server (a plain "failed" message would blame the wrong thing).
@@ -148,6 +149,9 @@ export default function Settings() {
               ))}
             </div>
           </div>
+
+          {/* The teacher's own voice for the lessons */}
+          <TeacherVoiceCard cardStyle={s.card} titleStyle={s.cardTitle} />
 
           {/* TOPIK Level */}
           <div style={s.card}>

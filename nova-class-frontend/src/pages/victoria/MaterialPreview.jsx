@@ -80,7 +80,7 @@ function AIChatPanel({ materialId, currentPage, totalPages, panelVisible, onAdva
 
   // The lecture narration (it never needs the mic; the student can pause,
   // resume, replay and seek it).
-  const narration = useNarrationPlayer();
+  const narration = useNarrationPlayer(materialId);
   // Push-to-talk lives inside the panel: tap, speak, tap, check the text, ask.
   const ptt = usePushToTalk({ lang });
   // The panel only slides out of view when collapsed (it never unmounts), so a

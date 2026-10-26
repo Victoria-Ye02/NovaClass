@@ -12,6 +12,8 @@ const aiUpload = multer({
   limits: { fileSize: 200 * 1024 * 1024 }, // 200MB
   fileFilter: (req, file, cb) => cb(null, true),
 });
+// a voice recording is kept in memory only long enough to send it on
+const voiceUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024, files: 1 } });
 const ctrl = require("../../controllers/victoria/classroom.controller");
 const posts = require("../../controllers/victoria/posts.controller");
 const assign = require("../../controllers/victoria/assignment.controller");
@@ -40,6 +42,9 @@ router.post("/materials/:materialId/lecture/:page/cues", auth, require("../../co
 router.get("/materials/:materialId/lecture/:page/quiz", auth, require("../../controllers/victoria/lecture.controller").getSlideQuiz);
 router.post("/materials/:materialId/lecture/quiz/:quizId/answer", auth, require("../../controllers/victoria/lecture.controller").gradeSlideQuiz);
 router.post("/tts",                         auth, ctrl.textToSpeech);
+router.get("/voice/me",                     auth, ctrl.getMyVoice);
+router.post("/voice/me",                    auth, voiceUpload.single("sample"), ctrl.saveMyVoice);
+router.delete("/voice/me",                  auth, ctrl.deleteMyVoice);
 router.get("/materials/:materialId/highlights", auth, highlights.getHighlights);
 router.post("/materials/:materialId/highlights/start", auth, highlights.startHighlights);
 router.post("/materials/:materialId/highlights/pages", auth, upload.highlightPageImage.single("image"), highlights.submitHighlightPage);

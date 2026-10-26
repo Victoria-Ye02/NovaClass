@@ -12,7 +12,7 @@ const FRAME_MS = 45;
 // status: idle | loading | playing | paused | ended | blocked | error
 //   blocked = the browser refused autoplay (no user gesture yet) — the UI shows
 //   a Play button instead of staying silent.
-export default function useNarrationPlayer() {
+export default function useNarrationPlayer(materialId) {
   const [status, setStatus] = useState("idle");
   const [clock, setClock] = useState({ current: 0, duration: 0 });
   const [viz, setViz] = useState(IDLE_VIZ);
@@ -100,7 +100,7 @@ export default function useNarrationPlayer() {
 
     let blob;
     try {
-      ({ data: blob } = await API.post("/classroom/tts", { text: clean, style: "lecture" }, { responseType: "blob" }));
+      ({ data: blob } = await API.post("/classroom/tts", { text: clean, style: "lecture", ...(materialId ? { materialId } : {}) }, { responseType: "blob" }));
     } catch {
       if (seq === seqRef.current) setStatus("error");
       return;
@@ -134,7 +134,7 @@ export default function useNarrationPlayer() {
     } catch (err) {
       if (seq === seqRef.current) setStatus(err?.name === "NotAllowedError" ? "blocked" : "error");
     }
-  }, [teardown, stopLoop, startLoop, connectAnalyser]);
+  }, [teardown, stopLoop, startLoop, connectAnalyser, materialId]);
 
   const pause = useCallback(() => {
     const audio = audioRef.current;

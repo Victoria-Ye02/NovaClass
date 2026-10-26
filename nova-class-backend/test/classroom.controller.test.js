@@ -11,8 +11,9 @@ const openaiTextPath = require.resolve("../services/ai/openaiText");
 const pdfVisionPath = require.resolve("../services/ai/pdfVision");
 const elevenLabsPath = require.resolve("../services/ai/elevenLabs");
 const burmeseTtsPath = require.resolve("../services/ai/burmeseTts");
+const teacherVoicesPath = require.resolve("../services/ai/teacherVoices");
 
-function loadController(t, { completeText, ocrPdfPageText, elevenLabsTextToSpeech, burmeseTextToSpeech } = {}) {
+function loadController(t, { completeText, ocrPdfPageText, elevenLabsTextToSpeech, burmeseTextToSpeech, createVoice, deleteVoice } = {}) {
   const originalOpenaiText = require.cache[openaiTextPath];
   require.cache[openaiTextPath] = {
     id: openaiTextPath,
@@ -44,6 +45,8 @@ function loadController(t, { completeText, ocrPdfPageText, elevenLabsTextToSpeec
       BURMESE_LECTURE_VOICE_ID: "sarah-voice",
       BURMESE_LECTURE_MODEL_ID: "eleven_v4",
       textToSpeech: elevenLabsTextToSpeech || (async () => { throw new Error("Unexpected textToSpeech call"); }),
+      createVoice: createVoice || (async () => { throw new Error("Unexpected createVoice call"); }),
+      deleteVoice: deleteVoice || (async () => { throw new Error("Unexpected deleteVoice call"); }),
     },
   };
 
@@ -58,10 +61,12 @@ function loadController(t, { completeText, ocrPdfPageText, elevenLabsTextToSpeec
   };
 
   delete require.cache[controllerPath];
+  delete require.cache[teacherVoicesPath];                               // a fresh "table is ready" state per test
 
   const controller = require(controllerPath);
   t.after(() => {
     delete require.cache[controllerPath];
+    delete require.cache[teacherVoicesPath];
     if (originalOpenaiText) require.cache[openaiTextPath] = originalOpenaiText;
     else delete require.cache[openaiTextPath];
     if (originalPdfVision) require.cache[pdfVisionPath] = originalPdfVision;
@@ -108,6 +113,7 @@ test.afterEach(() => {
 test("teacher-mode chat grounds Nova in the current PDF page and starts a professor-led lesson", async (t) => {
   global.fetch = async () => { throw new Error("RAG unavailable in test"); };
   pool.query = async (sql) => {
+    if (sql.includes("JOIN classes c ON c.id = m.class_id")) return [[{ name: "Kim", voice_id: null, allowed: 1 }]];
     if (sql.includes("FROM materials")) {
       return [[{
         title: "Database Lesson",
@@ -141,7 +147,7 @@ test("teacher-mode chat grounds Nova in the current PDF page and starts a profes
   await controller.materialAI(req, res);
 
   assert.equal(res.statusCode, 200);
-  assert.match(res.body.reply, /^Hi everyone! I'm Professor Kwon Sook-yeon/);          // the lesson opens with her greeting and name
+  assert.match(res.body.reply, /^Hi everyone! I'm Professor Kim, and I'll be teaching this lesson\./);   // the lesson opens with the greeting and the teacher's own name
   assert.match(res.body.reply, /\n\nLet's begin\.$/);
   const systemMessage = capturedMessages.find((m) => m.role === "system").content;
   assert.match(systemMessage, /Do NOT greet or introduce yourself/);                    // the model does not greet a second time
@@ -1275,9 +1281,6 @@ test("deleteMaterialComment lets the author delete their own comment", async (t)
 
 test("Burmese lecture narration uses ElevenLabs v4 with the chosen voice and Burmese language code", async (t) => {
   let call;
-  const professorVoice = process.env.ELEVENLABS_PROFESSOR_VOICE_ID;
-  delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID;                      // this test is about the default lesson voice
-  t.after(() => { if (professorVoice === undefined) delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID; else process.env.ELEVENLABS_PROFESSOR_VOICE_ID = professorVoice; });
   const controller = loadController(t, {
     elevenLabsTextToSpeech: async (text, voice, options) => {
       call = { text, voice, options };
@@ -1442,9 +1445,6 @@ test("a reply that comes back in the wrong language is translated into the lesso
 
 test("lecture speech: Korean text keeps the Korean narrator; English/Vietnamese use the warm lesson voice", async (t) => {
   const voices = [];
-  const professorVoice = process.env.ELEVENLABS_PROFESSOR_VOICE_ID;
-  delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID;                      // this test is about the default narrator
-  t.after(() => { if (professorVoice === undefined) delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID; else process.env.ELEVENLABS_PROFESSOR_VOICE_ID = professorVoice; });
   const controller = loadController(t, {
     elevenLabsTextToSpeech: async (text, voice) => { voices.push(voice); return Buffer.from("x"); },
   });
@@ -1457,40 +1457,107 @@ test("lecture speech: Korean text keeps the Korean narrator; English/Vietnamese 
   assert.equal(voices[2], "sarah-voice");
 });
 
-test("lecture speech: Korean lectures use the professor's own voice when ELEVENLABS_PROFESSOR_VOICE_ID is set; other languages and non-lecture speech do not", async (t) => {
-  const voices = [];
-  const before = process.env.ELEVENLABS_PROFESSOR_VOICE_ID;
-  process.env.ELEVENLABS_PROFESSOR_VOICE_ID = "professor-voice";
-  t.after(() => { if (before === undefined) delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID; else process.env.ELEVENLABS_PROFESSOR_VOICE_ID = before; });
+// ── a teacher's own voice ──
+const voiceRows = ({ teacherVoice = null, allowed = 1, name = "Kim" } = {}) => async sql => {
+  if (sql.includes("JOIN classes c ON c.id = m.class_id")) return [[{ name, voice_id: teacherVoice, allowed }]];
+  return [[]];
+};
+
+test("lecture speech: a lesson of a teacher who gave a voice is read in that voice, in every language", async (t) => {
+  const calls = [];
   const controller = loadController(t, {
-    elevenLabsTextToSpeech: async (text, voice) => { voices.push(voice); return Buffer.from("x"); },
+    elevenLabsTextToSpeech: async (text, voice, options) => { calls.push({ voice, model: options?.modelId }); return Buffer.from("x"); },
   });
-  for (const body of [
-    { text: "안녕하세요. 오늘은 기본 키를 배워요.", style: "lecture" },
-    { text: "Hello. Today we learn about keys.", style: "lecture" },
-    { text: "안녕하세요. 짧은 대답이에요." },
-  ]) {
-    const { req, res } = httpDouble({ body });
+  pool.query = voiceRows({ teacherVoice: "kim-voice" });
+  for (const text of ["안녕하세요. 오늘은 기본 키를 배워요.", "Hello. Today we learn about keys.", "မင်္ဂလာပါ ကျောင်းသားတို့။ ဒီနေ့ သင်ခန်းစာမှာ ပထမသော့ကို လေ့လာမယ်။"]) {
+    const { req, res } = httpDouble({ user: { id: 4 }, body: { text, style: "lecture", materialId: 9 } });
     await controller.textToSpeech(req, res);
+    assert.equal(res.statusCode, 200);
   }
-  assert.equal(voices[0], "professor-voice", "Korean lecture: the professor's voice");
-  assert.equal(voices[1], "sarah-voice", "English lecture is unchanged");
-  assert.equal(voices[2], undefined, "a chat reply keeps the default voice");
+  assert.deepEqual(calls.map(c => c.voice), ["kim-voice", "kim-voice", "kim-voice"]);
+  assert.equal(calls[2].model, "eleven_v4", "Burmese still uses the model that speaks Burmese");
 });
 
-test("lecture speech: Burmese lectures use the professor's voice when it is set, and the lesson voice otherwise", async (t) => {
+test("lecture speech: without a teacher voice, for someone outside that class, or outside a lecture, the default voice is used", async (t) => {
   const voices = [];
-  const before = { professor: process.env.ELEVENLABS_PROFESSOR_VOICE_ID, burmese: process.env.ELEVENLABS_BURMESE_VOICE_ID };
-  delete process.env.ELEVENLABS_BURMESE_VOICE_ID;
-  t.after(() => { for (const [k, v] of [["ELEVENLABS_PROFESSOR_VOICE_ID", before.professor], ["ELEVENLABS_BURMESE_VOICE_ID", before.burmese]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; } });
   const controller = loadController(t, {
     elevenLabsTextToSpeech: async (text, voice) => { voices.push(voice); return Buffer.from("x"); },
   });
-  const burmese = { text: "မင်္ဂလာပါ ကျောင်းသားတို့။ ဒီနေ့ သင်ခန်းစာမှာ ပထမသော့ကို လေ့လာမယ်။", style: "lecture" };
-  process.env.ELEVENLABS_PROFESSOR_VOICE_ID = "professor-voice";
-  await controller.textToSpeech(...Object.values(httpDouble({ body: burmese })));
-  delete process.env.ELEVENLABS_PROFESSOR_VOICE_ID;
-  await controller.textToSpeech(...Object.values(httpDouble({ body: { ...burmese, text: "ကဲ၊ ဒုတိယအပိုင်းကို ဆက်သွားကြရအောင်။" } })));
-  assert.equal(voices[0], "professor-voice");
-  assert.equal(voices[1], "sarah-voice");
+  pool.query = voiceRows({ teacherVoice: null });
+  await controller.textToSpeech(...Object.values(httpDouble({ body: { text: "Hello. Keys are unique.", style: "lecture", materialId: 9 } })));
+  pool.query = voiceRows({ teacherVoice: "kim-voice", allowed: 0 });                     // a stranger to the class
+  await controller.textToSpeech(...Object.values(httpDouble({ body: { text: "Hello again. Keys differ.", style: "lecture", materialId: 9 } })));
+  pool.query = voiceRows({ teacherVoice: "kim-voice" });
+  await controller.textToSpeech(...Object.values(httpDouble({ body: { text: "A short chat answer for the student." } })));   // not a lecture
+  assert.deepEqual(voices, ["sarah-voice", "sarah-voice", undefined]);
+});
+
+test("voice upload: needs the teacher's consent and a recording, makes the voice, keeps it and removes the old one", async (t) => {
+  const made = [], removed = [], saved = [];
+  const controller = loadController(t, {
+    createVoice: async options => { made.push(options); return "new-voice"; },
+    deleteVoice: async id => { removed.push(id); },
+  });
+  pool.query = async (sql, params) => {
+    if (sql.includes("SELECT name FROM users")) return [[{ name: "Kim" }]];
+    if (sql.includes("FROM teacher_voices WHERE user_id")) return [[{ voice_id: "old-voice", label: "Kim (NovaClass)", created_at: "2026-10-22" }]];
+    if (sql.includes("INSERT INTO teacher_voices")) { saved.push(params); return [{}]; }
+    return [[]];
+  };
+  const recording = { buffer: Buffer.from("audio"), originalname: "voice.m4a", mimetype: "audio/mp4" };
+
+  let call = httpDouble({ user: { id: 4 }, body: { consent: "false" } });
+  call.req.file = recording;
+  await controller.saveMyVoice(call.req, call.res);
+  assert.equal(call.res.statusCode, 400);                                                // no consent: nothing is made
+  call = httpDouble({ user: { id: 4 }, body: { consent: "true" } });
+  await controller.saveMyVoice(call.req, call.res);
+  assert.equal(call.res.statusCode, 400);                                                // no recording
+  assert.equal(made.length, 0);
+
+  call = httpDouble({ user: { id: 4 }, body: { consent: "true" } });
+  call.req.file = recording;
+  await controller.saveMyVoice(call.req, call.res);
+  assert.equal(call.res.statusCode, 200);
+  assert.deepEqual(call.res.body, { hasVoice: true, label: "Kim (NovaClass)" });
+  assert.equal(made[0].name, "Kim (NovaClass)");
+  assert.equal(made[0].mimeType, "audio/mp4");
+  assert.deepEqual(saved[0].slice(0, 2), [4, "new-voice"]);
+  assert.deepEqual(removed, ["old-voice"]);                                              // the voice it replaced is removed at ElevenLabs
+});
+
+test("voice delete: removes the voice at ElevenLabs first, and keeps the record if that fails", async (t) => {
+  const removed = [], deletedRows = [];
+  let failDelete = true;
+  const controller = loadController(t, {
+    deleteVoice: async id => { if (failDelete) throw new Error("down"); removed.push(id); },
+  });
+  pool.query = async (sql, params) => {
+    if (sql.includes("DELETE FROM teacher_voices")) { deletedRows.push(params); return [{}]; }
+    if (sql.includes("FROM teacher_voices WHERE user_id")) return [[{ voice_id: "kim-voice", label: "Kim", created_at: "2026-10-22" }]];
+    return [[]];
+  };
+  let call = httpDouble({ user: { id: 4 } });
+  await controller.deleteMyVoice(call.req, call.res);
+  assert.equal(call.res.statusCode, 502);
+  assert.equal(deletedRows.length, 0, "the record stays so the voice is not left behind unseen");
+  failDelete = false;
+  call = httpDouble({ user: { id: 4 } });
+  await controller.deleteMyVoice(call.req, call.res);
+  assert.equal(call.res.statusCode, 200);
+  assert.deepEqual(removed, ["kim-voice"]);
+  assert.deepEqual(deletedRows, [[4]]);
+});
+
+test("voice status: tells whether the teacher has a voice", async (t) => {
+  const controller = loadController(t);
+  pool.query = async () => [[]];
+  let call = httpDouble({ user: { id: 4 } });
+  await controller.getMyVoice(call.req, call.res);
+  assert.deepEqual(call.res.body, { hasVoice: false, label: "", createdAt: null });
+  pool.query = async sql => (sql.includes("FROM teacher_voices WHERE user_id") ? [[{ voice_id: "v", label: "Kim (NovaClass)", created_at: "2026-10-22" }]] : [[]]);
+  call = httpDouble({ user: { id: 4 } });
+  await controller.getMyVoice(call.req, call.res);
+  assert.equal(call.res.body.hasVoice, true);
+  assert.equal(call.res.body.label, "Kim (NovaClass)");
 });

@@ -78,13 +78,13 @@ function httpDouble(body, user) {
 
 const STORED_USERNAME = "victoria6";
 
-// The login query now matches either column with the same normalized
-// identifier (`WHERE email = ? OR username = ?`), so both bound params carry
-// whatever the user typed, whether it was their email or their ID.
-function installUserRow(hash, seen) {
+// The login query looks at ONE column: "email" when the typed value has an "@", "username" (the ID) when it has not.
+// `seen` collects the bound params and `sqls` the statements.
+function installUserRow(hash, seen, sqls = []) {
   pool.query = async (sql, params) => {
     seen.push(params);
-    const matches = params.includes(STORED_EMAIL) || params.includes(STORED_USERNAME);
+    sqls.push(sql);
+    const matches = (sql.includes("WHERE email = ?") && params[0] === STORED_EMAIL) || (sql.includes("WHERE username = ?") && params[0] === STORED_USERNAME);
     if (!matches) return [[]];
     return [[{ id: 1, name: "Victoria", email: STORED_EMAIL, username: STORED_USERNAME, password: hash, role: "teacher" }]];
   };
@@ -111,7 +111,7 @@ test("login normalizes the submitted email", async t => {
 
     await controller.login(req, res);
 
-    assert.deepEqual(seen, [[STORED_EMAIL, STORED_EMAIL]], `lookup for ${JSON.stringify(submitted)}`);
+    assert.deepEqual(seen, [[STORED_EMAIL]], `lookup for ${JSON.stringify(submitted)}`);
     assert.equal(res.statusCode, 200, `status for ${JSON.stringify(submitted)}`);
     assert.equal(typeof res.body.token, "string");
     assert.equal(res.body.user.name, "Victoria");
@@ -130,9 +130,10 @@ test("login succeeds when the submitted value is the account's ID (username), no
   const { req, res } = httpDouble({ email: "  Victoria6  ", password: PASSWORD });
   await controller.login(req, res);
 
-  assert.deepEqual(seen, [[STORED_USERNAME, STORED_USERNAME]]);
+  assert.deepEqual(seen, [[STORED_USERNAME]]);
   assert.equal(res.statusCode, 200);
   assert.equal(typeof res.body.token, "string");
+  assert.equal(res.body.user.email, STORED_EMAIL);                          // an ID login still hands back the real email
 });
 
 test("login still rejects a genuinely unknown email or ID", async t => {
@@ -146,8 +147,61 @@ test("login still rejects a genuinely unknown email or ID", async t => {
   const { req, res } = httpDouble({ email: "nobody@nova.com", password: PASSWORD });
   await controller.login(req, res);
 
-  assert.equal(res.statusCode, 404);
-  assert.deepEqual(res.body, { error: "User not found" });
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.body, { error: "Invalid ID or password" });
+});
+
+test("login gives the same answer for a wrong password as for an unknown account", async t => {
+  const hash = await bcrypt.hash(PASSWORD, 10);
+  installUserRow(hash, []);
+  t.after(() => { pool.query = originalQuery; });
+
+  const wrong = httpDouble({ email: STORED_EMAIL, password: "not-the-password" });
+  await controller.login(wrong.req, wrong.res);
+  const unknown = httpDouble({ email: "nobody@nova.com", password: PASSWORD });
+  await controller.login(unknown.req, unknown.res);
+
+  assert.equal(wrong.res.statusCode, 401);
+  assert.equal(unknown.res.statusCode, 401);
+  assert.deepEqual(wrong.res.body, unknown.res.body);                      // nothing tells the two apart
+});
+
+test("login looks an email up only as an email, and an ID only as an ID (an ID can never log in as someone's email)", async t => {
+  const hash = await bcrypt.hash(PASSWORD, 10);
+  const sqls = [];
+  installUserRow(hash, [], sqls);
+  t.after(() => { pool.query = originalQuery; });
+
+  await controller.login(...Object.values(httpDouble({ email: STORED_EMAIL, password: PASSWORD })));
+  await controller.login(...Object.values(httpDouble({ email: STORED_USERNAME, password: PASSWORD })));
+
+  assert.match(sqls[0], /WHERE email = \?/);
+  assert.doesNotMatch(sqls[0], /username/);
+  assert.match(sqls[1], /WHERE username = \?/);
+  assert.doesNotMatch(sqls[1], /email =/);
+});
+
+test("login with a missing password or ID is a 400, not a server error, and does not touch the database", async t => {
+  let queried = false;
+  pool.query = async () => { queried = true; return [[]]; };
+  t.after(() => { pool.query = originalQuery; });
+
+  for (const body of [{ email: STORED_EMAIL }, { email: "", password: PASSWORD }, { password: PASSWORD }]) {
+    const { req, res } = httpDouble(body);
+    await controller.login(req, res);
+    assert.equal(res.statusCode, 400);
+  }
+  assert.equal(queried, false);
+});
+
+test("login hides database failures behind a generic message", async t => {
+  pool.query = async () => { throw new Error("connect ECONNREFUSED 10.0.0.5:3306 (secret-host)"); };
+  t.after(() => { pool.query = originalQuery; });
+
+  const { req, res } = httpDouble({ email: STORED_EMAIL, password: PASSWORD });
+  await controller.login(req, res);
+  assert.equal(res.statusCode, 500);
+  assert.deepEqual(res.body, { error: "Something went wrong. Please try again." });
 });
 
 test("register stores the normalized email and ID (username)", async t => {
@@ -173,6 +227,48 @@ test("register stores the normalized email and ID (username)", async t => {
   assert.equal(res.statusCode, 201);
   assert.equal(res.body.email, "new.user@nova.com");
   assert.equal(res.body.username, "newuser6");
+});
+
+test("register answers a duplicate email or ID with 409 and a friendly message, never the database error", async t => {
+  pool.query = async () => { const e = new Error("Duplicate entry 'x' for key 'users.username'"); e.code = "ER_DUP_ENTRY"; throw e; };
+  t.after(() => { pool.query = originalQuery; });
+
+  const { req, res } = httpDouble({ name: "Vic", email: "vic@nova.com", username: "victoria6", password: PASSWORD });
+  await controller.register(req, res);
+  assert.equal(res.statusCode, 409);
+  assert.deepEqual(res.body, { error: "This email or ID is already registered" });
+});
+
+test("register rejects an ID with @ (it could look like someone's email), a bad email, a blank name and a missing password before the database", async t => {
+  let queried = false;
+  pool.query = async () => { queried = true; return [{ insertId: 1 }]; };
+  t.after(() => { pool.query = originalQuery; });
+
+  const base = { name: "Vic", email: "vic@nova.com", username: "victoria6", password: PASSWORD };
+  const cases = [
+    [{ ...base, username: "victim@school.com" }, "ID cannot contain @"],
+    [{ ...base, email: "not-an-email" }, "Please enter a valid email address"],
+    [{ ...base, name: "   " }, "Name is required"],
+    [{ ...base, password: undefined }, "Password is required"],
+    [{ ...base, password: "" }, "Password is required"],
+  ];
+  for (const [body, error] of cases) {
+    const { req, res } = httpDouble(body);
+    await controller.register(req, res);
+    assert.equal(res.statusCode, 400, error);
+    assert.deepEqual(res.body, { error });
+  }
+  assert.equal(queried, false);
+});
+
+test("register hides unexpected database failures behind a generic message", async t => {
+  pool.query = async () => { throw new Error("Table 'nova.users' doesn't exist"); };
+  t.after(() => { pool.query = originalQuery; });
+
+  const { req, res } = httpDouble({ name: "Vic", email: "vic@nova.com", username: "victoria6", password: PASSWORD });
+  await controller.register(req, res);
+  assert.equal(res.statusCode, 500);
+  assert.deepEqual(res.body, { error: "Something went wrong. Please try again." });
 });
 
 test("register rejects an ID (username) shorter than 6 characters without touching the database", async t => {
@@ -238,9 +334,34 @@ test("googleLogin creates a new account when signing up (intent: register)", asy
   });
   assert.equal(insertParams[0], "New Student");
   assert.equal(insertParams[1], "new.student@nova.com");
-  assert.equal(typeof insertParams[2], "string");
-  assert.notEqual(insertParams[2], ""); // a real (unusable) password hash is stored, never blank
-  assert.equal(insertParams[3], "student");
+  assert.match(insertParams[2], /^new\.student_[0-9a-f]{6}$/);          // a default ID, so the account never has an empty one
+  assert.equal(typeof insertParams[3], "string");
+  assert.notEqual(insertParams[3], ""); // a real (unusable) password hash is stored, never blank
+  assert.equal(insertParams[4], "student");
+});
+
+test("googleLogin tries another default ID when the first one is taken", async t => {
+  const googleController = loadGoogleController(t, {
+    verifyIdToken: async () => ticketFor({ email: "kim@nova.com", email_verified: true, name: "Kim" }),
+  });
+  process.env.JWT_SECRET = "test-secret";
+  const tried = [];
+  pool.query = async (sql, params) => {
+    if (sql.includes("SELECT * FROM users")) return [[]];
+    if (sql.includes("INSERT INTO users")) {
+      tried.push(params[2]);
+      if (tried.length === 1) { const e = new Error("Duplicate entry"); e.code = "ER_DUP_ENTRY"; throw e; }
+      return [{ insertId: 78 }];
+    }
+    throw new Error(`Unexpected query: ${sql}`);
+  };
+  t.after(() => { pool.query = originalQuery; });
+
+  const { req, res } = httpDouble({ credential: "fake-credential", intent: "register" });
+  await googleController.googleLogin(req, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(tried.length, 2);
+  assert.notEqual(tried[0], tried[1]);
 });
 
 test("googleLogin signs in an existing user by email instead of creating a duplicate", async t => {

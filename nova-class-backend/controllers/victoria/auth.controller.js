@@ -14,16 +14,30 @@ const googleClient = new OAuth2Client();
 // surfaces as "User not found". Normalize on the way in so lookups and inserts agree.
 const normalizeEmail = email => String(email ?? "").trim().toLowerCase();
 
+const GENERIC_ERROR = "Something went wrong. Please try again.";
+const BAD_LOGIN = "Invalid ID or password";
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// A hash to compare against when no account matches, so a wrong ID and a wrong password take about the same time.
+const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 10);
+const isDuplicate = err => err?.code === "ER_DUP_ENTRY" || err?.errno === 1062;
+
 exports.register = async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const name = String(req.body.name ?? "").trim();
+    const password = req.body.password;
     const email = normalizeEmail(req.body.email);
     // The ID doubles as a login credential alongside email, so it's
     // normalized the same way (trim + lowercase) for case-insensitive lookup.
     const username = normalizeEmail(req.body.username);
+    if (!name) return res.status(400).json({ error: "Name is required" });
+    if (!EMAIL_SHAPE.test(email)) return res.status(400).json({ error: "Please enter a valid email address" });
     if (username.length < 6) {
       return res.status(400).json({ error: "ID must be at least 6 characters" });
     }
+    // An ID never contains "@", and an email always does, so an ID can never be someone else's email
+    // (login treats a value with "@" as an email and anything else as an ID).
+    if (username.includes("@")) return res.status(400).json({ error: "ID cannot contain @" });
+    if (typeof password !== "string" || !password) return res.status(400).json({ error: "Password is required" });
     const hashed = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
       "INSERT INTO users (name, email, username, password, role) VALUES (?, ?, ?, ?, ?)",
@@ -31,7 +45,9 @@ exports.register = async (req, res) => {
     );
     res.status(201).json({ id: result.insertId, name, email, username });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (isDuplicate(err)) return res.status(409).json({ error: "This email or ID is already registered" });
+    console.error("[Auth] register failed:", err.message);
+    res.status(500).json({ error: GENERIC_ERROR });
   }
 };
 
@@ -50,33 +66,35 @@ exports.me = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { password } = req.body;
-    // The login field accepts either the account's email or its ID
-    // (username); both are stored trim+lowercased, so the same normalized
-    // value is matched against both columns.
+    const password = req.body.password;
+    // The login field accepts either the account's email or its ID (username), stored trim+lowercased.
+    // A value with "@" is looked up as an email and nothing else; a value without it as an ID and nothing else,
+    // so the two never get mixed up.
     const identifier = normalizeEmail(req.body.email);
-    const [rows] = await pool.query(
-      "SELECT * FROM users WHERE email = ? OR username = ?",
-      [identifier, identifier],
-    );
-    if (rows.length === 0)
-      return res.status(404).json({ error: "User not found" });
+    if (!identifier || typeof password !== "string" || !password) {
+      return res.status(400).json({ error: "Please enter your ID and password" });
+    }
+    const column = identifier.includes("@") ? "email" : "username";
+    const [rows] = await pool.query(`SELECT * FROM users WHERE ${column} = ? LIMIT 1`, [identifier]);
 
     const user = rows[0];
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ error: "Invalid password" });
+    // Same answer, status and about the same time whether the account does not exist or the password is wrong.
+    const match = await bcrypt.compare(password, user ? user.password : DUMMY_HASH);
+    if (!user || !match) return res.status(401).json({ error: BAD_LOGIN });
 
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" },
     );
+    // Same shape as the Google sign-in answer: the real email, so the app never has to guess it from what was typed (an ID).
     res.json({
       token,
-      user: { id: user.id, name: user.name, role: user.role },
+      user: { id: user.id, name: user.name, role: user.role, email: user.email },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("[Auth] login failed:", err.message);
+    res.status(500).json({ error: GENERIC_ERROR });
   }
 };
 
@@ -163,10 +181,22 @@ exports.googleLogin = async (req, res) => {
       const randomPassword = crypto.randomBytes(32).toString("hex");
       const hashed = await bcrypt.hash(randomPassword, 10);
       const name = payload.name || email.split("@")[0];
-      const [result] = await pool.query(
-        "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-        [name, email, hashed, "student"],
-      );
+      // The ID column is a login credential for password accounts. A Google account gets a default one (letters and
+      // digits of the email name + a random tail, 6+ characters, never "@") so it is never left empty; retry if it is taken.
+      const base = (email.split("@")[0].toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 20)) || "user";
+      let result, username;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        username = `${base}_${crypto.randomBytes(3).toString("hex")}`;
+        try {
+          [result] = await pool.query(
+            "INSERT INTO users (name, email, username, password, role) VALUES (?, ?, ?, ?, ?)",
+            [name, email, username, hashed, "student"],
+          );
+          break;
+        } catch (err) {
+          if (!isDuplicate(err) || attempt === 4) throw err;
+        }
+      }
       user = { id: result.insertId, name, email, role: "student" };
     }
 

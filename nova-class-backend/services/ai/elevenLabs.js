@@ -130,4 +130,45 @@ async function speechToText(audio, { filename = "audio.webm", languageCode } = {
   return (data.text || "").trim();
 }
 
-module.exports = { BURMESE_LECTURE_VOICE_ID, BURMESE_LECTURE_MODEL_ID, textToSpeech, getSignedUrl, speechToText, DEFAULT_VOICE_ID, DEFAULT_TTS_MODEL_ID };
+// A voice of the speaker's own, made from a recording they gave (instant voice cloning). The caller has already checked that the
+// speaker allowed it. `audio` is a Buffer of the recording. Returns the new voice id.
+async function createVoice({ name, audio, filename = "sample.wav", mimeType = "audio/wav", description = "" }) {
+  assertConfigured();
+  const form = new FormData();
+  form.append("name", String(name || "Teacher voice").slice(0, 100));
+  if (description) form.append("description", String(description).slice(0, 400));
+  form.append("remove_background_noise", "true");
+  form.append("files", new Blob([audio], { type: mimeType }), filename);
+  const res = await fetch(`${ELEVENLABS_API_URL}/voices/add`, {
+    method: "POST",
+    headers: { "xi-api-key": process.env.ELEVENLABS_API_KEY },
+    body: form,
+    signal: AbortSignal.timeout(90000),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    const error = new Error(`ElevenLabs could not make the voice: ${res.status} ${detail}`.slice(0, 300));
+    error.code = "ELEVENLABS_REQUEST_FAILED";
+    throw error;
+  }
+  const data = await res.json();
+  return data.voice_id;
+}
+
+// Removes a voice that createVoice made (the speaker took their voice back, or replaced it). A voice that is already gone is fine.
+async function deleteVoice(voiceId) {
+  assertConfigured();
+  const res = await fetch(`${ELEVENLABS_API_URL}/voices/${encodeURIComponent(voiceId)}`, {
+    method: "DELETE",
+    headers: { "xi-api-key": process.env.ELEVENLABS_API_KEY },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok && res.status !== 404) {
+    const detail = await res.text().catch(() => "");
+    const error = new Error(`ElevenLabs could not delete the voice: ${res.status} ${detail}`.slice(0, 300));
+    error.code = "ELEVENLABS_REQUEST_FAILED";
+    throw error;
+  }
+}
+
+module.exports = { BURMESE_LECTURE_VOICE_ID, BURMESE_LECTURE_MODEL_ID, textToSpeech, getSignedUrl, speechToText, createVoice, deleteVoice, DEFAULT_VOICE_ID, DEFAULT_TTS_MODEL_ID };
