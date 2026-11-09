@@ -11,6 +11,13 @@ export default function TeacherVoiceCard({ cardStyle, titleStyle }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);          // { ok, text }
   const picker = useRef(null);
+  const [recording, setRecording] = useState(false);
+  const recorder = useRef(null);
+  const chunks = useRef([]);
+  const stream = useRef(null);
+
+  // stop the microphone if the teacher leaves the page while recording
+  useEffect(() => () => { stream.current?.getTracks().forEach(track => track.stop()); }, []);
 
   useEffect(() => {
     let alive = true;
@@ -24,6 +31,37 @@ export default function TeacherVoiceCard({ cardStyle, titleStyle }) {
   }, []);
 
   const reasonOf = err => err?.response?.data?.error || t("voiceFailed");
+
+  // Records the teacher's voice in the browser; the result becomes the same file the upload picker would give.
+  function startRecording() {
+    if (recording || busy) return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setMessage({ ok: false, text: t("voiceNoMic") });
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(mic => {
+      stream.current = mic;
+      chunks.current = [];
+      const rec = new MediaRecorder(mic);
+      recorder.current = rec;
+      rec.ondataavailable = e => { if (e.data?.size) chunks.current.push(e.data); };
+      rec.onstop = () => {
+        const type = rec.mimeType || "audio/webm";
+        const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
+        setFile(new File([new Blob(chunks.current, { type })], `teacher-voice-${Date.now()}.${ext}`, { type }));
+        if (picker.current) picker.current.value = "";
+        mic.getTracks().forEach(track => track.stop());
+        setRecording(false);
+      };
+      rec.start();
+      setRecording(true);
+      setMessage(null);
+    }).catch(() => setMessage({ ok: false, text: t("voiceNoMic") }));
+  }
+
+  function stopRecording() {
+    if (recorder.current?.state === "recording") recorder.current.stop();
+  }
 
   async function make() {
     if (!file || !consent || busy) return;
@@ -66,6 +104,13 @@ export default function TeacherVoiceCard({ cardStyle, titleStyle }) {
         </div>
       )}
       <div style={v.row}>
+        <button type="button" style={{ ...v.recordBtn, ...(recording ? v.recordOn : {}) }} disabled={busy}
+          onClick={recording ? stopRecording : startRecording}>
+          {recording ? t("voiceStop") : t("voiceRecord")}
+        </button>
+        {recording && <p role="status" style={v.recHint}>{t("voiceRecording")}</p>}
+      </div>
+      <div style={v.row}>
         <input ref={picker} id="teacher-voice-file" type="file" accept="audio/*,video/mp4,video/quicktime" aria-label={t("voiceChoose")}
           onChange={e => setFile(e.target.files?.[0] || null)} style={v.file} />
       </div>
@@ -86,6 +131,9 @@ const v = {
   active: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", padding: "10px 12px", marginBottom: "14px", borderRadius: "10px", background: "var(--primary-tint)", color: "var(--primary)", fontSize: "13px", fontWeight: 600 },
   link: { background: "none", border: "none", color: "var(--danger)", fontSize: "13px", fontWeight: 600, textDecoration: "underline", cursor: "pointer" },
   row: { marginBottom: "12px" },
+  recordBtn: { padding: "9px 14px", marginBottom: "10px", border: "1px solid var(--primary)", borderRadius: "10px", background: "transparent", color: "var(--primary)", fontSize: "13px", fontWeight: 700, cursor: "pointer" },
+  recordOn: { background: "var(--danger)", borderColor: "var(--danger)", color: "#fff" },
+  recHint: { margin: "0 0 8px", fontSize: "13px", fontWeight: 600, color: "var(--danger)" },
   file: { width: "100%", fontSize: "13px", color: "var(--text)" },
   consent: { display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", lineHeight: 1.5, color: "var(--text)", marginBottom: "14px" },
   btn: { width: "100%", padding: "11px", border: "none", borderRadius: "10px", background: "var(--primary)", color: "#fff", fontSize: "14px", fontWeight: 700, cursor: "pointer" },
