@@ -7,6 +7,7 @@ services:
   - type: web
     name: nova-class-backend
     runtime: node
+    plan: free
     rootDir: nova-class-backend
     buildCommand: npm install
     startCommand: node server.js
