@@ -44,6 +44,8 @@ NovaClass는 선생님과 학생이 수업을 만들고 참여하고, 자료를 
 - **알림** — 과제 등록, 채점 완료 등 실시간 알림 (Dashboard 종 아이콘)
 - **클래스별 AI 튜터** — 교사가 진도/과제 컨텍스트를 지정하면 학생 질문에 맞춰 답변
 - **K.MATE AI 튜터** — 한국어로 질문하면 답변, TOPIK 연습 퀴즈 생성 및 채점, 음성 답변(TTS)
+- **TOPIK Hub** — 스마트 드릴(레벨·영역·문제 범위별 연습), TOPIK 부스터, 문법·의미 카드, 기출 문제
+- **TOPIK QR 바로가기 (MVP)** — `/topik-qr`에서 QR 코드를 만들고, 휴대폰으로 스캔하면 스마트 드릴 연습 화면으로 바로 연결 (로그인 필요, 현재는 고정 경로만 연결)
 - **멀티모달 파일 분석** — 이미지/오디오/PDF/DOCX를 올리면 AI가 내용을 읽고 질문에 답변
 - **대시보드** — AI가 정리해주는 오늘 할 일, 마감 임박 배너, 출석 현황, 알림, 캘린더 한눈에 보기
 - **다국어 UI + 실시간 번역** — 영어/미얀마어/한국어/베트남어 지원
@@ -74,10 +76,10 @@ K.MATE는 NovaClass의 대표 기능이지만, **NovaClass 자체는 K.MATE 하�
 React 19 + Vite                 (프론트엔드)
         │  Axios + JWT
         ▼
-Node.js / Express 5  ◄──────►  MySQL   (백엔드)
+Node.js / Express 5  ◄──────►  MySQL (로컬 개발) / TiDB Cloud (배포, MySQL 호환)
         │
         ▼
-Groq(OpenRouter 경유) — 채팅·요약·퀴즈·과제 점검 등 텍스트 생성 전반
+OpenAI — 채팅·요약·퀴즈·과제 점검 등 텍스트 생성 전반
 Groq Whisper — 음성 파일 텍스트 변환
 Google Cloud Vision — 이미지 속 텍스트/사물 인식, PDF 스캔본 OCR
 Gemini — 텍스트 레이어가 깨진 PDF 페이지 판독
@@ -124,6 +126,27 @@ npm install
 npm run dev       # http://localhost:5173
 ```
 
-`nova-class-backend/.env`에 DB 접속 정보(`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`), `JWT_SECRET`, 그리고 AI 연동 키(`GROQ_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_APPLICATION_CREDENTIALS`, `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`)가 필요합니다. 전체 목록은 [`nova-class-backend/.env.example`](nova-class-backend/.env.example) 참고.
+`nova-class-backend/.env`에 필요한 값은 아래와 같습니다. 전체 목록은 [`nova-class-backend/.env.example`](nova-class-backend/.env.example) 참고.
+
+- **DB 접속**: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`(기본 3306), `DB_SSL`(기본 비활성)
+  - 로컬 MySQL: `DB_HOST=localhost`, 포트·SSL 값은 비워 둠
+  - TiDB Cloud: `DB_PORT=4000`, `DB_SSL=true` (TLS 필수)
+- **인증/AI 키**: `JWT_SECRET`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `ELEVENLABS_API_KEY`, `GOOGLE_APPLICATION_CREDENTIALS` 등
+
+> 비밀번호와 키는 절대 커밋하지 마세요. `.env`는 `.gitignore`에 포함되어 있습니다.
+
+### 배포 (Render)
+
+루트의 [`render.yaml`](render.yaml)이 백엔드(Node 웹 서비스)와 프론트엔드(정적 사이트) 두 서비스를 정의합니다.
+
+1. GitHub에 push → Render 대시보드에서 **New → Blueprint**로 저장소 연결
+2. `sync: false`로 표시된 변수(DB 접속 정보, `JWT_SECRET`, API 키, `VITE_GOOGLE_CLIENT_ID`, `VITE_API_ORIGIN` 등)를 Render 대시보드에서 입력
+3. `VITE_API_ORIGIN`에는 배포된 백엔드 주소를 넣고, 프론트엔드를 다시 빌드
+
+### QR 바로가기 로컬 테스트 (휴대폰)
+
+- 휴대폰과 개발 PC가 **같은 Wi-Fi**에 있어야 합니다.
+- `vite.config.js`의 `server.host: '0.0.0.0'` 설정으로 LAN에서 접속할 수 있습니다. 테스트 후에는 필요에 따라 되돌리세요.
+- QR에 들어가는 주소는 `VITE_PUBLIC_BASE`(기본값 `http://192.168.0.4:5174`)로 바꿀 수 있습니다. 배포 후에는 배포 주소를 지정하세요.
 
 자세한 폴더 구조와 협업 규칙은 [`docs/PROJECT.md`](docs/PROJECT.md) 참고.

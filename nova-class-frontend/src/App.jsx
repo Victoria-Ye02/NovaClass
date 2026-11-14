@@ -14,6 +14,7 @@ import MaterialPreview from "./pages/victoria/MaterialPreview";
 import Settings from "./pages/victoria/Settings";
 import Exam from "./pages/victoria/Exam";
 import AdminDashboard from "./pages/victoria/AdminDashboard";
+import TopikQr from "./pages/victoria/TopikQr";
 // --- Thine's pages (add as they land in pages/thine/) ---
 // import XXX from "./pages/thine/XXX";
 
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="/topik-hub/grammar" element={<ProtectedRoute><GrammarMeaning /></ProtectedRoute>} />
         <Route path="/topik-hub/booster" element={<ProtectedRoute><TopikBooster /></ProtectedRoute>} />
         <Route path="/topik-hub/smart-drill" element={<ProtectedRoute><SmartDrill /></ProtectedRoute>} />
+        <Route path="/topik-qr" element={<ProtectedRoute><TopikQr /></ProtectedRoute>} />
         <Route path="/classroom" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
         <Route path="/classroom/:id" element={<ProtectedRoute><ClassDetail /></ProtectedRoute>} />
         <Route path="/classroom/:id/material/:materialId" element={<ProtectedRoute><MaterialPreview /></ProtectedRoute>} />

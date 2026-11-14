@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API = axios.create({ baseURL: "http://localhost:5001/api" });
+// Set VITE_API_ORIGIN at build time (e.g. https://nova-class-backend.onrender.com) when deploying.
+const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || "http://localhost:5001";
+const API = axios.create({ baseURL: `${API_ORIGIN}/api` });
 
 // Auto-attach token
 API.interceptors.request.use((config) => {

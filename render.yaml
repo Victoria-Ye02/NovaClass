@@ -1,0 +1,74 @@
+# Render Blueprint for NovaClass.
+# Secret values are NOT stored here. Each `sync: false` variable is entered
+# in the Render dashboard (Environment tab) after the blueprint is created.
+
+services:
+  # Backend: Express API (nova-class-backend). Needs an external MySQL database.
+  - type: web
+    name: nova-class-backend
+    runtime: node
+    rootDir: nova-class-backend
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false   # TiDB Cloud host (set in the Render dashboard)
+      - key: DB_PORT
+        value: 4000   # TiDB Cloud port
+      - key: DB_SSL
+        value: "true" # TiDB Cloud requires TLS
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_TEXT_MODEL
+        value: gpt-4o-mini
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_AGENT_ID
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: AZURE_SPEECH_KEY
+        sync: false
+      - key: AZURE_SPEECH_REGION
+        sync: false
+
+  # Frontend: Vite React build served as a static site.
+  - type: web
+    name: nova-class-frontend
+    runtime: static
+    rootDir: nova-class-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      # React Router: send every path to index.html so deep links work.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_API_ORIGIN
+        sync: false   # e.g. https://nova-class-backend.onrender.com
+      - key: VITE_PUBLIC_BASE
+        sync: false   # public frontend URL used inside QR codes (must not be a LAN address)
