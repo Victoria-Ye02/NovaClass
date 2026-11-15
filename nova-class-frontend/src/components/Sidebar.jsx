@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import "./mobile-nav.css";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useLang } from "../LanguageContext";
 import { useTheme } from "../ThemeContext";
 import Icon from "./Icon";
+import MobileQrModal from "./MobileQrModal";
 
 // `dark` lets a page (currently K_MATE's Code Assistant mode) force the
 // Devline dark-IDE palette on the sidebar without touching every other page,
@@ -23,6 +25,10 @@ export default function Sidebar({ dark }) {
   const { pathname } = useLocation();
   const inHub = HUB_ITEMS.some(h => pathname === h.path || pathname.startsWith(`${h.path}/`));
   const [hubOpen, setHubOpen] = useState(inHub);
+  const [qrOpen, setQrOpen] = useState(false);
+  // On phones the sidebar is a drawer; close it whenever the page changes.
+  const [navOpen, setNavOpen] = useState(false);
+  useEffect(() => { setNavOpen(false); }, [pathname]);
 
   const navItems = [
     { path: "/",         icon: "dashboard",      key: "dashboard"  },
@@ -43,7 +49,18 @@ export default function Sidebar({ dark }) {
   const c = dark ? darkPalette : null;
 
   return (
-    <aside style={{ ...styles.sidebar, ...(c ? { background: c.panelBg, borderRight: `1px solid ${c.borderColor}` } : {}) }}>
+    <>
+    <button
+      type="button"
+      className="nova-menu-btn"
+      aria-label="메뉴 열기"
+      aria-expanded={navOpen}
+      onClick={() => setNavOpen(o => !o)}
+    >
+      ☰
+    </button>
+    {navOpen && <div className="nova-nav-backdrop" onClick={() => setNavOpen(false)} />}
+    <aside className={`nova-sidebar${navOpen ? " open" : ""}`} style={{ ...styles.sidebar, ...(c ? { background: c.panelBg, borderRight: `1px solid ${c.borderColor}` } : {}) }}>
       <div style={{ ...styles.logo, ...(c ? { borderBottom: `1px solid ${c.borderColor}` } : {}) }}>
         <span style={{ ...styles.logoText, ...(c ? { color: c.textColor } : {}) }}>Nova Class</span>
         <span style={{ ...styles.logoSub, ...(c ? { color: c.mutedTextColor } : {}) }}>Educational Portal</span>
@@ -107,32 +124,53 @@ export default function Sidebar({ dark }) {
             <div style={{ ...styles.userName, ...(c ? { color: c.textColor } : {}) }}>{name}</div>
           </div>
         </div>
-        <button onClick={toggleTheme} style={{ ...styles.themeBtn, ...(c ? { background: c.surfaceAltBg, border: `1px solid ${c.borderColor}`, color: c.mutedTextColor } : {}) }}>
-          <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={styles.iconRow}>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title="Dark Mode"
+            aria-label="Dark Mode"
+            style={{ ...styles.iconBtn, ...(c ? { background: c.surfaceAltBg, border: `1px solid ${c.borderColor}`, color: c.mutedTextColor } : {}) }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--border)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = c ? c.surfaceAltBg : "var(--surface-alt)"; }}
+          >
             {theme === "dark" ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
                 <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
                 <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
                 <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
               </svg>
             ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
               </svg>
             )}
-            {theme === "dark" ? "Light mode" : "Dark mode"}
-          </span>
-          <div style={{ width: "30px", height: "17px", borderRadius: "9px", background: theme === "dark" ? "var(--primary)" : "var(--border)", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
-            <div style={{ width: "13px", height: "13px", borderRadius: "50%", background: "#fff", position: "absolute", top: "2px", left: theme === "dark" ? "15px" : "2px", transition: "left 0.2s" }} />
-          </div>
-        </button>
+          </button>
+          <button
+            type="button"
+            onClick={() => setQrOpen(true)}
+            title="모바일 QR"
+            aria-label="모바일 QR"
+            aria-haspopup="dialog"
+            style={{ ...styles.iconBtn, ...(c ? { background: c.surfaceAltBg, border: `1px solid ${c.borderColor}`, color: c.mutedTextColor } : {}) }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--border)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = c ? c.surfaceAltBg : "var(--surface-alt)"; }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+              <path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/>
+            </svg>
+          </button>
+        </div>
         <button onClick={logout} style={{ ...styles.logoutBtn, ...(c ? { background: c.surfaceAltBg } : {}) }}>{t("logout")}</button>
         <a href="https://icons8.com" target="_blank" rel="noreferrer" style={{ ...styles.iconCredit, ...(c ? { color: c.mutedTextColor } : {}) }}>
           Icons by Icons8
         </a>
       </div>
+      <MobileQrModal open={qrOpen} onClose={() => setQrOpen(false)} />
     </aside>
+    </>
   );
 }
 
@@ -171,6 +209,12 @@ const styles = {
   },
   userName: { fontSize: "14px", fontWeight: 600, color: "var(--text)" },
   userRole: { fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" },
+  iconRow: { display: "flex", gap: "8px", marginBottom: "8px" },
+  iconBtn: {
+    flex: 1, height: "36px", display: "flex", alignItems: "center", justifyContent: "center",
+    background: "var(--surface-alt)", border: "1px solid var(--border)", borderRadius: "8px",
+    color: "var(--text-muted)", cursor: "pointer", transition: "background 0.2s",
+  },
   themeBtn: {
     width: "100%", padding: "8px 12px", background: "var(--surface-alt)",
     border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px",
