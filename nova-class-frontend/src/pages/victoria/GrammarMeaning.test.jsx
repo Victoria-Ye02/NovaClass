@@ -35,7 +35,7 @@ beforeEach(() => { language.lang = "en"; vi.stubGlobal("localStorage", memorySto
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("Grammar & Meaning", () => {
-  it("opens on Grammar with the core grammar cards", () => {
+  it("opens on Reading with the core grammar cards", () => {
     render(<GrammarMeaning />);
     expect(screen.getAllByRole("tab")[0].getAttribute("aria-selected")).toBe("true");
     expect(screen.getByTestId("grammar-view-select").value).toBe("core");
@@ -43,10 +43,17 @@ describe("Grammar & Meaning", () => {
     expect(screen.queryByTestId("similar-grammar-list")).toBeNull();
   });
 
-  it("the dropdown offers the two options and switches to similar grammar pairs", () => {
+  it("the tabs are Reading, Listening and Writing", () => {
+    render(<GrammarMeaning />);
+    expect(screen.getAllByRole("tab").map(b => b.textContent)).toEqual(["Reading", "Listening", "Writing"]);
+  });
+
+  it("the Reading dropdown offers its study lists and switches to similar grammar pairs", () => {
     render(<GrammarMeaning />);
     const select = screen.getByTestId("grammar-view-select");
-    expect([...select.options].map(o => o.textContent)).toEqual(["Core Grammar (일반 문법)", "유사 문법 (Similar Grammar)"]);
+    expect([...select.options].map(o => o.textContent)).toEqual([
+      "Core Grammar (일반 문법)", "유사 문법 (Similar Grammar)", "Idioms & Proverbs", "Vocabulary (Meaning)",
+    ]);
     fireEvent.change(select, { target: { value: "similar" } });
     const list = screen.getByTestId("similar-grammar-list");
     expect(list.children).toHaveLength(40);
@@ -56,13 +63,35 @@ describe("Grammar & Meaning", () => {
     expect(screen.getByTestId("core-grammar-list")).toBeTruthy();
   });
 
-  it("Meaning shows the vocabulary list and hides the grammar dropdown", () => {
+  it("Listening shows the vocabulary with audio, a coming-soon note and no dropdown", () => {
     render(<GrammarMeaning />);
     fireEvent.click(screen.getAllByRole("tab")[1]);
+    expect(screen.getAllByRole("tab")[1].getAttribute("aria-selected")).toBe("true");
     expect(screen.getByTestId("vocab-list")).toBeTruthy();
+    expect(screen.getByTestId("skill-note").textContent).toContain("coming soon");
     expect(screen.queryByTestId("grammar-view-select")).toBeNull();
     fireEvent.click(screen.getAllByRole("tab")[0]);
     expect(screen.getByTestId("grammar-view-select")).toBeTruthy();
+    expect(screen.queryByTestId("skill-note")).toBeNull();
+  });
+
+  it("Writing offers grammar and idioms, and keeps the list chosen on Reading", () => {
+    render(<GrammarMeaning />);
+    fireEvent.change(screen.getByTestId("grammar-view-select"), { target: { value: "similar" } });
+    fireEvent.click(screen.getAllByRole("tab")[2]);
+    const select = screen.getByTestId("grammar-view-select");
+    expect([...select.options].map(o => o.value)).toEqual(["core", "similar", "idioms"]);
+    expect(select.value).toBe("similar");
+    expect(screen.getByTestId("similar-grammar-list")).toBeTruthy();
+  });
+
+  it("a list the new skill does not have falls back to that skill's first list", () => {
+    render(<GrammarMeaning />);
+    fireEvent.change(screen.getByTestId("grammar-view-select"), { target: { value: "meaning" } });
+    expect(screen.getByTestId("vocab-list")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("tab")[2]);
+    expect(screen.getByTestId("grammar-view-select").value).toBe("core");
+    expect(screen.getByTestId("core-grammar-list")).toBeTruthy();
   });
 });
 
@@ -797,8 +826,10 @@ describe("Grammar & Meaning in Vietnamese", () => {
   it("the page chrome, the tabs and the dropdown are Vietnamese", () => {
     render(<GrammarMeaning />);
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Ngữ pháp & Nghĩa");
-    expect(screen.getAllByRole("tab").map(b => b.textContent)).toEqual(["Ngữ pháp", "Nghĩa", "Thành ngữ & Tục ngữ"]);
-    expect([...screen.getByTestId("grammar-view-select").options].map(o => o.textContent)).toEqual(["Ngữ pháp cơ bản (일반 문법)", "Ngữ pháp tương tự (유사 문법)"]);
+    expect(screen.getAllByRole("tab").map(b => b.textContent)).toEqual(["Đọc", "Nghe", "Viết"]);
+    expect([...screen.getByTestId("grammar-view-select").options].map(o => o.textContent)).toEqual([
+      "Ngữ pháp cơ bản (일반 문법)", "Ngữ pháp tương tự (유사 문법)", "Thành ngữ & Tục ngữ", "Từ vựng (Nghĩa)",
+    ]);
     const speed = screen.getByRole("group", { name: "Audio speed" });
     expect(speed.textContent).toContain("Tốc độ");
     expect(within(speed).getAllByRole("button").map(b => b.textContent)).toEqual(["Bình thường", "Chậm"]);
