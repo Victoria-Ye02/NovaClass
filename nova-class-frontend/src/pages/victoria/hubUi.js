@@ -1,8 +1,9 @@
-// The labels of the Grammar & Meaning page (the three tabs, the dropdown, the speed toggle, the similar-grammar cards and the
+// The labels of the Grammar & Meaning page (the 읽기/듣기/쓰기 tabs and their study lists, the dropdown, the speed toggle, the similar-grammar cards and the
 // vocabulary list and flashcards) in the language chosen in Settings. The notebook of idioms and the Booster keep their
 // own labels. Any other language shows English.
 const EN = {
   title: "Grammar & Meaning", tabGrammar: "Grammar", tabMeaning: "Meaning", tabIdioms: "Idioms & Proverbs",
+  tabReading: "Reading", tabListening: "Listening", tabWriting: "Writing", meaningOption: "Vocabulary (Meaning)", idiomsOption: "Idioms & Proverbs", listeningNote: "Listening practice of its own is coming soon. For now, learn TOPIK words by ear: play each word and example at normal or slow speed.",
   coreOption: "Core Grammar (일반 문법)", similarOption: "유사 문법 (Similar Grammar)",
   speed: "Speed", normal: "Normal", slow: "Slow", conjugation: "Conjugation",
   allPairs: n => `All pairs (${n})`, confusing: n => `★ My Confusing Grammars (${n})`,
@@ -20,6 +21,7 @@ const EN = {
 
 const MY = {
   title: "သဒ္ဒါနှင့် အဓိပ္ပာယ်", tabGrammar: "သဒ္ဒါ", tabMeaning: "အဓိပ္ပာယ်", tabIdioms: "စကားစု & စကားပုံ",
+  tabReading: "ဖတ်ခြင်း", tabListening: "နားထောင်ခြင်း", tabWriting: "ရေးခြင်း", meaningOption: "ဝေါဟာရ (အဓိပ္ပာယ်)", idiomsOption: "စကားစု & စကားပုံ", listeningNote: "နားထောင်ခြင်း သီးသန့် လေ့ကျင့်ခန်းကို မကြာခင် ထည့်ပေးပါမယ်။ အခုတော့ TOPIK စာလုံးတွေကို အသံနဲ့ မှတ်ပါ။ စာလုံးနဲ့ ဥပမာဝါကျကို ပုံမှန် ဒါမှမဟုတ် နှေးနှေး ဖွင့်နားထောင်လို့ရပါတယ်။",
   coreOption: "အခြေခံသဒ္ဒါ (일반 문법)", similarOption: "ဆင်တူသဒ္ဒါ (유사 문법)",
   speed: "အမြန်နှုန်း", normal: "ပုံမှန်", slow: "နှေး", conjugation: "ပေါင်းစပ်ပုံ",
   allPairs: n => `အတွဲအားလုံး (${n})`, confusing: n => `★ ရှုပ်တတ်သော သဒ္ဒါများ (${n})`,
@@ -36,6 +38,7 @@ const MY = {
 
 const VI = {
   title: "Ngữ pháp & Nghĩa", tabGrammar: "Ngữ pháp", tabMeaning: "Nghĩa", tabIdioms: "Thành ngữ & Tục ngữ",
+  tabReading: "Đọc", tabListening: "Nghe", tabWriting: "Viết", meaningOption: "Từ vựng (Nghĩa)", idiomsOption: "Thành ngữ & Tục ngữ", listeningNote: "Bài luyện nghe riêng sẽ sớm có. Hiện tại hãy học từ TOPIK qua âm thanh: phát từng từ và câu ví dụ ở tốc độ bình thường hoặc chậm.",
   coreOption: "Ngữ pháp cơ bản (일반 문법)", similarOption: "Ngữ pháp tương tự (유사 문법)",
   speed: "Tốc độ", normal: "Bình thường", slow: "Chậm", conjugation: "Cách chia",
   allPairs: n => `Tất cả cặp (${n})`, confusing: n => `★ Ngữ pháp dễ nhầm của tôi (${n})`,
@@ -52,6 +55,7 @@ const VI = {
 
 const KO = {
   title: "문법 & 의미", tabGrammar: "문법", tabMeaning: "의미", tabIdioms: "관용 표현 & 속담",
+  tabReading: "읽기", tabListening: "듣기", tabWriting: "쓰기", meaningOption: "어휘 (의미)", idiomsOption: "관용 표현 & 속담", listeningNote: "듣기 전용 자료는 준비 중이에요. 지금은 TOPIK 어휘를 소리로 익혀 보세요. 단어와 예문을 보통·느린 속도로 들을 수 있어요.",
   coreOption: "일반 문법 (Core Grammar)", similarOption: "유사 문법 (Similar Grammar)",
   speed: "속도", normal: "보통", slow: "느리게", conjugation: "활용",
   allPairs: n => `전체 쌍 (${n})`, confusing: n => `★ 헷갈리는 문법 (${n})`,

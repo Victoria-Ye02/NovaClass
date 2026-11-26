@@ -10,9 +10,15 @@ import IdiomNotebook from "./IdiomNotebook";
 import { ExplainButton, ExplainPanel } from "./GrammarExplain";
 import PlayButton from "./PlayButton";
 
-// TOPIK Hub › Grammar & Meaning. At the top a [Grammar] / [Meaning] switch; Grammar has a dropdown
-// that picks the list: core grammar cards, or similar-grammar pairs.
-const GRAMMAR_VIEWS = [{ value: "core", label: "coreOption" }, { value: "similar", label: "similarOption" }];  // keys of hubUi
+// TOPIK Hub › Grammar & Meaning. At the top a [읽기] / [듣기] / [쓰기] switch (the TOPIK skill); each skill's dropdown picks
+// one of the study lists that help with it: core grammar cards, similar-grammar pairs, vocabulary or idioms & proverbs.
+// Listening has no dedicated list yet, so it offers the vocabulary with audio and says so.
+const VIEW_LABELS = { core: "coreOption", similar: "similarOption", meaning: "meaningOption", idioms: "idiomsOption" };  // keys of hubUi
+const SKILLS = [
+  { value: "reading", label: "tabReading", views: ["core", "similar", "idioms", "meaning"] },
+  { value: "listening", label: "tabListening", views: ["meaning"], note: "listeningNote" },
+  { value: "writing", label: "tabWriting", views: ["core", "similar", "idioms"] },
+];
 
 // the badge text of a category: "선택" + "무관" → "선택 · 무관"; ①/② items list both senses
 const categoryLabel = c => c.join(c.some(x => /^[①②]/.test(x)) ? "  " : " · ");
@@ -72,11 +78,31 @@ function CoreRow({ item, lang, speed }) {
   );
 }
 
-function CoreList({ speed }) {
+// The text a search looks at for one core grammar card: the pattern, the meanings, the rule and the example sentences
+function coreText(item, lang) {
+  return [item.pattern, item.my, item.rule, coreShort(item, lang), ...item.examples.map((ex, i) => `${ex.ko} ${coreExample(item, i, lang)}`)].join(" ");
+}
+
+// Search box labels (the grammar tab only; the meaning and idiom tabs keep their own search boxes)
+const SEARCH_UI = {
+  en: { placeholder: "Search grammar", none: "No grammar matches your search." },
+  my: { placeholder: "သဒ္ဒါ ရှာပါ", none: "ရှာထားတာနဲ့ ကိုက်တဲ့ သဒ္ဒါ မရှိပါ။" },
+  vi: { placeholder: "Tìm ngữ pháp", none: "Không có ngữ pháp nào khớp với tìm kiếm." },
+  ko: { placeholder: "문법 검색", none: "검색과 일치하는 문법이 없습니다." },
+};
+
+function SearchEmpty({ lang }) {
+  return <div style={g.placeholder} data-testid="grammar-search-empty">{(SEARCH_UI[lang] || SEARCH_UI.en).none}</div>;
+}
+
+function CoreList({ speed, query }) {
   const { lang } = useLang();
+  const q = query.trim().toLowerCase();
+  const items = CORE_GRAMMAR.filter(item => !q || coreText(item, lang).toLowerCase().includes(q));
+  if (items.length === 0) return <SearchEmpty lang={lang} />;
   return (
     <div style={g.rowList} data-testid="core-grammar-list">
-      {CORE_GRAMMAR.map(item => <CoreRow key={item.no} item={item} lang={lang} speed={speed} />)}
+      {items.map(item => <CoreRow key={item.no} item={item} lang={lang} speed={speed} />)}
     </div>
   );
 }
@@ -162,7 +188,12 @@ function SimilarCard({ group, starred, onStar, speed, lang }) {
   );
 }
 
-function SimilarList({ speed }) {
+// The text a search looks at for one similar-grammar pair: its title, the grammar forms, the difference and the sentences
+function similarHaystack(group, lang) {
+  return [group.title, group.pre, group.post, ...group.items.map(x => x.p), similarText(group, lang).diff].join(" ");
+}
+
+function SimilarList({ speed, query }) {
   const { lang } = useLang();
   const ui = hubUi(lang);
   const [stars, setStars] = useState(loadStars);         // ids of the saved pairs
@@ -176,7 +207,9 @@ function SimilarList({ speed }) {
     });
   }
 
-  const groups = only ? SIMILAR_GRAMMAR.filter(x => stars.includes(x.id)) : SIMILAR_GRAMMAR;
+  const q = query.trim().toLowerCase();
+  const base = only ? SIMILAR_GRAMMAR.filter(x => stars.includes(x.id)) : SIMILAR_GRAMMAR;
+  const groups = base.filter(x => !q || similarHaystack(x, lang).toLowerCase().includes(q));
   const seg = on => ({ ...g.miniTab, ...(on ? g.miniTabOn : {}) });
 
   return (
@@ -188,7 +221,7 @@ function SimilarList({ speed }) {
         </div>
       </div>
       {groups.length === 0 ? (
-        <div style={g.placeholder} data-testid="confusion-empty">{ui.confusionEmpty}</div>
+        q ? <SearchEmpty lang={lang} /> : <div style={g.placeholder} data-testid="confusion-empty">{ui.confusionEmpty}</div>
       ) : (
         <div style={g.accList} data-testid="similar-grammar-list">
           {groups.map(group => <SimilarCard key={group.id} group={group} starred={stars.includes(group.id)} onStar={() => toggleStar(group.id)} speed={speed} lang={lang} />)}
@@ -201,42 +234,53 @@ function SimilarList({ speed }) {
 export default function GrammarMeaning() {
   const { lang } = useLang();
   const ui = hubUi(lang);
-  const [section, setSection] = useState("grammar");   // grammar | meaning | idioms
-  const [view, setView] = useState("core");            // core | similar
+  const [skill, setSkill] = useState("reading");      // reading | listening | writing
+  const [picked, setPicked] = useState("core");        // core | similar | meaning | idioms (the last list chosen)
   const [speed, setSpeed] = useState("normal");         // audio speed for both lists
+  const [query, setQuery] = useState("");               // grammar search (the grammar tab)
+  const searchUi = SEARCH_UI[lang] || SEARCH_UI.en;
 
   const tab = on => ({ ...g.tab, ...(on ? g.tabOn : {}) });
+  const current = SKILLS.find(x => x.value === skill);
+  // Keep the chosen list when the new skill has it too; otherwise fall back to the skill's first list.
+  const view = current.views.includes(picked) ? picked : current.views[0];
+  const isGrammar = view === "core" || view === "similar";
 
   return (
     <div style={g.layout}>
       <Sidebar />
       <main style={g.main}>
         <h2 style={g.title}>{ui.title}</h2>
-        <div style={g.tabs} role="tablist" aria-label="Grammar, Meaning or Idioms">
-          <button role="tab" aria-selected={section === "grammar"} style={tab(section === "grammar")} onClick={() => setSection("grammar")}>{ui.tabGrammar}</button>
-          <button role="tab" aria-selected={section === "meaning"} style={tab(section === "meaning")} onClick={() => setSection("meaning")}>{ui.tabMeaning}</button>
-          <button role="tab" aria-selected={section === "idioms"} style={tab(section === "idioms")} onClick={() => setSection("idioms")}>{ui.tabIdioms}</button>
+        <div style={g.topRow}>
+          <div style={g.tabs} role="tablist" aria-label="Reading, Listening or Writing">
+            {SKILLS.map(x => (
+              <button key={x.value} role="tab" aria-selected={skill === x.value} style={tab(skill === x.value)} onClick={() => setSkill(x.value)} data-testid={`skill-${x.value}`}>{ui[x.label]}</button>
+            ))}
+          </div>
+          {isGrammar && (
+            <input
+              type="search"
+              style={g.search}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder={searchUi.placeholder}
+              aria-label={searchUi.placeholder}
+              data-testid="grammar-search"
+            />
+          )}
         </div>
 
-        {section === "grammar" ? (
-          <>
-            <select style={g.select} value={view} onChange={e => setView(e.target.value)} aria-label="Grammar type" data-testid="grammar-view-select">
-              {GRAMMAR_VIEWS.map(o => <option key={o.value} value={o.value}>{ui[o.label]}</option>)}
-            </select>
-            <SpeedToggle speed={speed} onChange={setSpeed} />
-            {view === "core" ? <CoreList speed={speed} /> : <SimilarList speed={speed} />}
-          </>
-        ) : section === "meaning" ? (
-          <>
-            <SpeedToggle speed={speed} onChange={setSpeed} />
-            <VocabList speed={speed} />
-          </>
-        ) : (
-          <>
-            <SpeedToggle speed={speed} onChange={setSpeed} />
-            <IdiomNotebook speed={speed} />
-          </>
+        {current.views.length > 1 && (
+          <select style={g.select} value={view} onChange={e => setPicked(e.target.value)} aria-label="Study list" data-testid="grammar-view-select">
+            {current.views.map(v => <option key={v} value={v}>{ui[VIEW_LABELS[v]]}</option>)}
+          </select>
         )}
+        {current.note && <p style={g.note} role="note" data-testid="skill-note">{ui[current.note]}</p>}
+        <SpeedToggle speed={speed} onChange={setSpeed} />
+        {view === "core" ? <CoreList speed={speed} query={query} />
+          : view === "similar" ? <SimilarList speed={speed} query={query} />
+          : view === "meaning" ? <VocabList speed={speed} />
+          : <IdiomNotebook speed={speed} />}
       </main>
     </div>
   );
@@ -246,9 +290,12 @@ const g = {
   layout: { display: "flex", minHeight: "100vh", background: "var(--bg)" },
   main: { marginLeft: "240px", flex: 1, minWidth: 0, padding: "24px 32px", boxSizing: "border-box" },
   title: { margin: "0 0 16px", color: "var(--text)" },
-  tabs: { display: "inline-flex", gap: "4px", padding: "4px", border: "1px solid var(--border)", borderRadius: "12px", background: "var(--surface)", marginBottom: "16px" },
+  topRow: { display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "16px" },
+  search: { flex: "0 1 300px", minWidth: "180px", padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: "14px" },
+  tabs: { display: "inline-flex", gap: "4px", padding: "4px", border: "1px solid var(--border)", borderRadius: "12px", background: "var(--surface)" },
   tab: { padding: "8px 22px", borderRadius: "9px", border: "none", background: "transparent", color: "var(--text-muted)", fontWeight: 600, fontSize: "14px", cursor: "pointer" },
   tabOn: { background: "var(--primary)", color: "#fff" },
+  note: { maxWidth: "640px", margin: "0 0 14px", padding: "10px 14px", borderRadius: "10px", border: "1px dashed var(--border)", background: "var(--surface)", color: "var(--text-muted)", fontSize: "14px", lineHeight: 1.6 },
   select: { display: "block", width: "100%", maxWidth: "420px", padding: "10px 12px", marginBottom: "18px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: "14px" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" },
   card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "14px", padding: "18px" },

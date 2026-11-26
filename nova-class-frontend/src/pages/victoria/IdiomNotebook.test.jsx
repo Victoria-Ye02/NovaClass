@@ -24,7 +24,12 @@ function memoryStorage() {
 beforeEach(() => { language.lang = "en"; vi.stubGlobal("localStorage", memoryStorage()); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-const openNotebook = () => { render(<GrammarMeaning />); fireEvent.click(screen.getAllByRole("tab")[2]); };
+// The notebook is a study list of the Writing (and Reading) tab: open Writing, then pick it in the dropdown.
+const openNotebook = () => {
+  render(<GrammarMeaning />);
+  fireEvent.click(screen.getAllByRole("tab")[2]);
+  fireEvent.change(screen.getByTestId("grammar-view-select"), { target: { value: "idioms" } });
+};
 const rows = () => screen.getAllByTestId("idiom-row");
 const mode = name => fireEvent.click(screen.getByRole("button", { name }));
 
@@ -56,7 +61,7 @@ describe("Idioms · Proverbs notebook: data", () => {
 });
 
 describe("Idioms · Proverbs notebook: the page", () => {
-  it("is a third tab of Grammar & Meaning, opening on the idioms list with the category tabs and counts", () => {
+  it("is a study list of the Writing tab, opening on the idioms list with the category tabs and counts", () => {
     openNotebook();
     expect(screen.getAllByRole("tab")[2].getAttribute("aria-selected")).toBe("true");
     const cats = within(screen.getByRole("group", { name: "Category" })).getAllByRole("button");
